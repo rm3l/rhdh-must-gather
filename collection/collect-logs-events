@@ -1,0 +1,373 @@
+#!/bin/bash
+
+# Logs and Events Collection Script
+# Collects logs from pods and cluster events
+
+set -euo pipefail
+
+# Source utilities
+source "$(dirname "$0")/lib/utils.sh"
+
+collect_cluster_events() {
+    log_info "Collecting cluster-wide events..."
+    
+    local events_dir="$MUST_GATHER_DIR/events"
+    ensure_directory "$events_dir"
+    
+    # All cluster events
+    safe_exec "kubectl get events --all-namespaces --sort-by='.lastTimestamp'" "$events_dir/all-events.txt" "All cluster events (sorted by time)"
+    safe_exec "kubectl get events --all-namespaces --sort-by='.lastTimestamp' -o yaml" "$events_dir/all-events.yaml" "All cluster events (YAML)"
+    
+    # Filter events by type
+    safe_exec "kubectl get events --all-namespaces --field-selector type=Warning --sort-by='.lastTimestamp'" "$events_dir/warning-events.txt" "Warning events"
+    safe_exec "kubectl get events --all-namespaces --field-selector type=Error --sort-by='.lastTimestamp'" "$events_dir/error-events.txt" "Error events"
+    safe_exec "kubectl get events --all-namespaces --field-selector type=Normal --sort-by='.lastTimestamp'" "$events_dir/normal-events.txt" "Normal events"
+    
+    # Recent events (last 1 hour)
+    local one_hour_ago=$(date -u -d '1 hour ago' '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || date -u -v-1H '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || echo "")
+    if [[ -n "$one_hour_ago" ]]; then
+        safe_exec "kubectl get events --all-namespaces --field-selector lastTimestamp>='$one_hour_ago' --sort-by='.lastTimestamp'" "$events_dir/recent-events.txt" "Recent events (last hour)"
+    fi
+}
+
+collect_rhdh_namespace_events() {
+    local namespace="$1"
+    
+    if [[ -z "$namespace" ]]; then
+        log_debug "No RHDH namespace provided, skipping namespace-specific events"
+        return 0
+    fi
+    
+    log_info "Collecting events from RHDH namespace: $namespace"
+    
+    local events_dir="$MUST_GATHER_DIR/events"
+    
+    # RHDH namespace events
+    safe_exec "kubectl get events -n '$namespace' --sort-by='.lastTimestamp'" "$events_dir/rhdh-events.txt" "RHDH namespace events"
+    safe_exec "kubectl get events -n '$namespace' --sort-by='.lastTimestamp' -o yaml" "$events_dir/rhdh-events.yaml" "RHDH namespace events (YAML)"
+    
+    # Filter RHDH events by type
+    safe_exec "kubectl get events -n '$namespace' --field-selector type=Warning --sort-by='.lastTimestamp'" "$events_dir/rhdh-warning-events.txt" "RHDH warning events"
+    safe_exec "kubectl get events -n '$namespace' --field-selector type=Error --sort-by='.lastTimestamp'" "$events_dir/rhdh-error-events.txt" "RHDH error events"
+    
+    # Events related to specific resources
+    safe_exec "kubectl get events -n '$namespace' --field-selector involvedObject.kind=Pod --sort-by='.lastTimestamp'" "$events_dir/rhdh-pod-events.txt" "RHDH pod events"
+    safe_exec "kubectl get events -n '$namespace' --field-selector involvedObject.kind=Deployment --sort-by='.lastTimestamp'" "$events_dir/rhdh-deployment-events.txt" "RHDH deployment events"
+    safe_exec "kubectl get events -n '$namespace' --field-selector involvedObject.kind=Service --sort-by='.lastTimestamp'" "$events_dir/rhdh-service-events.txt" "RHDH service events"
+}
+
+collect_pod_logs() {
+    local namespace="$1"
+    
+    if [[ -z "$namespace" ]]; then
+        log_debug "No RHDH namespace provided, skipping pod logs collection"
+        return 0
+    fi
+    
+    log_info "Collecting pod logs from namespace: $namespace"
+    
+    local logs_dir="$MUST_GATHER_DIR/logs"
+    ensure_directory "$logs_dir"
+    
+    # Create namespace-specific logs directory
+    local ns_logs_dir="$logs_dir/$namespace"
+    ensure_directory "$ns_logs_dir"
+    
+    # Get all pods in the namespace
+    kubectl get pods -n "$namespace" -o name 2>/dev/null | while IFS= read -r pod; do
+        if [[ -n "$pod" ]]; then
+            local pod_name=$(basename "$pod")
+            log_debug "Collecting logs for pod: $pod_name"
+            
+            # Create pod-specific directory
+            local pod_logs_dir="$ns_logs_dir/$pod_name"
+            ensure_directory "$pod_logs_dir"
+            
+            # Current logs
+            safe_exec "kubectl logs '$pod' -n '$namespace' --tail=2000" "$pod_logs_dir/current.log" "Current logs for $pod_name"
+            
+            # Previous logs if available (pod restarted)
+            if kubectl logs "$pod" -n "$namespace" --previous >/dev/null 2>&1; then
+                safe_exec "kubectl logs '$pod' -n '$namespace' --previous --tail=2000" "$pod_logs_dir/previous.log" "Previous logs for $pod_name"
+            fi
+            
+            # Container-specific logs if multiple containers
+            local containers=$(kubectl get "$pod" -n "$namespace" -o jsonpath='{.spec.containers[*].name}' 2>/dev/null || echo "")
+            local container_count=$(echo "$containers" | wc -w)
+            
+            if [[ $container_count -gt 1 ]]; then
+                log_debug "Pod $pod_name has $container_count containers, collecting per-container logs"
+                for container in $containers; do
+                    safe_exec "kubectl logs '$pod' -n '$namespace' -c '$container' --tail=2000" "$pod_logs_dir/${container}.log" "Logs for container $container in $pod_name"
+                    
+                    # Previous logs for container
+                    if kubectl logs "$pod" -n "$namespace" -c "$container" --previous >/dev/null 2>&1; then
+                        safe_exec "kubectl logs '$pod' -n '$namespace' -c '$container' --previous --tail=2000" "$pod_logs_dir/${container}-previous.log" "Previous logs for container $container in $pod_name"
+                    fi
+                done
+            fi
+            
+            # Init container logs if any
+            local init_containers=$(kubectl get "$pod" -n "$namespace" -o jsonpath='{.spec.initContainers[*].name}' 2>/dev/null || echo "")
+            if [[ -n "$init_containers" ]]; then
+                log_debug "Pod $pod_name has init containers, collecting init container logs"
+                for init_container in $init_containers; do
+                    safe_exec "kubectl logs '$pod' -n '$namespace' -c '$init_container'" "$pod_logs_dir/init-${init_container}.log" "Init container $init_container logs in $pod_name"
+                done
+            fi
+        fi
+    done
+}
+
+collect_system_logs() {
+    log_info "Collecting system component logs..."
+    
+    local logs_dir="$MUST_GATHER_DIR/logs"
+    local system_logs_dir="$logs_dir/system"
+    ensure_directory "$system_logs_dir"
+    
+    # Core Kubernetes system components
+    local system_namespaces=("kube-system" "kube-public" "kube-node-lease")
+    
+    for sys_ns in "${system_namespaces[@]}"; do
+        if kubectl get namespace "$sys_ns" >/dev/null 2>&1; then
+            log_debug "Collecting logs from system namespace: $sys_ns"
+            
+            local sys_ns_dir="$system_logs_dir/$sys_ns"
+            ensure_directory "$sys_ns_dir"
+            
+            # Get logs from key system components
+            kubectl get pods -n "$sys_ns" -o name 2>/dev/null | while IFS= read -r pod; do
+                if [[ -n "$pod" ]]; then
+                    local pod_name=$(basename "$pod")
+                    
+                    # Focus on important system components
+                    if [[ "$pod_name" =~ (kube-apiserver|kube-controller-manager|kube-scheduler|etcd|coredns|calico|flannel|weave) ]]; then
+                        log_debug "Collecting system logs for: $pod_name"
+                        safe_exec "kubectl logs '$pod' -n '$sys_ns' --tail=1000" "$sys_ns_dir/${pod_name}.log" "System logs for $pod_name"
+                    fi
+                fi
+            done
+        fi
+    done
+    
+    # OpenShift system components
+    load_detection_results
+    local cluster_type="${CLUSTER_TYPE:-kubernetes}"
+    
+    if [[ "$cluster_type" == "openshift" ]]; then
+        log_debug "Collecting OpenShift system component logs"
+        
+        local openshift_namespaces=("openshift-kube-apiserver" "openshift-kube-controller-manager" "openshift-kube-scheduler" "openshift-etcd")
+        
+        for os_ns in "${openshift_namespaces[@]}"; do
+            if kubectl get namespace "$os_ns" >/dev/null 2>&1; then
+                local os_ns_dir="$system_logs_dir/$os_ns"
+                ensure_directory "$os_ns_dir"
+                
+                # Get recent logs from OpenShift system pods
+                kubectl get pods -n "$os_ns" -o name 2>/dev/null | head -5 | while IFS= read -r pod; do
+                    if [[ -n "$pod" ]]; then
+                        local pod_name=$(basename "$pod")
+                        safe_exec "kubectl logs '$pod' -n '$os_ns' --tail=500" "$os_ns_dir/${pod_name}.log" "OpenShift system logs for $pod_name"
+                    fi
+                done
+            fi
+        done
+    fi
+}
+
+collect_audit_logs() {
+    load_detection_results
+    local cluster_type="${CLUSTER_TYPE:-kubernetes}"
+    
+    if [[ "$cluster_type" != "openshift" ]]; then
+        log_debug "Skipping audit logs collection (not an OpenShift cluster)"
+        return 0
+    fi
+    
+    log_info "Collecting audit logs (OpenShift)..."
+    
+    local logs_dir="$MUST_GATHER_DIR/logs"
+    local audit_logs_dir="$logs_dir/audit"
+    ensure_directory "$audit_logs_dir"
+    
+    # OpenShift audit logs are typically in specific locations
+    # We'll attempt to collect what's available through the API
+    
+    # API server audit policy
+    safe_exec "oc get configmap audit-policy -n openshift-kube-apiserver -o yaml" "$audit_logs_dir/audit-policy.yaml" "Audit policy configuration" || true
+    
+    # Recent audit events (if accessible)
+    safe_exec "oc get events --all-namespaces --field-selector source=audit --sort-by='.lastTimestamp' --limit=1000" "$audit_logs_dir/audit-events.txt" "Recent audit events" || true
+    
+    # Note about audit logs location
+    cat > "$audit_logs_dir/audit-logs-note.txt" << EOF
+Audit Logs Collection Note
+=========================
+Collection Time: $(date)
+
+OpenShift audit logs are typically stored on master nodes in:
+- /var/log/audit/audit.log
+- /var/log/kube-apiserver/audit.log
+- /var/log/openshift-apiserver/audit.log
+
+This must-gather tool cannot directly access node filesystems.
+For complete audit log collection, you may need to:
+1. SSH to master nodes directly
+2. Use 'oc adm node-logs' command
+3. Use OpenShift's logging infrastructure
+
+What we collected:
+- Audit policy configuration (if available)
+- Recent audit-related events
+EOF
+}
+
+generate_logs_summary() {
+    local namespace="${1:-}"
+    
+    log_info "Generating logs and events collection summary..."
+    
+    local logs_dir="$MUST_GATHER_DIR/logs"
+    local events_dir="$MUST_GATHER_DIR/events"
+    
+    local total_log_files=$(find "$logs_dir" -name "*.log" -type f 2>/dev/null | wc -l || echo "0")
+    local total_event_files=$(find "$events_dir" -name "*.txt" -o -name "*.yaml" -type f 2>/dev/null | wc -l || echo "0")
+    
+    local rhdh_pods_count=0
+    if [[ -n "$namespace" ]]; then
+        rhdh_pods_count=$(kubectl get pods -n "$namespace" --no-headers 2>/dev/null | wc -l || echo "0")
+    fi
+    
+    cat > "$MUST_GATHER_DIR/logs-events-summary.txt" << EOF
+Logs and Events Collection Summary
+=================================
+Collection Time: $(date)
+RHDH Namespace: ${namespace:-"Not detected"}
+
+Statistics:
+- Total log files collected: $total_log_files
+- Total event files collected: $total_event_files
+- RHDH pods with logs: $rhdh_pods_count
+
+Collected Data:
+- Cluster-wide events (all types)
+- RHDH namespace events (if namespace detected)
+- Pod logs from RHDH namespace
+  - Current logs (last 2000 lines)
+  - Previous logs (if pods restarted)
+  - Per-container logs (if multiple containers)
+  - Init container logs (if any)
+- System component logs (limited)
+- Audit information (OpenShift only)
+
+File Organization:
+logs/
+├── $namespace/               # RHDH namespace logs
+│   └── [pod-name]/          # Per-pod directories
+│       ├── current.log      # Current pod logs
+│       ├── previous.log     # Previous logs (if available)
+│       └── [container].log  # Per-container logs
+├── system/                  # System component logs
+└── audit/                   # Audit logs and configuration
+
+events/
+├── all-events.txt           # All cluster events
+├── warning-events.txt       # Warning events only
+├── error-events.txt         # Error events only
+└── rhdh-*.txt              # RHDH-specific events
+
+Notes:
+- Log files are limited to prevent excessive size
+- Previous logs are included when pods have restarted
+- System logs focus on key Kubernetes components
+- Audit logs require special permissions and may be limited
+EOF
+}
+
+# Main execution
+main() {
+    log_info "Starting logs and events collection..."
+    
+    if ! check_cluster_connectivity; then
+        log_error "Cannot connect to cluster"
+        exit 1
+    fi
+    
+    # Load detection results
+    load_detection_results
+    local namespace="${RHDH_NAMESPACE:-}"
+    
+    # Collect cluster-wide events (always)
+    collect_cluster_events
+    
+    # Collect RHDH-specific events if namespace is known
+    if [[ -n "$namespace" ]]; then
+        collect_rhdh_namespace_events "$namespace"
+        collect_pod_logs "$namespace"
+    else
+        log_warn "RHDH namespace not detected, skipping RHDH-specific logs and events"
+    fi
+    
+    # Collect system logs (limited to avoid excessive data)
+    collect_system_logs
+    
+    # Collect audit information
+    collect_audit_logs
+    
+    # Generate summary
+    generate_logs_summary "$namespace"
+    
+    log_success "Logs and events collection completed"
+}
+
+# Show help
+show_help() {
+    cat << EOF
+Logs and Events Collection Script
+
+Usage: $0 [OPTIONS]
+
+This script collects logs from pods and cluster events.
+
+Options:
+  -h, --help    Show this help message
+
+Environment Variables:
+  MUST_GATHER_DIR   Output directory (default: /must-gather)
+  LOG_LEVEL         Logging level (default: INFO)
+
+Collected Information:
+  - Cluster-wide events (all namespaces)
+  - RHDH namespace events (if detected)
+  - Pod logs from RHDH namespace
+    - Current and previous logs
+    - Per-container logs
+    - Init container logs
+  - Key system component logs
+  - Audit information (OpenShift)
+
+Log Limitations:
+  - Pod logs limited to last 2000 lines
+  - System logs limited to last 500-1000 lines
+  - Focuses on key components to prevent excessive data
+
+Examples:
+  $0                # Collect logs and events
+  LOG_LEVEL=DEBUG $0 # Collect with debug logging
+
+Output:
+  - Creates logs/ and events/ directories
+  - Generates logs-events-summary.txt with details
+EOF
+}
+
+# Handle command line arguments
+if [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
+    show_help
+    exit 0
+fi
+
+# Execute main function
+main "$@"

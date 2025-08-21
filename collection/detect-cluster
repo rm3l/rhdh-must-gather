@@ -1,0 +1,108 @@
+#!/bin/bash
+
+# Cluster Type Detection Script
+# Detects whether the cluster is OpenShift or standard Kubernetes
+
+set -euo pipefail
+
+# Source utilities
+source "$(dirname "$0")/lib/utils.sh"
+
+detect_cluster_type() {
+    log_info "Detecting cluster type..."
+    
+    local cluster_type="kubernetes"
+    
+    # Method 1: Check node OS image for Red Hat/CoreOS indicators
+    if kubectl get nodes -o jsonpath='{.items[0].status.nodeInfo.osImage}' 2>/dev/null | grep -qi "red hat\|rhcos\|coreos"; then
+        cluster_type="openshift"
+        log_debug "OpenShift detected via node OS image"
+    # Method 2: Check if oc command exists and works
+    elif command_exists oc && oc version 2>/dev/null | grep -q "openshift"; then
+        cluster_type="openshift"
+        log_debug "OpenShift detected via oc client"
+    # Method 3: Look for OpenShift-specific resources
+    elif kubectl get clusterversion 2>/dev/null | grep -q "VERSION"; then
+        cluster_type="openshift"
+        log_debug "OpenShift detected via clusterversion resource"
+    # Method 4: Check for OpenShift API groups
+    elif kubectl api-resources 2>/dev/null | grep -q "config.openshift.io"; then
+        cluster_type="openshift"
+        log_debug "OpenShift detected via API groups"
+    else
+        log_debug "Standard Kubernetes cluster detected"
+    fi
+    
+    # Write result
+    write_detection_result "CLUSTER_TYPE" "$cluster_type"
+    
+    if [[ "$cluster_type" == "openshift" ]]; then
+        log_success "Detected OpenShift cluster"
+        
+        # Collect additional OpenShift version information
+        if command_exists oc; then
+            oc version > "$MUST_GATHER_DIR/cluster-version-info.txt" 2>&1 || true
+        fi
+        
+        # Get OpenShift cluster version
+        if kubectl get clusterversion -o yaml > "$MUST_GATHER_DIR/clusterversion-details.yaml" 2>/dev/null; then
+            log_debug "OpenShift cluster version details collected"
+        fi
+    else
+        log_success "Detected standard Kubernetes cluster"
+        
+        # Collect Kubernetes version information
+        kubectl version --output=yaml > "$MUST_GATHER_DIR/kubernetes-version-info.yaml" 2>&1 || true
+    fi
+    
+    return 0
+}
+
+# Main execution
+main() {
+    log_info "Starting cluster type detection..."
+    
+    if ! check_cluster_connectivity; then
+        log_error "Cannot connect to cluster"
+        exit 1
+    fi
+    
+    detect_cluster_type
+    
+    log_success "Cluster type detection completed"
+}
+
+# Show help
+show_help() {
+    cat << EOF
+Cluster Type Detection Script
+
+Usage: $0 [OPTIONS]
+
+This script detects whether the cluster is OpenShift or standard Kubernetes.
+
+Options:
+  -h, --help    Show this help message
+
+Environment Variables:
+  MUST_GATHER_DIR   Output directory (default: /must-gather)
+  LOG_LEVEL         Logging level (default: INFO)
+
+Examples:
+  $0                # Detect cluster type
+  LOG_LEVEL=DEBUG $0 # Detect with debug logging
+
+Output:
+  - Sets CLUSTER_TYPE in detection-results.env
+  - Creates cluster version info files
+EOF
+}
+
+# Handle command line arguments
+if [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
+    show_help
+    exit 0
+fi
+
+# Execute main function
+main "$@"

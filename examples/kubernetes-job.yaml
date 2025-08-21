@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rhdh-must-gather
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: rhdh-must-gather
+rules:
+- apiGroups: [""]
+  resources: ["*"]
+  verbs: ["get", "list", "describe"]
+- apiGroups: ["apps", "extensions"]
+  resources: ["*"]
+  verbs: ["get", "list", "describe"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["*"]
+  verbs: ["get", "list", "describe"]
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["*"]
+  verbs: ["get", "list", "describe"]
+- apiGroups: ["storage.k8s.io"]
+  resources: ["*"]
+  verbs: ["get", "list", "describe"]
+- apiGroups: ["rhdh.redhat.com"]
+  resources: ["*"]
+  verbs: ["get", "list", "describe"]
+- apiGroups: ["operators.coreos.com"]
+  resources: ["*"]
+  verbs: ["get", "list", "describe"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: rhdh-must-gather
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: rhdh-must-gather
+subjects:
+- kind: ServiceAccount
+  name: rhdh-must-gather
+  namespace: default
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rhdh-must-gather
+  namespace: default
+spec:
+  template:
+    spec:
+      serviceAccountName: rhdh-must-gather
+      containers:
+      - name: must-gather
+        image: quay.io/rhdh/rhdh-must-gather:latest
+        env:
+        - name: MUST_GATHER_DIR
+          value: "/must-gather"
+        - name: LOG_LEVEL
+          value: "INFO"
+        volumeMounts:
+        - name: output
+          mountPath: /must-gather
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: output
+        emptyDir: {}
+      restartPolicy: Never
+  backoffLimit: 3

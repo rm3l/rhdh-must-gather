@@ -1,0 +1,28 @@
+# Build artifacts
+*.log
+*.tmp
+test-output/
+must-gather-*/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Container build cache
+.buildah/
+.podman/
+
+# Backup files
+*.backup
+*.bak
+
+# Test data
+test-data/
+sample-output/

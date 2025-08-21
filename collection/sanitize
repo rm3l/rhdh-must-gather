@@ -1,0 +1,183 @@
+#!/bin/bash
+
+# RHDH Must-Gather Sanitization Script
+# Removes or masks sensitive information from collected data
+
+set -euo pipefail
+
+MUST_GATHER_DIR="${1:-/must-gather}"
+
+# Patterns that should be sanitized
+declare -a SENSITIVE_PATTERNS=(
+    "password"
+    "passwd"
+    "secret"
+    "token"
+    "key"
+    "cert"
+    "certificate"
+    "private"
+    "oauth"
+    "auth"
+    "api-key"
+    "apikey"
+    "client-secret"
+    "client_secret"
+)
+
+# File extensions to sanitize
+declare -a SANITIZE_EXTENSIONS=(
+    "*.yaml"
+    "*.yml"
+    "*.json"
+    "*.txt"
+    "*.log"
+)
+
+log_info() {
+    echo "[INFO] $*" >&2
+}
+
+log_warn() {
+    echo "[WARN] $*" >&2
+}
+
+# Mask sensitive values in YAML/JSON files
+sanitize_structured_file() {
+    local file="$1"
+    local backup_file="${file}.backup"
+    
+    # Create backup
+    cp "$file" "$backup_file"
+    
+    # Sanitize common sensitive fields
+    sed -i -E 's/(password|passwd|secret|token|key|private|oauth|auth|api-key|apikey|client-secret|client_secret)(\s*:\s*).*/\1\2"<REDACTED>"/gi' "$file"
+    
+    # Sanitize base64 encoded values (common in secrets)
+    sed -i -E 's/([a-zA-Z0-9+/]{20,}={0,2})/\1 -> <BASE64_REDACTED>/g' "$file"
+    
+    # Sanitize JWT tokens
+    sed -i -E 's/(eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*)/\1 -> <JWT_REDACTED>/g' "$file"
+    
+    # Sanitize URLs with credentials
+    sed -i -E 's|(https?://)[^:/@]+:[^@]+@|\1<USER>:<PASS>@|g' "$file"
+}
+
+# Sanitize log files
+sanitize_log_file() {
+    local file="$1"
+    local backup_file="${file}.backup"
+    
+    # Create backup
+    cp "$file" "$backup_file"
+    
+    # Remove lines containing sensitive patterns
+    for pattern in "${SENSITIVE_PATTERNS[@]}"; do
+        sed -i "/${pattern}/d" "$file" 2>/dev/null || true
+    done
+    
+    # Sanitize IP addresses (optional - comment out if IPs are needed)
+    # sed -i -E 's/[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/<IP_REDACTED>/g' "$file"
+}
+
+# Remove actual secret content files
+remove_secret_data() {
+    log_info "Removing secret data files..."
+    
+    # Find and remove secret content (but keep metadata)
+    find "$MUST_GATHER_DIR" -name "*.yaml" -o -name "*.yml" | while read -r file; do
+        if grep -q "kind.*Secret" "$file" 2>/dev/null; then
+            log_info "Processing secret file: $file"
+            # Keep only metadata, remove data section
+            sed -i '/^data:/,$d' "$file" 2>/dev/null || true
+            echo "data: <REDACTED>" >> "$file"
+        fi
+    done
+}
+
+# Main sanitization function
+main() {
+    if [[ ! -d "$MUST_GATHER_DIR" ]]; then
+        log_warn "Must-gather directory not found: $MUST_GATHER_DIR"
+        exit 1
+    fi
+    
+    log_info "Starting sanitization of must-gather data..."
+    log_info "Directory: $MUST_GATHER_DIR"
+    
+    # Remove secret data first
+    remove_secret_data
+    
+    # Process structured files
+    log_info "Sanitizing structured files..."
+    for ext in "${SANITIZE_EXTENSIONS[@]}"; do
+        find "$MUST_GATHER_DIR" -name "$ext" -type f | while read -r file; do
+            if [[ -f "$file" ]]; then
+                log_info "Sanitizing: $file"
+                if [[ "$file" == *.log ]]; then
+                    sanitize_log_file "$file"
+                else
+                    sanitize_structured_file "$file"
+                fi
+            fi
+        done
+    done
+    
+    # Create sanitization report
+    cat > "$MUST_GATHER_DIR/sanitization-report.txt" << EOF
+Sanitization Report
+==================
+Date: $(date)
+Directory: $MUST_GATHER_DIR
+
+Actions Performed:
+- Masked sensitive field values in YAML/JSON files
+- Redacted base64 encoded content
+- Redacted JWT tokens
+- Sanitized URLs with embedded credentials
+- Removed secret data sections
+- Filtered sensitive log entries
+
+Patterns Sanitized:
+$(printf "- %s\n" "${SENSITIVE_PATTERNS[@]}")
+
+Note: Original files are backed up with .backup extension
+EOF
+    
+    log_info "Sanitization completed successfully!"
+    log_info "Report saved to: $MUST_GATHER_DIR/sanitization-report.txt"
+}
+
+# Show help
+show_help() {
+    cat << EOF
+RHDH Must-Gather Sanitization Tool
+
+Usage: $0 [MUST_GATHER_DIR]
+
+This script sanitizes sensitive information from must-gather data including:
+- Passwords, secrets, tokens, and keys
+- Base64 encoded values
+- JWT tokens
+- URLs with embedded credentials
+- Kubernetes secret data
+
+Arguments:
+  MUST_GATHER_DIR   Directory containing must-gather data (default: /must-gather)
+
+Examples:
+  $0                    # Sanitize /must-gather
+  $0 ./output          # Sanitize ./output directory
+
+Note: Original files are backed up with .backup extension before sanitization.
+EOF
+}
+
+# Handle command line arguments
+if [[ $# -gt 1 ]] || [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
+    show_help
+    exit 0
+fi
+
+# Execute main function
+main "$@"

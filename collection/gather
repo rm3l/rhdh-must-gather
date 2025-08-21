@@ -1,0 +1,364 @@
+#!/bin/bash
+
+# RHDH Must-Gather Tool
+# Collects diagnostic information for Red Hat Developer Hub troubleshooting
+# Supports both OpenShift and standard Kubernetes clusters
+# Handles both Helm and Operator deployments
+
+set -euo pipefail
+
+# Global variables
+MUST_GATHER_DIR="${MUST_GATHER_DIR:-/must-gather}"
+LOG_LEVEL="${LOG_LEVEL:-INFO}"
+COLLECTION_TIMEOUT="${COLLECTION_TIMEOUT:-300}"
+RHDH_NAMESPACE=""
+DEPLOYMENT_TYPE=""
+CLUSTER_TYPE=""
+
+# Color codes for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Logging functions
+log() {
+    local level="$1"
+    shift
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    echo -e "[${timestamp}] [${level}] $*" >&2
+}
+
+log_info() { log "INFO" "$@"; }
+log_warn() { log "WARN" "${YELLOW}$*${NC}"; }
+log_error() { log "ERROR" "${RED}$*${NC}"; }
+log_success() { log "SUCCESS" "${GREEN}$*${NC}"; }
+
+# Check if command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Safe command execution with timeout
+safe_exec() {
+    local cmd="$1"
+    local output_file="$2"
+    local description="${3:-}"
+    
+    if [[ -n "$description" ]]; then
+        log_info "Collecting: $description"
+    fi
+    
+    if ! timeout "$COLLECTION_TIMEOUT" bash -c "$cmd" > "$output_file" 2>&1; then
+        log_warn "Command timed out or failed: $cmd"
+        echo "Command failed or timed out: $cmd" > "$output_file"
+        echo "Timestamp: $(date)" >> "$output_file"
+    fi
+}
+
+# Detect cluster type (OpenShift vs Kubernetes)
+detect_cluster_type() {
+    log_info "Detecting cluster type..."
+    
+    if kubectl get nodes -o jsonpath='{.items[0].status.nodeInfo.osImage}' 2>/dev/null | grep -qi "red hat\|rhcos\|coreos"; then
+        CLUSTER_TYPE="openshift"
+        log_success "Detected OpenShift cluster"
+    elif command_exists oc && oc version 2>/dev/null | grep -q "openshift"; then
+        CLUSTER_TYPE="openshift"
+        log_success "Detected OpenShift cluster (via oc client)"
+    else
+        CLUSTER_TYPE="kubernetes"
+        log_success "Detected standard Kubernetes cluster"
+    fi
+}
+
+# Detect RHDH deployment type and namespace
+detect_rhdh_deployment() {
+    log_info "Detecting RHDH deployment..."
+    
+    # Look for RHDH in common namespaces
+    local common_namespaces=("rhdh" "backstage" "developer-hub" "openshift-developer-hub" "rhdh-operator" "backstage-system")
+    
+    for ns in "${common_namespaces[@]}"; do
+        if kubectl get namespace "$ns" >/dev/null 2>&1; then
+            # Check for Helm deployment
+            if kubectl get secret -n "$ns" -l "app.kubernetes.io/managed-by=Helm" -o name 2>/dev/null | grep -q backstage; then
+                DEPLOYMENT_TYPE="helm"
+                RHDH_NAMESPACE="$ns"
+                log_success "Found Helm-based RHDH deployment in namespace: $ns"
+                return 0
+            fi
+            
+            # Check for Operator deployment
+            if kubectl get backstage -n "$ns" >/dev/null 2>&1 || kubectl get backstages -n "$ns" >/dev/null 2>&1; then
+                DEPLOYMENT_TYPE="operator"
+                RHDH_NAMESPACE="$ns"
+                log_success "Found Operator-based RHDH deployment in namespace: $ns"
+                return 0
+            fi
+        fi
+    done
+    
+    # Fallback: search all namespaces
+    log_info "Searching all namespaces for RHDH deployment..."
+    
+    # Search for Helm deployments
+    if kubectl get secret --all-namespaces -l "app.kubernetes.io/managed-by=Helm" -o jsonpath='{range .items[*]}{.metadata.namespace}{"\n"}{end}' 2>/dev/null | while read ns; do
+        if kubectl get secret -n "$ns" -l "app.kubernetes.io/managed-by=Helm" -o name 2>/dev/null | grep -q backstage; then
+            DEPLOYMENT_TYPE="helm"
+            RHDH_NAMESPACE="$ns"
+            log_success "Found Helm-based RHDH deployment in namespace: $ns"
+            echo "$ns" > /tmp/rhdh_namespace
+            echo "helm" > /tmp/deployment_type
+            exit 0
+        fi
+    done; then
+        RHDH_NAMESPACE=$(cat /tmp/rhdh_namespace 2>/dev/null || echo "")
+        DEPLOYMENT_TYPE=$(cat /tmp/deployment_type 2>/dev/null || echo "")
+        rm -f /tmp/rhdh_namespace /tmp/deployment_type
+        return 0
+    fi
+    
+    # Search for Operator deployments
+    if kubectl get backstage --all-namespaces >/dev/null 2>&1; then
+        local backstage_ns=$(kubectl get backstage --all-namespaces -o jsonpath='{.items[0].metadata.namespace}' 2>/dev/null)
+        if [[ -n "$backstage_ns" ]]; then
+            DEPLOYMENT_TYPE="operator"
+            RHDH_NAMESPACE="$backstage_ns"
+            log_success "Found Operator-based RHDH deployment in namespace: $backstage_ns"
+            return 0
+        fi
+    fi
+    
+    log_warn "No RHDH deployment detected. Will collect general cluster information."
+    return 1
+}
+
+# Create directory structure
+setup_directories() {
+    log_info "Setting up collection directories..."
+    
+    mkdir -p "$MUST_GATHER_DIR"/{cluster-info,rhdh,namespaces,logs,events,network,storage}
+    
+    if [[ "$DEPLOYMENT_TYPE" == "helm" ]]; then
+        mkdir -p "$MUST_GATHER_DIR"/rhdh/{helm,resources}
+    elif [[ "$DEPLOYMENT_TYPE" == "operator" ]]; then
+        mkdir -p "$MUST_GATHER_DIR"/rhdh/{operator,backstage-crs,operands}
+    fi
+    
+    log_success "Directory structure created"
+}
+
+# Collect basic cluster information
+collect_cluster_info() {
+    log_info "Collecting cluster information..."
+    
+    local cluster_dir="$MUST_GATHER_DIR/cluster-info"
+    
+    # Basic cluster info
+    safe_exec "kubectl cluster-info" "$cluster_dir/cluster-info.txt" "Cluster info"
+    safe_exec "kubectl version --output=yaml" "$cluster_dir/version.yaml" "Kubernetes version"
+    safe_exec "kubectl get nodes -o wide" "$cluster_dir/nodes.txt" "Node information"
+    safe_exec "kubectl get nodes -o yaml" "$cluster_dir/nodes.yaml" "Node details (YAML)"
+    safe_exec "kubectl describe nodes" "$cluster_dir/nodes-describe.txt" "Node descriptions"
+    
+    # Storage classes
+    safe_exec "kubectl get storageclass -o yaml" "$cluster_dir/storageclasses.yaml" "Storage classes"
+    
+    # Network policies
+    safe_exec "kubectl get networkpolicy --all-namespaces -o yaml" "$cluster_dir/networkpolicies.yaml" "Network policies"
+    
+    # RBAC
+    safe_exec "kubectl get clusterroles -o yaml" "$cluster_dir/clusterroles.yaml" "Cluster roles"
+    safe_exec "kubectl get clusterrolebindings -o yaml" "$cluster_dir/clusterrolebindings.yaml" "Cluster role bindings"
+    
+    # OpenShift specific
+    if [[ "$CLUSTER_TYPE" == "openshift" ]]; then
+        safe_exec "oc get clusterversion -o yaml" "$cluster_dir/clusterversion.yaml" "OpenShift cluster version"
+        safe_exec "oc get clusteroperators -o yaml" "$cluster_dir/clusteroperators.yaml" "OpenShift cluster operators"
+        safe_exec "oc get routes --all-namespaces -o yaml" "$cluster_dir/routes.yaml" "OpenShift routes"
+    fi
+    
+    log_success "Cluster information collected"
+}
+
+# Collect Helm-specific information
+collect_helm_info() {
+    log_info "Collecting Helm deployment information..."
+    
+    local helm_dir="$MUST_GATHER_DIR/rhdh/helm"
+    
+    # Helm releases
+    safe_exec "helm list -n '$RHDH_NAMESPACE' -o yaml" "$helm_dir/releases.yaml" "Helm releases"
+    
+    # Get Helm values
+    local release_name=$(helm list -n "$RHDH_NAMESPACE" -o json | jq -r '.[0].name' 2>/dev/null || echo "")
+    if [[ -n "$release_name" ]]; then
+        safe_exec "helm get values '$release_name' -n '$RHDH_NAMESPACE'" "$helm_dir/values.yaml" "Helm values"
+        safe_exec "helm get manifest '$release_name' -n '$RHDH_NAMESPACE'" "$helm_dir/manifest.yaml" "Helm manifest"
+        safe_exec "helm history '$release_name' -n '$RHDH_NAMESPACE'" "$helm_dir/history.txt" "Helm history"
+    fi
+    
+    log_success "Helm information collected"
+}
+
+# Collect Operator-specific information
+collect_operator_info() {
+    log_info "Collecting Operator deployment information..."
+    
+    local operator_dir="$MUST_GATHER_DIR/rhdh/operator"
+    local cr_dir="$MUST_GATHER_DIR/rhdh/backstage-crs"
+    
+    # Operator information
+    safe_exec "kubectl get deployment -n '$RHDH_NAMESPACE' -o yaml" "$operator_dir/deployments.yaml" "Operator deployments"
+    safe_exec "kubectl get pods -n '$RHDH_NAMESPACE' -o yaml" "$operator_dir/pods.yaml" "Operator pods"
+    
+    # CRDs
+    safe_exec "kubectl get crd backstages.rhdh.redhat.com -o yaml" "$operator_dir/backstage-crd.yaml" "Backstage CRD"
+    
+    # Backstage Custom Resources
+    safe_exec "kubectl get backstage -n '$RHDH_NAMESPACE' -o yaml" "$cr_dir/backstage-instances.yaml" "Backstage instances"
+    safe_exec "kubectl describe backstage -n '$RHDH_NAMESPACE'" "$cr_dir/backstage-describe.txt" "Backstage descriptions"
+    
+    # Operator logs
+    kubectl get pods -n "$RHDH_NAMESPACE" -l "control-plane=controller-manager" -o name 2>/dev/null | while read pod; do
+        pod_name=$(basename "$pod")
+        safe_exec "kubectl logs '$pod' -n '$RHDH_NAMESPACE' --tail=1000" "$operator_dir/logs-$pod_name.log" "Operator logs: $pod_name"
+    done
+    
+    log_success "Operator information collected"
+}
+
+# Collect RHDH namespace resources
+collect_rhdh_resources() {
+    if [[ -z "$RHDH_NAMESPACE" ]]; then
+        log_warn "No RHDH namespace detected, skipping resource collection"
+        return
+    fi
+    
+    log_info "Collecting RHDH resources from namespace: $RHDH_NAMESPACE"
+    
+    local resources_dir="$MUST_GATHER_DIR/rhdh/resources"
+    mkdir -p "$resources_dir"
+    
+    # All resources in RHDH namespace
+    safe_exec "kubectl get all -n '$RHDH_NAMESPACE' -o yaml" "$resources_dir/all-resources.yaml" "All resources"
+    safe_exec "kubectl describe all -n '$RHDH_NAMESPACE'" "$resources_dir/all-resources-describe.txt" "Resource descriptions"
+    
+    # ConfigMaps and Secrets (names only for security)
+    safe_exec "kubectl get configmaps -n '$RHDH_NAMESPACE'" "$resources_dir/configmaps-list.txt" "ConfigMaps list"
+    safe_exec "kubectl get secrets -n '$RHDH_NAMESPACE'" "$resources_dir/secrets-list.txt" "Secrets list"
+    
+    # Services and Ingress
+    safe_exec "kubectl get services -n '$RHDH_NAMESPACE' -o yaml" "$resources_dir/services.yaml" "Services"
+    safe_exec "kubectl get ingress -n '$RHDH_NAMESPACE' -o yaml" "$resources_dir/ingress.yaml" "Ingress"
+    
+    # PVCs
+    safe_exec "kubectl get pvc -n '$RHDH_NAMESPACE' -o yaml" "$resources_dir/pvcs.yaml" "Persistent Volume Claims"
+    
+    log_success "RHDH resources collected"
+}
+
+# Collect logs and events
+collect_logs_and_events() {
+    log_info "Collecting logs and events..."
+    
+    local logs_dir="$MUST_GATHER_DIR/logs"
+    local events_dir="$MUST_GATHER_DIR/events"
+    
+    # Cluster events
+    safe_exec "kubectl get events --all-namespaces --sort-by='.lastTimestamp'" "$events_dir/all-events.txt" "Cluster events"
+    
+    if [[ -n "$RHDH_NAMESPACE" ]]; then
+        # RHDH namespace events
+        safe_exec "kubectl get events -n '$RHDH_NAMESPACE' --sort-by='.lastTimestamp'" "$events_dir/rhdh-events.txt" "RHDH events"
+        
+        # RHDH pod logs
+        kubectl get pods -n "$RHDH_NAMESPACE" -o name 2>/dev/null | while read pod; do
+            pod_name=$(basename "$pod")
+            safe_exec "kubectl logs '$pod' -n '$RHDH_NAMESPACE' --tail=1000" "$logs_dir/$pod_name.log" "Pod logs: $pod_name"
+            
+            # Previous logs if pod restarted
+            if kubectl logs "$pod" -n "$RHDH_NAMESPACE" --previous >/dev/null 2>&1; then
+                safe_exec "kubectl logs '$pod' -n '$RHDH_NAMESPACE' --previous --tail=1000" "$logs_dir/$pod_name-previous.log" "Previous logs: $pod_name"
+            fi
+        done
+    fi
+    
+    log_success "Logs and events collected"
+}
+
+# Main collection function
+main() {
+    log_info "Starting RHDH must-gather collection..."
+    log_info "Output directory: $MUST_GATHER_DIR"
+    
+    # Verify kubectl is available
+    if ! command_exists kubectl; then
+        log_error "kubectl command not found"
+        exit 1
+    fi
+    
+    # Test cluster connectivity
+    if ! kubectl cluster-info >/dev/null 2>&1; then
+        log_error "Unable to connect to Kubernetes cluster"
+        exit 1
+    fi
+    
+    # Detection phase
+    detect_cluster_type
+    detect_rhdh_deployment
+    
+    # Setup
+    setup_directories
+    
+    # Collection phase
+    collect_cluster_info
+    
+    if [[ "$DEPLOYMENT_TYPE" == "helm" ]]; then
+        if command_exists helm; then
+            collect_helm_info
+        else
+            log_warn "Helm command not found, skipping Helm-specific collection"
+        fi
+    elif [[ "$DEPLOYMENT_TYPE" == "operator" ]]; then
+        collect_operator_info
+    fi
+    
+    collect_rhdh_resources
+    collect_logs_and_events
+    
+    # Create summary
+    cat > "$MUST_GATHER_DIR/collection-summary.txt" << EOF
+RHDH Must-Gather Collection Summary
+==================================
+Collection Date: $(date)
+Cluster Type: $CLUSTER_TYPE
+RHDH Namespace: ${RHDH_NAMESPACE:-"Not detected"}
+Deployment Type: ${DEPLOYMENT_TYPE:-"Not detected"}
+
+Collected Data:
+- Cluster information and configuration
+- Node details and status
+- Storage and network configuration
+- RBAC settings
+EOF
+
+    if [[ -n "$RHDH_NAMESPACE" ]]; then
+        cat >> "$MUST_GATHER_DIR/collection-summary.txt" << EOF
+- RHDH resources from namespace: $RHDH_NAMESPACE
+- Pod logs and events
+- $([[ "$DEPLOYMENT_TYPE" == "helm" ]] && echo "Helm charts and values" || echo "Operator and Custom Resources")
+EOF
+    fi
+
+    echo "" >> "$MUST_GATHER_DIR/collection-summary.txt"
+    echo "Collection completed successfully!" >> "$MUST_GATHER_DIR/collection-summary.txt"
+    
+    log_success "Must-gather collection completed successfully!"
+    log_info "Data collected in: $MUST_GATHER_DIR"
+}
+
+# Execute main function
+main "$@"

@@ -1,0 +1,317 @@
+#!/bin/bash
+
+# Helm Data Collection Script
+# Collects Helm-specific information for RHDH deployments
+
+set -euo pipefail
+
+# Source utilities
+source "$(dirname "$0")/lib/utils.sh"
+
+collect_helm_releases() {
+    local namespace="$1"
+    local helm_dir="$MUST_GATHER_DIR/rhdh/helm"
+    
+    log_info "Collecting Helm release information..."
+    ensure_directory "$helm_dir"
+    
+    # List all Helm releases in the namespace
+    safe_exec "helm list -n '$namespace'" "$helm_dir/releases.txt" "Helm releases list"
+    safe_exec "helm list -n '$namespace' -o yaml" "$helm_dir/releases.yaml" "Helm releases (YAML)"
+    safe_exec "helm list -n '$namespace' -o json" "$helm_dir/releases.json" "Helm releases (JSON)"
+    
+    # Get all Helm releases (in case RHDH spans multiple namespaces)
+    safe_exec "helm list --all-namespaces" "$helm_dir/all-releases.txt" "All Helm releases"
+    safe_exec "helm list --all-namespaces -o yaml" "$helm_dir/all-releases.yaml" "All Helm releases (YAML)"
+}
+
+collect_helm_values_and_manifests() {
+    local namespace="$1"
+    local helm_dir="$MUST_GATHER_DIR/rhdh/helm"
+    
+    log_info "Collecting Helm values and manifests..."
+    
+    # Find RHDH-related releases
+    local releases
+    if command_exists helm; then
+        releases=$(helm list -n "$namespace" -o json 2>/dev/null | jq -r '.[].name' 2>/dev/null || echo "")
+    else
+        log_warn "Helm command not available"
+        return 1
+    fi
+    
+    if [[ -z "$releases" ]]; then
+        log_warn "No Helm releases found in namespace $namespace"
+        
+        # Try to find releases with backstage/rhdh patterns in all namespaces
+        log_info "Searching for RHDH-related releases in all namespaces..."
+        releases=$(helm list --all-namespaces -o json 2>/dev/null | jq -r '.[] | select(.name | test("backstage|rhdh|developer-hub"; "i")) | "\(.namespace)/\(.name)"' 2>/dev/null || echo "")
+        
+        if [[ -z "$releases" ]]; then
+            echo "No RHDH-related Helm releases found" > "$helm_dir/no-releases.txt"
+            return 1
+        fi
+    fi
+    
+    # Process each release
+    echo "$releases" | while IFS= read -r release_info; do
+        if [[ -z "$release_info" ]]; then
+            continue
+        fi
+        
+        local release_ns="$namespace"
+        local release_name="$release_info"
+        
+        # Handle namespace/release format from all-namespaces search
+        if [[ "$release_info" == *"/"* ]]; then
+            release_ns=$(echo "$release_info" | cut -d'/' -f1)
+            release_name=$(echo "$release_info" | cut -d'/' -f2)
+        fi
+        
+        log_info "Processing Helm release: $release_name in namespace $release_ns"
+        
+        local release_dir="$helm_dir/releases/$release_name"
+        ensure_directory "$release_dir"
+        
+        # Get Helm values
+        safe_exec "helm get values '$release_name' -n '$release_ns'" "$release_dir/values.yaml" "Helm values for $release_name"
+        safe_exec "helm get values '$release_name' -n '$release_ns' --all" "$release_dir/all-values.yaml" "All Helm values for $release_name"
+        
+        # Get manifest
+        safe_exec "helm get manifest '$release_name' -n '$release_ns'" "$release_dir/manifest.yaml" "Helm manifest for $release_name"
+        
+        # Get hooks
+        safe_exec "helm get hooks '$release_name' -n '$release_ns'" "$release_dir/hooks.yaml" "Helm hooks for $release_name"
+        
+        # Get notes
+        safe_exec "helm get notes '$release_name' -n '$release_ns'" "$release_dir/notes.txt" "Helm notes for $release_name"
+        
+        # Get release history
+        safe_exec "helm history '$release_name' -n '$release_ns'" "$release_dir/history.txt" "Helm history for $release_name"
+        safe_exec "helm history '$release_name' -n '$release_ns' -o yaml" "$release_dir/history.yaml" "Helm history (YAML) for $release_name"
+        
+        # Get status
+        safe_exec "helm status '$release_name' -n '$release_ns'" "$release_dir/status.txt" "Helm status for $release_name"
+        safe_exec "helm status '$release_name' -n '$release_ns' -o yaml" "$release_dir/status.yaml" "Helm status (YAML) for $release_name"
+    done
+}
+
+collect_helm_secrets() {
+    local namespace="$1"
+    local helm_dir="$MUST_GATHER_DIR/rhdh/helm"
+    
+    log_info "Collecting Helm secrets (metadata only)..."
+    
+    local secrets_dir="$helm_dir/secrets"
+    ensure_directory "$secrets_dir"
+    
+    # Get Helm release secrets (contains release information)
+    safe_exec "kubectl get secrets -n '$namespace' -l 'owner=helm'" "$secrets_dir/helm-secrets.txt" "Helm release secrets"
+    safe_exec "kubectl get secrets -n '$namespace' -l 'app.kubernetes.io/managed-by=Helm'" "$secrets_dir/helm-managed-secrets.txt" "Helm-managed secrets"
+    
+    # Get metadata of Helm secrets (without actual secret data)
+    kubectl get secrets -n "$namespace" -l "owner=helm" -o name 2>/dev/null | while IFS= read -r secret; do
+        if [[ -n "$secret" ]]; then
+            secret_name=$(basename "$secret")
+            log_debug "Collecting metadata for Helm secret: $secret_name"
+            safe_exec "kubectl get '$secret' -n '$namespace' -o yaml" "$secrets_dir/${secret_name}-metadata.yaml" "Metadata for $secret_name"
+            
+            # Remove actual data section for security
+            if [[ -f "$secrets_dir/${secret_name}-metadata.yaml" ]]; then
+                sed -i '/^data:/,$d' "$secrets_dir/${secret_name}-metadata.yaml" 2>/dev/null || true
+                echo "data: <REDACTED_FOR_SECURITY>" >> "$secrets_dir/${secret_name}-metadata.yaml"
+            fi
+        fi
+    done
+}
+
+collect_helm_charts() {
+    local namespace="$1"
+    local helm_dir="$MUST_GATHER_DIR/rhdh/helm"
+    
+    log_info "Collecting Helm chart information..."
+    
+    local charts_dir="$helm_dir/charts"
+    ensure_directory "$charts_dir"
+    
+    # Find RHDH-related releases and get their chart information
+    helm list -n "$namespace" -o json 2>/dev/null | jq -r '.[] | "\(.name) \(.chart) \(.app_version)"' 2>/dev/null | while IFS= read -r line; do
+        if [[ -n "$line" ]]; then
+            echo "$line" >> "$charts_dir/chart-versions.txt"
+        fi
+    done || echo "Failed to collect chart information" > "$charts_dir/chart-versions.txt"
+    
+    # Get chart repository information
+    safe_exec "helm repo list" "$charts_dir/repositories.txt" "Helm repositories"
+    
+    # Search for backstage charts in configured repos
+    safe_exec "helm search repo backstage" "$charts_dir/backstage-charts.txt" "Backstage charts in repositories" || true
+    safe_exec "helm search repo rhdh" "$charts_dir/rhdh-charts.txt" "RHDH charts in repositories" || true
+    safe_exec "helm search repo developer-hub" "$charts_dir/developer-hub-charts.txt" "Developer Hub charts in repositories" || true
+}
+
+collect_helm_dependencies() {
+    local namespace="$1"
+    local helm_dir="$MUST_GATHER_DIR/rhdh/helm"
+    
+    log_info "Collecting Helm dependencies information..."
+    
+    # Get information about dependent charts/resources
+    local deps_dir="$helm_dir/dependencies"
+    ensure_directory "$deps_dir"
+    
+    # Look for ConfigMaps and other resources created by Helm
+    safe_exec "kubectl get configmaps -n '$namespace' -l 'app.kubernetes.io/managed-by=Helm'" "$deps_dir/helm-configmaps.txt" "Helm-managed ConfigMaps"
+    safe_exec "kubectl get services -n '$namespace' -l 'app.kubernetes.io/managed-by=Helm'" "$deps_dir/helm-services.txt" "Helm-managed Services"
+    safe_exec "kubectl get deployments -n '$namespace' -l 'app.kubernetes.io/managed-by=Helm'" "$deps_dir/helm-deployments.txt" "Helm-managed Deployments"
+    safe_exec "kubectl get ingress -n '$namespace' -l 'app.kubernetes.io/managed-by=Helm'" "$deps_dir/helm-ingress.txt" "Helm-managed Ingress"
+    
+    # Check for common RHDH dependencies
+    safe_exec "kubectl get postgresql -n '$namespace'" "$deps_dir/postgresql-instances.txt" "PostgreSQL instances" || true
+    safe_exec "kubectl get redis -n '$namespace'" "$deps_dir/redis-instances.txt" "Redis instances" || true
+}
+
+generate_helm_summary() {
+    local namespace="$1"
+    local helm_dir="$MUST_GATHER_DIR/rhdh/helm"
+    
+    log_info "Generating Helm collection summary..."
+    
+    local releases_count=0
+    local charts_count=0
+    
+    if command_exists helm; then
+        releases_count=$(helm list -n "$namespace" 2>/dev/null | tail -n +2 | wc -l || echo "0")
+        charts_count=$(helm repo list 2>/dev/null | tail -n +2 | wc -l || echo "0")
+    fi
+    
+    cat > "$helm_dir/collection-summary.txt" << EOF
+Helm Data Collection Summary
+===========================
+Collection Time: $(date)
+Namespace: $namespace
+Helm Version: $(helm version --short 2>/dev/null || echo "Not available")
+
+Statistics:
+- Helm releases in namespace: $releases_count
+- Configured repositories: $charts_count
+
+Collected Data:
+- Release information and status
+- Values files (user and computed)
+- Deployment manifests
+- Release history and notes
+- Helm secrets metadata (data redacted)
+- Chart information and dependencies
+- Helm-managed Kubernetes resources
+
+Files Created:
+$(find "$helm_dir" -type f 2>/dev/null | wc -l) files in rhdh/helm directory
+
+Note: Secret data has been redacted for security.
+Original values may contain sensitive information.
+EOF
+}
+
+# Main execution
+main() {
+    log_info "Starting Helm data collection..."
+    
+    if ! check_cluster_connectivity; then
+        log_error "Cannot connect to cluster"
+        exit 1
+    fi
+    
+    # Check if Helm is available
+    if ! command_exists helm; then
+        log_error "Helm command not found"
+        cat > "$MUST_GATHER_DIR/rhdh/helm/helm-not-available.txt" << EOF
+Helm Data Collection - Command Not Available
+===========================================
+Collection Time: $(date)
+
+Error: The 'helm' command is not available in this environment.
+Cannot collect Helm-specific data.
+
+Recommendation: Install Helm CLI or run must-gather from an environment
+with Helm access to collect complete Helm deployment information.
+EOF
+        exit 1
+    fi
+    
+    # Load detection results
+    load_detection_results
+    local namespace="${RHDH_NAMESPACE:-}"
+    local deployment_type="${DEPLOYMENT_TYPE:-}"
+    
+    if [[ "$deployment_type" != "helm" ]]; then
+        log_warn "Deployment type is not Helm ($deployment_type), skipping Helm collection"
+        exit 0
+    fi
+    
+    if [[ -z "$namespace" ]]; then
+        log_error "RHDH namespace not detected, cannot collect Helm data"
+        exit 1
+    fi
+    
+    log_info "Collecting Helm data for namespace: $namespace"
+    
+    # Collect all Helm data
+    collect_helm_releases "$namespace"
+    collect_helm_values_and_manifests "$namespace"
+    collect_helm_secrets "$namespace"
+    collect_helm_charts "$namespace"
+    collect_helm_dependencies "$namespace"
+    generate_helm_summary "$namespace"
+    
+    log_success "Helm data collection completed"
+}
+
+# Show help
+show_help() {
+    cat << EOF
+Helm Data Collection Script
+
+Usage: $0 [OPTIONS]
+
+This script collects Helm-specific information for RHDH deployments.
+
+Options:
+  -h, --help    Show this help message
+
+Environment Variables:
+  MUST_GATHER_DIR   Output directory (default: /must-gather)
+  LOG_LEVEL         Logging level (default: INFO)
+
+Prerequisites:
+  - Helm CLI must be available
+  - RHDH deployment detected as Helm-based
+  - RHDH_NAMESPACE must be set in detection results
+
+Collected Information:
+  - Helm release information and status
+  - Values files and computed values
+  - Deployment manifests and hooks
+  - Release history and notes
+  - Helm secrets metadata (data redacted)
+  - Chart and repository information
+  - Helm-managed Kubernetes resources
+
+Examples:
+  $0                # Collect Helm data
+  LOG_LEVEL=DEBUG $0 # Collect with debug logging
+
+Output:
+  - Creates rhdh/helm/ directory with collected data
+  - Generates collection-summary.txt with details
+EOF
+}
+
+# Handle command line arguments
+if [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
+    show_help
+    exit 0
+fi
+
+# Execute main function
+main "$@"

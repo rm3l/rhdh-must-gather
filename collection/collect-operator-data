@@ -1,0 +1,364 @@
+#!/bin/bash
+
+# Operator Data Collection Script
+# Collects Operator-specific information for RHDH deployments
+
+set -euo pipefail
+
+# Source utilities
+source "$(dirname "$0")/lib/utils.sh"
+
+collect_operator_deployments() {
+    local namespace="$1"
+    local operator_dir="$MUST_GATHER_DIR/rhdh/operator"
+    
+    log_info "Collecting operator deployment information..."
+    ensure_directory "$operator_dir"
+    
+    # Operator deployments
+    safe_exec "kubectl get deployment -n '$namespace'" "$operator_dir/deployments.txt" "Operator deployments list"
+    safe_exec "kubectl get deployment -n '$namespace' -o yaml" "$operator_dir/deployments.yaml" "Operator deployments details"
+    safe_exec "kubectl describe deployment -n '$namespace'" "$operator_dir/deployments-describe.txt" "Deployment descriptions"
+    
+    # Operator pods
+    safe_exec "kubectl get pods -n '$namespace'" "$operator_dir/pods.txt" "Operator pods list"
+    safe_exec "kubectl get pods -n '$namespace' -o yaml" "$operator_dir/pods.yaml" "Operator pods details"
+    safe_exec "kubectl describe pods -n '$namespace'" "$operator_dir/pods-describe.txt" "Pod descriptions"
+    
+    # ReplicaSets
+    safe_exec "kubectl get replicaset -n '$namespace'" "$operator_dir/replicasets.txt" "ReplicaSets"
+    safe_exec "kubectl get replicaset -n '$namespace' -o yaml" "$operator_dir/replicasets.yaml" "ReplicaSet details"
+}
+
+collect_operator_logs() {
+    local namespace="$1"
+    local operator_dir="$MUST_GATHER_DIR/rhdh/operator"
+    
+    log_info "Collecting operator logs..."
+    
+    local logs_dir="$operator_dir/logs"
+    ensure_directory "$logs_dir"
+    
+    # Collect logs from operator pods
+    kubectl get pods -n "$namespace" -o name 2>/dev/null | while IFS= read -r pod; do
+        if [[ -n "$pod" ]]; then
+            local pod_name=$(basename "$pod")
+            log_debug "Collecting logs for pod: $pod_name"
+            
+            # Current logs
+            safe_exec "kubectl logs '$pod' -n '$namespace' --tail=1000" "$logs_dir/${pod_name}.log" "Current logs for $pod_name"
+            
+            # Previous logs if available
+            if kubectl logs "$pod" -n "$namespace" --previous >/dev/null 2>&1; then
+                safe_exec "kubectl logs '$pod' -n '$namespace' --previous --tail=1000" "$logs_dir/${pod_name}-previous.log" "Previous logs for $pod_name"
+            fi
+            
+            # Container-specific logs if multiple containers
+            local containers=$(kubectl get "$pod" -n "$namespace" -o jsonpath='{.spec.containers[*].name}' 2>/dev/null || echo "")
+            if [[ $(echo "$containers" | wc -w) -gt 1 ]]; then
+                for container in $containers; do
+                    safe_exec "kubectl logs '$pod' -n '$namespace' -c '$container' --tail=1000" "$logs_dir/${pod_name}-${container}.log" "Logs for container $container in $pod_name"
+                done
+            fi
+        fi
+    done
+    
+    # Operator manager logs (common pattern)
+    kubectl get pods -n "$namespace" -l "control-plane=controller-manager" -o name 2>/dev/null | while IFS= read -r pod; do
+        if [[ -n "$pod" ]]; then
+            local pod_name=$(basename "$pod")
+            log_debug "Collecting controller-manager logs for: $pod_name"
+            safe_exec "kubectl logs '$pod' -n '$namespace' --tail=2000" "$logs_dir/controller-manager-${pod_name}.log" "Controller manager logs for $pod_name"
+        fi
+    done
+}
+
+collect_crds() {
+    local operator_dir="$MUST_GATHER_DIR/rhdh/operator"
+    
+    log_info "Collecting Custom Resource Definitions..."
+    
+    local crds_dir="$operator_dir/crds"
+    ensure_directory "$crds_dir"
+    
+    # RHDH/Backstage CRDs
+    safe_exec "kubectl get crd" "$crds_dir/all-crds.txt" "All CRDs in cluster"
+    
+    # Specific RHDH CRDs
+    local rhdh_crds=(
+        "backstages.rhdh.redhat.com"
+        "backstages.backstage.io" 
+        "backstages.janus-idp.io"
+    )
+    
+    for crd in "${rhdh_crds[@]}"; do
+        if kubectl get crd "$crd" >/dev/null 2>&1; then
+            safe_exec "kubectl get crd '$crd' -o yaml" "$crds_dir/${crd}.yaml" "CRD definition for $crd"
+            safe_exec "kubectl describe crd '$crd'" "$crds_dir/${crd}-describe.txt" "CRD description for $crd"
+        else
+            echo "CRD $crd not found" > "$crds_dir/${crd}-not-found.txt"
+        fi
+    done
+    
+    # Look for any other backstage-related CRDs
+    kubectl get crd -o name 2>/dev/null | grep -i backstage | while IFS= read -r crd; do
+        if [[ -n "$crd" ]]; then
+            local crd_name=$(basename "$crd")
+            safe_exec "kubectl get '$crd' -o yaml" "$crds_dir/${crd_name}-additional.yaml" "Additional CRD: $crd_name"
+        fi
+    done
+}
+
+collect_backstage_custom_resources() {
+    local namespace="$1"
+    local operator_dir="$MUST_GATHER_DIR/rhdh/operator"
+    
+    log_info "Collecting Backstage Custom Resources..."
+    
+    local crs_dir="$operator_dir/backstage-crs"
+    ensure_directory "$crs_dir"
+    
+    # Backstage instances in the namespace
+    safe_exec "kubectl get backstage -n '$namespace'" "$crs_dir/backstage-instances.txt" "Backstage instances list"
+    safe_exec "kubectl get backstage -n '$namespace' -o yaml" "$crs_dir/backstage-instances.yaml" "Backstage instances details"
+    safe_exec "kubectl describe backstage -n '$namespace'" "$crs_dir/backstage-instances-describe.txt" "Backstage instance descriptions"
+    
+    # Backstage instances across all namespaces (in case there are multiple)
+    safe_exec "kubectl get backstage --all-namespaces" "$crs_dir/all-backstage-instances.txt" "All Backstage instances"
+    safe_exec "kubectl get backstage --all-namespaces -o yaml" "$crs_dir/all-backstage-instances.yaml" "All Backstage instances details"
+    
+    # Collect individual Backstage CR details
+    kubectl get backstage -n "$namespace" -o name 2>/dev/null | while IFS= read -r cr; do
+        if [[ -n "$cr" ]]; then
+            local cr_name=$(basename "$cr")
+            log_debug "Collecting details for Backstage CR: $cr_name"
+            
+            local cr_dir="$crs_dir/instances/$cr_name"
+            ensure_directory "$cr_dir"
+            
+            safe_exec "kubectl get '$cr' -n '$namespace' -o yaml" "$cr_dir/spec.yaml" "Backstage CR spec for $cr_name"
+            safe_exec "kubectl describe '$cr' -n '$namespace'" "$cr_dir/describe.txt" "Backstage CR description for $cr_name"
+            
+            # Get status and conditions
+            safe_exec "kubectl get '$cr' -n '$namespace' -o jsonpath='{.status}'" "$cr_dir/status.json" "Backstage CR status for $cr_name"
+        fi
+    done
+}
+
+collect_operator_configuration() {
+    local namespace="$1"
+    local operator_dir="$MUST_GATHER_DIR/rhdh/operator"
+    
+    log_info "Collecting operator configuration..."
+    
+    local config_dir="$operator_dir/configuration"
+    ensure_directory "$config_dir"
+    
+    # ConfigMaps
+    safe_exec "kubectl get configmaps -n '$namespace'" "$config_dir/configmaps.txt" "ConfigMaps list"
+    safe_exec "kubectl get configmaps -n '$namespace' -o yaml" "$config_dir/configmaps.yaml" "ConfigMaps details"
+    
+    # Secrets (metadata only)
+    safe_exec "kubectl get secrets -n '$namespace'" "$config_dir/secrets-list.txt" "Secrets list"
+    
+    # Service accounts
+    safe_exec "kubectl get serviceaccounts -n '$namespace'" "$config_dir/serviceaccounts.txt" "Service accounts"
+    safe_exec "kubectl get serviceaccounts -n '$namespace' -o yaml" "$config_dir/serviceaccounts.yaml" "Service account details"
+    
+    # RBAC
+    safe_exec "kubectl get rolebindings -n '$namespace'" "$config_dir/rolebindings.txt" "Role bindings"
+    safe_exec "kubectl get rolebindings -n '$namespace' -o yaml" "$config_dir/rolebindings.yaml" "Role binding details"
+    safe_exec "kubectl get roles -n '$namespace'" "$config_dir/roles.txt" "Roles"
+    safe_exec "kubectl get roles -n '$namespace' -o yaml" "$config_dir/roles.yaml" "Role details"
+    
+    # Operator-specific ClusterRoles and ClusterRoleBindings
+    safe_exec "kubectl get clusterroles | grep -E '(rhdh|backstage)'" "$config_dir/operator-clusterroles.txt" "Operator cluster roles" || echo "No RHDH cluster roles found" > "$config_dir/operator-clusterroles.txt"
+    safe_exec "kubectl get clusterrolebindings | grep -E '(rhdh|backstage)'" "$config_dir/operator-clusterrolebindings.txt" "Operator cluster role bindings" || echo "No RHDH cluster role bindings found" > "$config_dir/operator-clusterrolebindings.txt"
+}
+
+collect_olm_information() {
+    local namespace="$1"
+    local operator_dir="$MUST_GATHER_DIR/rhdh/operator"
+    
+    log_info "Collecting OLM (Operator Lifecycle Manager) information..."
+    
+    local olm_dir="$operator_dir/olm"
+    ensure_directory "$olm_dir"
+    
+    # ClusterServiceVersions
+    safe_exec "kubectl get csv -n '$namespace'" "$olm_dir/csv.txt" "ClusterServiceVersions in namespace"
+    safe_exec "kubectl get csv -n '$namespace' -o yaml" "$olm_dir/csv.yaml" "CSV details"
+    safe_exec "kubectl get csv --all-namespaces | grep -E '(rhdh|backstage)'" "$olm_dir/rhdh-csv-all.txt" "RHDH CSVs in all namespaces" || echo "No RHDH CSVs found" > "$olm_dir/rhdh-csv-all.txt"
+    
+    # Subscriptions
+    safe_exec "kubectl get subscription -n '$namespace'" "$olm_dir/subscriptions.txt" "Subscriptions in namespace"
+    safe_exec "kubectl get subscription -n '$namespace' -o yaml" "$olm_dir/subscriptions.yaml" "Subscription details"
+    safe_exec "kubectl get subscription --all-namespaces | grep -E '(rhdh|backstage)'" "$olm_dir/rhdh-subscriptions-all.txt" "RHDH subscriptions in all namespaces" || echo "No RHDH subscriptions found" > "$olm_dir/rhdh-subscriptions-all.txt"
+    
+    # InstallPlans
+    safe_exec "kubectl get installplan -n '$namespace'" "$olm_dir/installplans.txt" "InstallPlans in namespace"
+    safe_exec "kubectl get installplan -n '$namespace' -o yaml" "$olm_dir/installplans.yaml" "InstallPlan details"
+    
+    # OperatorGroups
+    safe_exec "kubectl get operatorgroup -n '$namespace'" "$olm_dir/operatorgroups.txt" "OperatorGroups in namespace"
+    safe_exec "kubectl get operatorgroup -n '$namespace' -o yaml" "$olm_dir/operatorgroups.yaml" "OperatorGroup details"
+    
+    # CatalogSources
+    safe_exec "kubectl get catalogsource --all-namespaces" "$olm_dir/catalogsources.txt" "CatalogSources"
+    safe_exec "kubectl get catalogsource --all-namespaces -o yaml" "$olm_dir/catalogsources.yaml" "CatalogSource details"
+}
+
+collect_operator_metrics() {
+    local namespace="$1"
+    local operator_dir="$MUST_GATHER_DIR/rhdh/operator"
+    
+    log_info "Collecting operator metrics information..."
+    
+    local metrics_dir="$operator_dir/metrics"
+    ensure_directory "$metrics_dir"
+    
+    # ServiceMonitors
+    if kubectl api-resources | grep -q servicemonitor; then
+        safe_exec "kubectl get servicemonitor -n '$namespace'" "$metrics_dir/servicemonitors.txt" "ServiceMonitors"
+        safe_exec "kubectl get servicemonitor -n '$namespace' -o yaml" "$metrics_dir/servicemonitors.yaml" "ServiceMonitor details"
+    else
+        echo "ServiceMonitor CRD not available (Prometheus Operator not installed)" > "$metrics_dir/servicemonitors-not-available.txt"
+    fi
+    
+    # Check for metrics endpoints
+    kubectl get pods -n "$namespace" -o name 2>/dev/null | while IFS= read -r pod; do
+        if [[ -n "$pod" ]]; then
+            local pod_name=$(basename "$pod")
+            # Check if pod has metrics port
+            local metrics_port=$(kubectl get "$pod" -n "$namespace" -o jsonpath='{.spec.containers[0].ports[?(@.name=="metrics")].containerPort}' 2>/dev/null || echo "")
+            if [[ -n "$metrics_port" ]]; then
+                echo "$pod_name has metrics port: $metrics_port" >> "$metrics_dir/metrics-endpoints.txt"
+            fi
+        fi
+    done
+}
+
+generate_operator_summary() {
+    local namespace="$1"
+    local operator_dir="$MUST_GATHER_DIR/rhdh/operator"
+    
+    log_info "Generating operator collection summary..."
+    
+    local pods_count=$(kubectl get pods -n "$namespace" --no-headers 2>/dev/null | wc -l || echo "0")
+    local deployments_count=$(kubectl get deployment -n "$namespace" --no-headers 2>/dev/null | wc -l || echo "0")
+    local backstage_count=$(kubectl get backstage -n "$namespace" --no-headers 2>/dev/null | wc -l || echo "0")
+    
+    cat > "$operator_dir/collection-summary.txt" << EOF
+Operator Data Collection Summary
+===============================
+Collection Time: $(date)
+Namespace: $namespace
+
+Statistics:
+- Pods in namespace: $pods_count
+- Deployments in namespace: $deployments_count
+- Backstage CRs in namespace: $backstage_count
+
+Collected Data:
+- Operator deployments and pod information
+- Operator logs (current and previous)
+- Custom Resource Definitions (CRDs)
+- Backstage Custom Resources and status
+- Operator configuration (ConfigMaps, RBAC)
+- OLM information (CSVs, Subscriptions, InstallPlans)
+- Metrics configuration
+
+Files Created:
+$(find "$operator_dir" -type f 2>/dev/null | wc -l) files in rhdh/operator directory
+
+Note: Sensitive data in secrets has been excluded from collection.
+Pod logs are limited to last 1000-2000 lines per container.
+EOF
+}
+
+# Main execution
+main() {
+    log_info "Starting Operator data collection..."
+    
+    if ! check_cluster_connectivity; then
+        log_error "Cannot connect to cluster"
+        exit 1
+    fi
+    
+    # Load detection results
+    load_detection_results
+    local namespace="${RHDH_NAMESPACE:-}"
+    local deployment_type="${DEPLOYMENT_TYPE:-}"
+    
+    if [[ "$deployment_type" != "operator" ]]; then
+        log_warn "Deployment type is not Operator ($deployment_type), skipping Operator collection"
+        exit 0
+    fi
+    
+    if [[ -z "$namespace" ]]; then
+        log_error "RHDH namespace not detected, cannot collect Operator data"
+        exit 1
+    fi
+    
+    log_info "Collecting Operator data for namespace: $namespace"
+    
+    # Collect all operator data
+    collect_operator_deployments "$namespace"
+    collect_operator_logs "$namespace"
+    collect_crds
+    collect_backstage_custom_resources "$namespace"
+    collect_operator_configuration "$namespace"
+    collect_olm_information "$namespace"
+    collect_operator_metrics "$namespace"
+    generate_operator_summary "$namespace"
+    
+    log_success "Operator data collection completed"
+}
+
+# Show help
+show_help() {
+    cat << EOF
+Operator Data Collection Script
+
+Usage: $0 [OPTIONS]
+
+This script collects Operator-specific information for RHDH deployments.
+
+Options:
+  -h, --help    Show this help message
+
+Environment Variables:
+  MUST_GATHER_DIR   Output directory (default: /must-gather)
+  LOG_LEVEL         Logging level (default: INFO)
+
+Prerequisites:
+  - RHDH deployment detected as Operator-based
+  - RHDH_NAMESPACE must be set in detection results
+
+Collected Information:
+  - Operator deployments and pods
+  - Operator logs (current and previous)
+  - Custom Resource Definitions (CRDs)
+  - Backstage Custom Resources and status
+  - Operator configuration and RBAC
+  - OLM information (if applicable)
+  - Metrics configuration
+
+Examples:
+  $0                # Collect Operator data
+  LOG_LEVEL=DEBUG $0 # Collect with debug logging
+
+Output:
+  - Creates rhdh/operator/ directory with collected data
+  - Generates collection-summary.txt with details
+EOF
+}
+
+# Handle command line arguments
+if [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
+    show_help
+    exit 0
+fi
+
+# Execute main function
+main "$@"

@@ -1,0 +1,273 @@
+#!/bin/bash
+
+# RHDH Deployment Detection Script
+# Detects RHDH deployment type (Helm or Operator) and namespace
+
+set -euo pipefail
+
+# Source utilities
+source "$(dirname "$0")/lib/utils.sh"
+
+# Common namespaces where RHDH might be deployed
+declare -a COMMON_NAMESPACES=(
+    "rhdh"
+    "backstage" 
+    "developer-hub"
+    "openshift-developer-hub"
+    "rhdh-operator"
+    "backstage-system"
+    "redhat-developer-hub"
+)
+
+detect_helm_deployment() {
+    local namespace="$1"
+    
+    log_debug "Checking for Helm deployment in namespace: $namespace"
+    
+    # Check for Helm secrets with backstage-related labels
+    if kubectl get secret -n "$namespace" -l "app.kubernetes.io/managed-by=Helm" -o name 2>/dev/null | grep -q backstage; then
+        log_debug "Found Helm-managed backstage secrets in $namespace"
+        return 0
+    fi
+    
+    # Check for Helm releases containing backstage/rhdh
+    if command_exists helm; then
+        if helm list -n "$namespace" -o json 2>/dev/null | jq -r '.[].name' 2>/dev/null | grep -E "(backstage|rhdh|developer-hub)" >/dev/null; then
+            log_debug "Found Helm release with backstage/rhdh pattern in $namespace"
+            return 0
+        fi
+    fi
+    
+    return 1
+}
+
+detect_operator_deployment() {
+    local namespace="$1"
+    
+    log_debug "Checking for Operator deployment in namespace: $namespace"
+    
+    # Check for Backstage Custom Resources
+    if kubectl get backstage -n "$namespace" >/dev/null 2>&1; then
+        log_debug "Found Backstage CRs in $namespace"
+        return 0
+    fi
+    
+    # Alternative: check for backstages (plural)
+    if kubectl get backstages -n "$namespace" >/dev/null 2>&1; then
+        log_debug "Found Backstages CRs in $namespace"
+        return 0
+    fi
+    
+    # Check for RHDH operator deployment
+    if kubectl get deployment -n "$namespace" -l "control-plane=controller-manager" 2>/dev/null | grep -E "(rhdh|backstage)" >/dev/null; then
+        log_debug "Found RHDH operator deployment in $namespace"
+        return 0
+    fi
+    
+    return 1
+}
+
+check_namespace_for_rhdh() {
+    local namespace="$1"
+    
+    log_debug "Examining namespace: $namespace"
+    
+    # Check if namespace exists
+    if ! kubectl get namespace "$namespace" >/dev/null 2>&1; then
+        log_debug "Namespace $namespace does not exist"
+        return 1
+    fi
+    
+    # Check for Helm deployment first
+    if detect_helm_deployment "$namespace"; then
+        write_detection_result "DEPLOYMENT_TYPE" "helm"
+        write_detection_result "RHDH_NAMESPACE" "$namespace"
+        log_success "Found Helm-based RHDH deployment in namespace: $namespace"
+        return 0
+    fi
+    
+    # Check for Operator deployment
+    if detect_operator_deployment "$namespace"; then
+        write_detection_result "DEPLOYMENT_TYPE" "operator"
+        write_detection_result "RHDH_NAMESPACE" "$namespace"
+        log_success "Found Operator-based RHDH deployment in namespace: $namespace"
+        return 0
+    fi
+    
+    return 1
+}
+
+search_all_namespaces() {
+    log_info "Searching all namespaces for RHDH deployment..."
+    
+    # Search for Helm deployments across all namespaces
+    log_debug "Searching for Helm deployments..."
+    while IFS= read -r namespace; do
+        if [[ -n "$namespace" ]] && detect_helm_deployment "$namespace"; then
+            write_detection_result "DEPLOYMENT_TYPE" "helm"
+            write_detection_result "RHDH_NAMESPACE" "$namespace"
+            log_success "Found Helm-based RHDH deployment in namespace: $namespace"
+            return 0
+        fi
+    done < <(kubectl get secret --all-namespaces -l "app.kubernetes.io/managed-by=Helm" -o jsonpath='{range .items[*]}{.metadata.namespace}{"\n"}{end}' 2>/dev/null | sort -u)
+    
+    # Search for Operator deployments across all namespaces
+    log_debug "Searching for Operator deployments..."
+    if kubectl get backstage --all-namespaces >/dev/null 2>&1; then
+        local backstage_ns=$(kubectl get backstage --all-namespaces -o jsonpath='{.items[0].metadata.namespace}' 2>/dev/null)
+        if [[ -n "$backstage_ns" ]]; then
+            write_detection_result "DEPLOYMENT_TYPE" "operator"
+            write_detection_result "RHDH_NAMESPACE" "$backstage_ns"
+            log_success "Found Operator-based RHDH deployment in namespace: $backstage_ns"
+            return 0
+        fi
+    fi
+    
+    return 1
+}
+
+collect_deployment_details() {
+    local deployment_type="$1"
+    local namespace="$2"
+    
+    log_info "Collecting deployment details..."
+    
+    local details_file="$MUST_GATHER_DIR/rhdh-deployment-details.txt"
+    
+    cat > "$details_file" << EOF
+RHDH Deployment Details
+======================
+Detection Time: $(date)
+Deployment Type: $deployment_type
+Namespace: $namespace
+
+EOF
+    
+    if [[ "$deployment_type" == "helm" ]]; then
+        echo "Helm Release Information:" >> "$details_file"
+        if command_exists helm; then
+            helm list -n "$namespace" >> "$details_file" 2>&1 || echo "Failed to get helm releases" >> "$details_file"
+        else
+            echo "Helm command not available" >> "$details_file"
+        fi
+    elif [[ "$deployment_type" == "operator" ]]; then
+        echo "Backstage Custom Resources:" >> "$details_file"
+        kubectl get backstage -n "$namespace" -o wide >> "$details_file" 2>&1 || echo "Failed to get Backstage CRs" >> "$details_file"
+    fi
+    
+    echo "" >> "$details_file"
+    echo "Pods in namespace:" >> "$details_file"
+    kubectl get pods -n "$namespace" -o wide >> "$details_file" 2>&1 || echo "Failed to get pods" >> "$details_file"
+}
+
+detect_rhdh_deployment() {
+    log_info "Detecting RHDH deployment..."
+    
+    # First, check common namespaces
+    for namespace in "${COMMON_NAMESPACES[@]}"; do
+        if check_namespace_for_rhdh "$namespace"; then
+            local deployment_type=$(read_detection_result "DEPLOYMENT_TYPE")
+            collect_deployment_details "$deployment_type" "$namespace"
+            return 0
+        fi
+    done
+    
+    # If not found in common namespaces, search all namespaces
+    if search_all_namespaces; then
+        local deployment_type=$(read_detection_result "DEPLOYMENT_TYPE")
+        local namespace=$(read_detection_result "RHDH_NAMESPACE")
+        collect_deployment_details "$deployment_type" "$namespace"
+        return 0
+    fi
+    
+    # No RHDH deployment found
+    write_detection_result "DEPLOYMENT_TYPE" "none"
+    write_detection_result "RHDH_NAMESPACE" ""
+    log_warn "No RHDH deployment detected"
+    
+    # Create a summary of what was searched
+    cat > "$MUST_GATHER_DIR/rhdh-deployment-details.txt" << EOF
+RHDH Deployment Details
+======================
+Detection Time: $(date)
+Deployment Type: Not detected
+Namespace: None found
+
+Searched Namespaces:
+$(printf "- %s\n" "${COMMON_NAMESPACES[@]}")
+
+Additional Search:
+- Searched all namespaces for Helm releases with backstage labels
+- Searched all namespaces for Backstage Custom Resources
+- No RHDH deployment found
+
+Note: RHDH might be deployed with non-standard names or labels.
+Manual investigation may be required.
+EOF
+    
+    return 1
+}
+
+# Main execution
+main() {
+    log_info "Starting RHDH deployment detection..."
+    
+    if ! check_cluster_connectivity; then
+        log_error "Cannot connect to cluster"
+        exit 1
+    fi
+    
+    detect_rhdh_deployment
+    
+    # Display results
+    local deployment_type=$(read_detection_result "DEPLOYMENT_TYPE")
+    local namespace=$(read_detection_result "RHDH_NAMESPACE")
+    
+    if [[ "$deployment_type" != "none" ]]; then
+        log_success "RHDH deployment detection completed"
+        log_info "Type: $deployment_type, Namespace: $namespace"
+    else
+        log_warn "RHDH deployment detection completed - no deployment found"
+    fi
+}
+
+# Show help
+show_help() {
+    cat << EOF
+RHDH Deployment Detection Script
+
+Usage: $0 [OPTIONS]
+
+This script detects RHDH deployment type (Helm or Operator) and namespace.
+
+Options:
+  -h, --help    Show this help message
+
+Environment Variables:
+  MUST_GATHER_DIR   Output directory (default: /must-gather)
+  LOG_LEVEL         Logging level (default: INFO)
+
+Detection Logic:
+  1. Checks common RHDH namespaces first
+  2. Looks for Helm releases with backstage labels
+  3. Looks for Backstage Custom Resources
+  4. Falls back to searching all namespaces
+
+Examples:
+  $0                # Detect RHDH deployment
+  LOG_LEVEL=DEBUG $0 # Detect with debug logging
+
+Output:
+  - Sets DEPLOYMENT_TYPE and RHDH_NAMESPACE in detection-results.env
+  - Creates rhdh-deployment-details.txt with findings
+EOF
+}
+
+# Handle command line arguments
+if [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
+    show_help
+    exit 0
+fi
+
+# Execute main function
+main "$@"

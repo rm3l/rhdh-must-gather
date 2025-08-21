@@ -3,7 +3,7 @@
 # Variables
 IMAGE_NAME ?= rhdh-must-gather
 IMAGE_TAG ?= latest
-REGISTRY ?= quay.io/rhdh
+REGISTRY ?= quay.io/asoro
 FULL_IMAGE_NAME = $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
 
 # Build targets

@@ -55,7 +55,7 @@ spec:
       serviceAccountName: rhdh-must-gather
       containers:
       - name: must-gather
-        image: quay.io/rhdh/rhdh-must-gather:latest
+        image: quay.io/asoro/rhdh-must-gather:latest
         env:
         - name: MUST_GATHER_DIR
           value: "/must-gather"

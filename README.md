@@ -17,10 +17,10 @@ This tool helps support teams and engineers collect essential information from R
 
 ```bash
 # Use the published image
-oc adm must-gather --image=quay.io/rhdh/rhdh-must-gather:latest
+oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest
 
 # Use a specific namespace (if RHDH is not in default locations)
-oc adm must-gather --image=quay.io/rhdh/rhdh-must-gather:latest -- /usr/local/bin/gather
+oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest -- /usr/local/bin/gather
 ```
 
 ### Using with Kubernetes
@@ -37,7 +37,7 @@ spec:
     spec:
       containers:
       - name: must-gather
-        image: quay.io/rhdh/rhdh-must-gather:latest
+        image: quay.io/asoro/rhdh-must-gather:latest
         volumeMounts:
         - name: output
           mountPath: /must-gather

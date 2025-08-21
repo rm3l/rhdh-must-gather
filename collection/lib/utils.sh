@@ -146,6 +146,67 @@ load_detection_results() {
     fi
 }
 
+# Load RHDH instances information
+load_rhdh_instances() {
+    local instances_file="${1:-$MUST_GATHER_DIR/rhdh-instances.env}"
+    
+    if [[ -f "$instances_file" ]]; then
+        log_debug "Loading RHDH instances from: $instances_file"
+        
+        # Read instances into array (skip comment lines)
+        mapfile -t RHDH_INSTANCES < <(grep -v '^#' "$instances_file" 2>/dev/null || true)
+        
+        log_debug "Loaded ${#RHDH_INSTANCES[@]} RHDH instances"
+        return 0
+    else
+        log_debug "No RHDH instances file found"
+        return 1
+    fi
+}
+
+# Get all RHDH namespaces
+get_rhdh_namespaces() {
+    load_rhdh_instances
+    
+    local namespaces=()
+    for instance in "${RHDH_INSTANCES[@]}"; do
+        if [[ -n "$instance" ]]; then
+            local namespace=$(echo "$instance" | cut -d':' -f1)
+            if [[ -n "$namespace" ]]; then
+                namespaces+=("$namespace")
+            fi
+        fi
+    done
+    
+    # Remove duplicates and return
+    printf '%s\n' "${namespaces[@]}" | sort -u
+}
+
+# Get RHDH instances by deployment type
+get_rhdh_instances_by_type() {
+    local deployment_type="$1"
+    load_rhdh_instances
+    
+    local matching_instances=()
+    for instance in "${RHDH_INSTANCES[@]}"; do
+        if [[ -n "$instance" ]]; then
+            local instance_type=$(echo "$instance" | cut -d':' -f2)
+            if [[ "$instance_type" == "$deployment_type" ]]; then
+                matching_instances+=("$instance")
+            fi
+        fi
+    done
+    
+    printf '%s\n' "${matching_instances[@]}"
+}
+
+# Check if multiple RHDH instances exist
+has_multiple_rhdh_instances() {
+    load_detection_results
+    local instances_count="${RHDH_INSTANCES_COUNT:-0}"
+    [[ "$instances_count" -gt 1 ]]
+}
+
 # Create a section header in output files
 write_section_header() {
     local title="$1"

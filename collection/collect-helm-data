@@ -213,6 +213,85 @@ Original values may contain sensitive information.
 EOF
 }
 
+# Generate summary for multiple Helm instances
+generate_helm_summary_multi_instance() {
+    local instances=("$@")
+    local helm_dir="$MUST_GATHER_DIR/rhdh/helm"
+    
+    log_info "Generating multi-instance Helm collection summary..."
+    
+    local total_releases=0
+    local total_namespaces=${#instances[@]}
+    
+    cat > "$helm_dir/collection-summary.txt" << EOF
+Helm Data Collection Summary - Multiple Instances
+================================================
+Collection Time: $(date)
+Helm Version: $(helm version --short 2>/dev/null || echo "Not available")
+Total RHDH Instances: $total_namespaces
+
+=== DETECTED HELM INSTANCES ===
+EOF
+    
+    for instance in "${instances[@]}"; do
+        local namespace=$(echo "$instance" | cut -d':' -f1)
+        local details=$(echo "$instance" | cut -d':' -f3-)
+        
+        local releases_count=0
+        if command_exists helm; then
+            releases_count=$(helm list -n "$namespace" 2>/dev/null | tail -n +2 | wc -l || echo "0")
+            ((total_releases += releases_count))
+        fi
+        
+        cat >> "$helm_dir/collection-summary.txt" << EOF
+
+Namespace: $namespace
+Details: $details
+Helm Releases: $releases_count
+EOF
+    done
+    
+    local charts_count=0
+    if command_exists helm; then
+        charts_count=$(helm repo list 2>/dev/null | tail -n +2 | wc -l || echo "0")
+    fi
+    
+    cat >> "$helm_dir/collection-summary.txt" << EOF
+
+=== OVERALL STATISTICS ===
+- Total Helm releases across all namespaces: $total_releases
+- Configured Helm repositories: $charts_count
+- RHDH namespaces processed: $total_namespaces
+
+=== COLLECTED DATA ===
+For each detected namespace:
+- Release information and status
+- Values files (user and computed)
+- Deployment manifests
+- Release history and notes
+- Helm secrets metadata (data redacted)
+- Chart information and dependencies
+- Helm-managed Kubernetes resources
+
+=== FILE ORGANIZATION ===
+rhdh/helm/
+├── releases.txt            # All releases summary
+├── all-releases.yaml       # All releases across all namespaces
+├── releases/               # Per-release data
+│   └── [release-name]/     # Individual release directories
+├── secrets/                # Helm secrets metadata
+├── charts/                 # Chart and repository information
+└── dependencies/           # Helm-managed resources
+
+Files Created: $(find "$helm_dir" -type f 2>/dev/null | wc -l) files in rhdh/helm directory
+
+=== SECURITY NOTES ===
+- Secret data has been redacted for security
+- Original values may contain sensitive information
+- Helm secrets include only metadata, not actual secret data
+EOF
+}
+
 # Main execution
 main() {
     log_info "Starting Helm data collection..."
@@ -225,6 +304,7 @@ main() {
     # Check if Helm is available
     if ! command_exists helm; then
         log_error "Helm command not found"
+        ensure_directory "$MUST_GATHER_DIR/rhdh/helm"
         cat > "$MUST_GATHER_DIR/rhdh/helm/helm-not-available.txt" << EOF
 Helm Data Collection - Command Not Available
 ===========================================
@@ -241,30 +321,40 @@ EOF
     
     # Load detection results
     load_detection_results
-    local namespace="${RHDH_NAMESPACE:-}"
-    local deployment_type="${DEPLOYMENT_TYPE:-}"
     
-    if [[ "$deployment_type" != "helm" ]]; then
-        log_warn "Deployment type is not Helm ($deployment_type), skipping Helm collection"
+    # Check if we have any Helm instances
+    local helm_instances
+    mapfile -t helm_instances < <(get_rhdh_instances_by_type "helm")
+    
+    if [[ ${#helm_instances[@]} -eq 0 ]]; then
+        log_warn "No Helm-based RHDH deployments detected, skipping Helm collection"
         exit 0
     fi
     
-    if [[ -z "$namespace" ]]; then
-        log_error "RHDH namespace not detected, cannot collect Helm data"
-        exit 1
-    fi
+    log_info "Found ${#helm_instances[@]} Helm-based RHDH instance(s)"
     
-    log_info "Collecting Helm data for namespace: $namespace"
+    # Process each Helm instance
+    for instance in "${helm_instances[@]}"; do
+        if [[ -n "$instance" ]]; then
+            local namespace=$(echo "$instance" | cut -d':' -f1)
+            local details=$(echo "$instance" | cut -d':' -f3-)
+            
+            log_info "Collecting Helm data for namespace: $namespace"
+            log_debug "Instance details: $details"
+            
+            # Collect all Helm data for this namespace
+            collect_helm_releases "$namespace"
+            collect_helm_values_and_manifests "$namespace"
+            collect_helm_secrets "$namespace"
+            collect_helm_charts "$namespace"
+            collect_helm_dependencies "$namespace"
+        fi
+    done
     
-    # Collect all Helm data
-    collect_helm_releases "$namespace"
-    collect_helm_values_and_manifests "$namespace"
-    collect_helm_secrets "$namespace"
-    collect_helm_charts "$namespace"
-    collect_helm_dependencies "$namespace"
-    generate_helm_summary "$namespace"
+    # Generate overall summary
+    generate_helm_summary_multi_instance "${helm_instances[@]}"
     
-    log_success "Helm data collection completed"
+    log_success "Helm data collection completed for ${#helm_instances[@]} instance(s)"
 }
 
 # Show help

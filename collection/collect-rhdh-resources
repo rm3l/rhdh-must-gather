@@ -247,6 +247,85 @@ collect_resource_usage() {
     fi
 }
 
+# Namespace-specific collection functions (using MUST_GATHER_DIR_RESOURCES if set)
+collect_all_namespace_resources_ns() {
+    local namespace="$1"
+    local resources_dir="${MUST_GATHER_DIR_RESOURCES:-$MUST_GATHER_DIR/rhdh/resources}"
+    
+    collect_all_namespace_resources "$namespace"
+}
+
+collect_workload_resources_ns() {
+    local namespace="$1"
+    local resources_dir="${MUST_GATHER_DIR_RESOURCES:-$MUST_GATHER_DIR/rhdh/resources}"
+    
+    # Override the resources_dir in the original function by temporarily changing MUST_GATHER_DIR
+    local original_must_gather_dir="$MUST_GATHER_DIR"
+    export MUST_GATHER_DIR="$(dirname "$resources_dir")"
+    collect_workload_resources "$namespace"
+    export MUST_GATHER_DIR="$original_must_gather_dir"
+}
+
+collect_networking_resources_ns() {
+    local namespace="$1"
+    local resources_dir="${MUST_GATHER_DIR_RESOURCES:-$MUST_GATHER_DIR/rhdh/resources}"
+    
+    local original_must_gather_dir="$MUST_GATHER_DIR"
+    export MUST_GATHER_DIR="$(dirname "$resources_dir")"
+    collect_networking_resources "$namespace"
+    export MUST_GATHER_DIR="$original_must_gather_dir"
+}
+
+collect_configuration_resources_ns() {
+    local namespace="$1"
+    local resources_dir="${MUST_GATHER_DIR_RESOURCES:-$MUST_GATHER_DIR/rhdh/resources}"
+    
+    local original_must_gather_dir="$MUST_GATHER_DIR"
+    export MUST_GATHER_DIR="$(dirname "$resources_dir")"
+    collect_configuration_resources "$namespace"
+    export MUST_GATHER_DIR="$original_must_gather_dir"
+}
+
+collect_storage_resources_ns() {
+    local namespace="$1"
+    local resources_dir="${MUST_GATHER_DIR_RESOURCES:-$MUST_GATHER_DIR/rhdh/resources}"
+    
+    local original_must_gather_dir="$MUST_GATHER_DIR"
+    export MUST_GATHER_DIR="$(dirname "$resources_dir")"
+    collect_storage_resources "$namespace"
+    export MUST_GATHER_DIR="$original_must_gather_dir"
+}
+
+collect_rbac_resources_ns() {
+    local namespace="$1"
+    local resources_dir="${MUST_GATHER_DIR_RESOURCES:-$MUST_GATHER_DIR/rhdh/resources}"
+    
+    local original_must_gather_dir="$MUST_GATHER_DIR"
+    export MUST_GATHER_DIR="$(dirname "$resources_dir")"
+    collect_rbac_resources "$namespace"
+    export MUST_GATHER_DIR="$original_must_gather_dir"
+}
+
+collect_custom_resources_ns() {
+    local namespace="$1"
+    local resources_dir="${MUST_GATHER_DIR_RESOURCES:-$MUST_GATHER_DIR/rhdh/resources}"
+    
+    local original_must_gather_dir="$MUST_GATHER_DIR"
+    export MUST_GATHER_DIR="$(dirname "$resources_dir")"
+    collect_custom_resources "$namespace"
+    export MUST_GATHER_DIR="$original_must_gather_dir"
+}
+
+collect_resource_usage_ns() {
+    local namespace="$1"
+    local resources_dir="${MUST_GATHER_DIR_RESOURCES:-$MUST_GATHER_DIR/rhdh/resources}"
+    
+    local original_must_gather_dir="$MUST_GATHER_DIR"
+    export MUST_GATHER_DIR="$(dirname "$resources_dir")"
+    collect_resource_usage "$namespace"
+    export MUST_GATHER_DIR="$original_must_gather_dir"
+}
+
 generate_resources_summary() {
     local namespace="$1"
     local resources_dir="$MUST_GATHER_DIR/rhdh/resources"
@@ -292,6 +371,87 @@ Security Notes:
 EOF
 }
 
+# Generate summary for multiple namespaces
+generate_resources_summary_multi_namespace() {
+    local namespaces=("$@")
+    local resources_dir="$MUST_GATHER_DIR/rhdh/resources"
+    
+    log_info "Generating multi-namespace resources collection summary..."
+    
+    local total_pods=0
+    local total_services=0
+    local total_configmaps=0
+    local total_secrets=0
+    local total_pvcs=0
+    local total_namespaces=${#namespaces[@]}
+    
+    cat > "$resources_dir/collection-summary.txt" << EOF
+RHDH Resources Collection Summary - Multiple Namespaces
+======================================================
+Collection Time: $(date)
+Total RHDH Namespaces: $total_namespaces
+
+=== NAMESPACE BREAKDOWN ===
+EOF
+    
+    for namespace in "${namespaces[@]}"; do
+        local pods_count=$(kubectl get pods -n "$namespace" --no-headers 2>/dev/null | wc -l || echo "0")
+        local services_count=$(kubectl get services -n "$namespace" --no-headers 2>/dev/null | wc -l || echo "0")
+        local configmaps_count=$(kubectl get configmaps -n "$namespace" --no-headers 2>/dev/null | wc -l || echo "0")
+        local secrets_count=$(kubectl get secrets -n "$namespace" --no-headers 2>/dev/null | wc -l || echo "0")
+        local pvcs_count=$(kubectl get pvc -n "$namespace" --no-headers 2>/dev/null | wc -l || echo "0")
+        
+        ((total_pods += pods_count))
+        ((total_services += services_count))
+        ((total_configmaps += configmaps_count))
+        ((total_secrets += secrets_count))
+        ((total_pvcs += pvcs_count))
+        
+        cat >> "$resources_dir/collection-summary.txt" << EOF
+
+Namespace: $namespace
+- Pods: $pods_count
+- Services: $services_count
+- ConfigMaps: $configmaps_count
+- Secrets: $secrets_count
+- PVCs: $pvcs_count
+EOF
+    done
+    
+    cat >> "$resources_dir/collection-summary.txt" << EOF
+
+=== OVERALL TOTALS ===
+- Total Pods: $total_pods
+- Total Services: $total_services
+- Total ConfigMaps: $total_configmaps
+- Total Secrets: $total_secrets
+- Total PVCs: $total_pvcs
+
+=== COLLECTED CATEGORIES ===
+For each namespace:
+- Workload resources (Deployments, Pods, etc.)
+- Networking resources (Services, Ingress, etc.)
+- Configuration resources (ConfigMaps, Secrets metadata)
+- Storage resources (PVCs, PVs)
+- RBAC resources (ServiceAccounts, Roles, etc.)
+- Custom resources
+- Resource usage information
+
+=== FILE ORGANIZATION ===
+rhdh/resources/
+$(for ns in "${namespaces[@]}"; do echo "├── $ns/                   # Resources from namespace $ns"; done)
+└── collection-summary.txt  # This summary file
+
+Files Created: $(find "$resources_dir" -type f 2>/dev/null | wc -l) files in rhdh/resources directory
+
+=== SECURITY NOTES ===
+- Secret data has been redacted for security
+- Only metadata and structure of secrets are included
+- ConfigMap data is included (may contain configuration details)
+- Each namespace's data is organized in separate subdirectories
+EOF
+}
+
 # Main execution
 main() {
     log_info "Starting RHDH resources collection..."
@@ -301,12 +461,14 @@ main() {
         exit 1
     fi
     
-    # Load detection results
+    # Load detection results and get all RHDH namespaces
     load_detection_results
-    local namespace="${RHDH_NAMESPACE:-}"
+    local rhdh_namespaces
+    mapfile -t rhdh_namespaces < <(get_rhdh_namespaces)
     
-    if [[ -z "$namespace" ]]; then
-        log_warn "RHDH namespace not detected, skipping resource collection"
+    if [[ ${#rhdh_namespaces[@]} -eq 0 ]]; then
+        log_warn "No RHDH namespaces detected, skipping resource collection"
+        ensure_directory "$MUST_GATHER_DIR/rhdh/resources"
         cat > "$MUST_GATHER_DIR/rhdh/resources/no-namespace-detected.txt" << EOF
 RHDH Resources Collection - No Namespace Detected
 ================================================
@@ -328,20 +490,40 @@ EOF
         exit 1
     fi
     
-    log_info "Collecting resources from RHDH namespace: $namespace"
+    log_info "Found ${#rhdh_namespaces[@]} RHDH namespace(s) to collect resources from"
     
-    # Collect all categories of resources
-    collect_all_namespace_resources "$namespace"
-    collect_workload_resources "$namespace"
-    collect_networking_resources "$namespace"
-    collect_configuration_resources "$namespace"
-    collect_storage_resources "$namespace"
-    collect_rbac_resources "$namespace"
-    collect_custom_resources "$namespace"
-    collect_resource_usage "$namespace"
-    generate_resources_summary "$namespace"
+    # Collect resources from each namespace
+    for namespace in "${rhdh_namespaces[@]}"; do
+        if [[ -n "$namespace" ]]; then
+            log_info "Collecting resources from RHDH namespace: $namespace"
+            
+            # Create namespace-specific subdirectory
+            local ns_resources_dir="$MUST_GATHER_DIR/rhdh/resources/$namespace"
+            ensure_directory "$ns_resources_dir"
+            
+            # Temporarily override the base resources directory for this namespace
+            local original_resources_dir="$MUST_GATHER_DIR/rhdh/resources"
+            export MUST_GATHER_DIR_RESOURCES="$ns_resources_dir"
+            
+            # Collect all categories of resources for this namespace
+            collect_all_namespace_resources_ns "$namespace"
+            collect_workload_resources_ns "$namespace"
+            collect_networking_resources_ns "$namespace"
+            collect_configuration_resources_ns "$namespace"
+            collect_storage_resources_ns "$namespace"
+            collect_rbac_resources_ns "$namespace"
+            collect_custom_resources_ns "$namespace"
+            collect_resource_usage_ns "$namespace"
+            
+            # Restore original resources directory
+            unset MUST_GATHER_DIR_RESOURCES
+        fi
+    done
     
-    log_success "RHDH resources collection completed"
+    # Generate overall summary for all namespaces
+    generate_resources_summary_multi_namespace "${rhdh_namespaces[@]}"
+    
+    log_success "RHDH resources collection completed for ${#rhdh_namespaces[@]} namespace(s)"
 }
 
 # Show help

@@ -24,9 +24,19 @@ collect_cluster_events() {
     safe_exec "kubectl get events --all-namespaces --field-selector type=Normal --sort-by='.lastTimestamp'" "$events_dir/normal-events.txt" "Normal events"
     
     # Recent events (last 1 hour)
-    local one_hour_ago=$(date -u -d '1 hour ago' '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || date -u -v-1H '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || echo "")
+    local one_hour_ago=""
+    if date -u -d '1 hour ago' '+%Y-%m-%dT%H:%M:%SZ' >/dev/null 2>&1; then
+        # GNU date (Linux)
+        one_hour_ago=$(date -u -d '1 hour ago' '+%Y-%m-%dT%H:%M:%SZ')
+    elif date -u -v-1H '+%Y-%m-%dT%H:%M:%SZ' >/dev/null 2>&1; then
+        # BSD date (macOS)
+        one_hour_ago=$(date -u -v-1H '+%Y-%m-%dT%H:%M:%SZ')
+    else
+        # Neither syntax works, skip recent events filter
+        log_debug "Unable to calculate timestamp for recent events filter"
+    fi
     if [[ -n "$one_hour_ago" ]]; then
-        safe_exec "kubectl get events --all-namespaces --field-selector lastTimestamp>='$one_hour_ago' --sort-by='.lastTimestamp'" "$events_dir/recent-events.txt" "Recent events (last hour)"
+        safe_exec "kubectl get events --all-namespaces --field-selector \"lastTimestamp>='$one_hour_ago'\" --sort-by='.lastTimestamp'" "$events_dir/recent-events.txt" "Recent events (last hour)"
     fi
 }
 

@@ -8,23 +8,23 @@ This document provides specific examples for using the RHDH must-gather tool wit
 
 ```bash
 # Basic must-gather collection
-oc adm must-gather --image=quay.io/rhdh/rhdh-must-gather:latest
+oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest
 
 # Collection with custom output directory
-oc adm must-gather --dest-dir=./rhdh-diagnostics --image=quay.io/rhdh/rhdh-must-gather:latest
+oc adm must-gather --dest-dir=./rhdh-diagnostics --image=quay.io/asoro/rhdh-must-gather:latest
 ```
 
 ### Advanced Usage
 
 ```bash
 # Collect from specific node
-oc adm must-gather --image=quay.io/rhdh/rhdh-must-gather:latest --node-name=worker-1
+oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --node-name=worker-1
 
 # Collect with timeout
-oc adm must-gather --image=quay.io/rhdh/rhdh-must-gather:latest --timeout=10m
+oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --timeout=10m
 
 # Collect with custom source directory
-oc adm must-gather --image=quay.io/rhdh/rhdh-must-gather:latest --source-dir=/tmp/rhdh-data
+oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --source-dir=/tmp/rhdh-data
 ```
 
 ## OpenShift-Specific Features
@@ -73,10 +73,10 @@ rules:
 
 ```bash
 # Collect comprehensive diagnostics
-oc adm must-gather --image=quay.io/rhdh/rhdh-must-gather:latest
+oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest
 
 # Focus on specific namespace if known
-oc adm must-gather --image=quay.io/rhdh/rhdh-must-gather:latest -- \
+oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest -- \
   bash -c "RHDH_NAMESPACE=my-rhdh-namespace /usr/local/bin/gather"
 ```
 
@@ -84,7 +84,7 @@ oc adm must-gather --image=quay.io/rhdh/rhdh-must-gather:latest -- \
 
 ```bash
 # Collect data with debug logging
-oc adm must-gather --image=quay.io/rhdh/rhdh-must-gather:latest -- \
+oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest -- \
   bash -c "LOG_LEVEL=DEBUG /usr/local/bin/gather"
 ```
 
@@ -92,7 +92,7 @@ oc adm must-gather --image=quay.io/rhdh/rhdh-must-gather:latest -- \
 
 ```bash
 # Standard collection (includes network policies, routes, services)
-oc adm must-gather --image=quay.io/rhdh/rhdh-must-gather:latest
+oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest
 
 # Additionally, you might want to collect network diagnostics
 oc adm must-gather --image=registry.redhat.io/openshift4/network-tools-rhel8:latest
@@ -162,16 +162,16 @@ oc describe pod -n openshift-must-gather-* <pod-name>
 oc auth can-i "*" "*" --all-namespaces
 
 # Use system:admin if needed (for cluster administrators)
-oc adm must-gather --image=quay.io/rhdh/rhdh-must-gather:latest --as=system:admin
+oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --as=system:admin
 ```
 
 ### Collection Timeout
 
 ```bash
 # Increase timeout for large clusters
-oc adm must-gather --image=quay.io/rhdh/rhdh-must-gather:latest --timeout=20m
+oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --timeout=20m
 
 # Or use environment variables
-oc adm must-gather --image=quay.io/rhdh/rhdh-must-gather:latest -- \
+oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest -- \
   bash -c "COLLECTION_TIMEOUT=600 /usr/local/bin/gather"
 ```

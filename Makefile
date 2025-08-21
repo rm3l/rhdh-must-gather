@@ -21,8 +21,11 @@ build-push: build
 	podman push $(FULL_IMAGE_NAME)
 	@echo "Image pushed: $(FULL_IMAGE_NAME)"
 
+test-output:
+	@mkdir -p ./test-output
+
 .PHONY: test-local
-test-local:
+test-local: test-output
 	@echo "Testing must-gather script locally..."
 	@if ! command -v kubectl >/dev/null 2>&1; then \
 		echo "Error: kubectl not found. Please install kubectl to test."; \
@@ -32,9 +35,8 @@ test-local:
 	MUST_GATHER_DIR=./test-output ./collection/gather
 
 .PHONY: test-container
-test-container:
+test-container: test-output
 	@echo "Testing must-gather in container..."
-	@mkdir -p ./test-output
 	podman run --rm \
 		-v $(HOME)/.kube:/home/must-gather/.kube:ro \
 		-v $(PWD)/test-output:/must-gather \

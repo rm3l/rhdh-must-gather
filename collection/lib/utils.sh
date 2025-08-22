@@ -8,6 +8,10 @@ export MUST_GATHER_DIR="${MUST_GATHER_DIR:-/must-gather}"
 export LOG_LEVEL="${LOG_LEVEL:-INFO}"
 export COLLECTION_TIMEOUT="${COLLECTION_TIMEOUT:-300}"
 
+# Time constraint variables (used by oc adm must-gather --since/--since-time)
+export SINCE="${SINCE:-}"
+export SINCE_TIME="${SINCE_TIME:-}"
+
 # Color codes for output
 export RED='\033[0;31m'
 export GREEN='\033[0;32m'
@@ -286,6 +290,103 @@ init_must_gather() {
     
     log_success "Must-gather environment initialized"
     return 0
+}
+
+# Time constraint utilities
+
+# Convert relative time (like "2h") to timestamp
+convert_since_to_timestamp() {
+    local since="$1"
+    
+    # Handle different time formats
+    if [[ "$since" =~ ^[0-9]+s$ ]]; then
+        # Seconds ago
+        local seconds="${since%s}"
+        date -u -d "$seconds seconds ago" '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || \
+        date -u -v-"${seconds}S" '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || echo ""
+    elif [[ "$since" =~ ^[0-9]+m$ ]]; then
+        # Minutes ago
+        local minutes="${since%m}"
+        date -u -d "$minutes minutes ago" '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || \
+        date -u -v-"${minutes}M" '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || echo ""
+    elif [[ "$since" =~ ^[0-9]+h$ ]]; then
+        # Hours ago
+        local hours="${since%h}"
+        date -u -d "$hours hours ago" '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || \
+        date -u -v-"${hours}H" '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || echo ""
+    elif [[ "$since" =~ ^[0-9]+d$ ]]; then
+        # Days ago
+        local days="${since%d}"
+        date -u -d "$days days ago" '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || \
+        date -u -v-"${days}d" '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || echo ""
+    else
+        # Try to parse as relative time directly
+        date -u -d "$since" '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || echo ""
+    fi
+}
+
+# Get the effective since time for log/event collection
+get_effective_since_time() {
+    local since_timestamp=""
+    
+    # Check for SINCE_TIME first (absolute timestamp)
+    if [[ -n "$SINCE_TIME" ]]; then
+        since_timestamp="$SINCE_TIME"
+        log_debug "Using SINCE_TIME: $since_timestamp"
+    # Then check for SINCE (relative time)
+    elif [[ -n "$SINCE" ]]; then
+        since_timestamp=$(convert_since_to_timestamp "$SINCE")
+        log_debug "Converted SINCE '$SINCE' to timestamp: $since_timestamp"
+    fi
+    
+    echo "$since_timestamp"
+}
+
+# Check if time constraints are specified
+has_time_constraints() {
+    [[ -n "$SINCE" ]] || [[ -n "$SINCE_TIME" ]]
+}
+
+# Get kubectl logs time arguments
+get_kubectl_logs_since_args() {
+    local since_timestamp
+    since_timestamp=$(get_effective_since_time)
+    
+    if [[ -n "$since_timestamp" ]]; then
+        echo "--since-time=$since_timestamp"
+    elif [[ -n "$SINCE" ]]; then
+        # kubectl logs supports relative time directly
+        echo "--since=$SINCE"
+    else
+        echo ""
+    fi
+}
+
+# Get kubectl events time filter
+get_kubectl_events_time_filter() {
+    local since_timestamp
+    since_timestamp=$(get_effective_since_time)
+    
+    if [[ -n "$since_timestamp" ]]; then
+        echo "lastTimestamp>='$since_timestamp'"
+    else
+        echo ""
+    fi
+}
+
+# Log time constraint information
+log_time_constraints() {
+    if has_time_constraints; then
+        log_info "Time constraints detected:"
+        [[ -n "$SINCE" ]] && log_info "  SINCE: $SINCE"
+        [[ -n "$SINCE_TIME" ]] && log_info "  SINCE_TIME: $SINCE_TIME"
+        
+        local effective_time
+        effective_time=$(get_effective_since_time)
+        [[ -n "$effective_time" ]] && log_info "  Effective since time: $effective_time"
+    else
+        log_debug "No time constraints specified"
+    fi
 }
 
 # Cleanup function

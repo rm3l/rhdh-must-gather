@@ -14,29 +14,51 @@ collect_cluster_events() {
     local events_dir="$MUST_GATHER_DIR/events"
     ensure_directory "$events_dir"
     
-    # All cluster events
-    safe_exec "kubectl get events --all-namespaces --sort-by='.lastTimestamp'" "$events_dir/all-events.txt" "All cluster events (sorted by time)"
-    safe_exec "kubectl get events --all-namespaces --sort-by='.lastTimestamp' -o yaml" "$events_dir/all-events.yaml" "All cluster events (YAML)"
+    # Get time constraint filter for events
+    local time_filter
+    time_filter=$(get_kubectl_events_time_filter)
     
-    # Filter events by type
-    safe_exec "kubectl get events --all-namespaces --field-selector type=Warning --sort-by='.lastTimestamp'" "$events_dir/warning-events.txt" "Warning events"
-    safe_exec "kubectl get events --all-namespaces --field-selector type=Error --sort-by='.lastTimestamp'" "$events_dir/error-events.txt" "Error events"
-    safe_exec "kubectl get events --all-namespaces --field-selector type=Normal --sort-by='.lastTimestamp'" "$events_dir/normal-events.txt" "Normal events"
-    
-    # Recent events (last 1 hour)
-    local one_hour_ago=""
-    if date -u -d '1 hour ago' '+%Y-%m-%dT%H:%M:%SZ' >/dev/null 2>&1; then
-        # GNU date (Linux)
-        one_hour_ago=$(date -u -d '1 hour ago' '+%Y-%m-%dT%H:%M:%SZ')
-    elif date -u -v-1H '+%Y-%m-%dT%H:%M:%SZ' >/dev/null 2>&1; then
-        # BSD date (macOS)
-        one_hour_ago=$(date -u -v-1H '+%Y-%m-%dT%H:%M:%SZ')
-    else
-        # Neither syntax works, skip recent events filter
-        log_debug "Unable to calculate timestamp for recent events filter"
+    local base_selector=""
+    if [[ -n "$time_filter" ]]; then
+        base_selector="--field-selector $time_filter"
+        log_info "Applying time constraints to event collection: $time_filter"
     fi
-    if [[ -n "$one_hour_ago" ]]; then
-        safe_exec "kubectl get events --all-namespaces --field-selector \"lastTimestamp>='$one_hour_ago'\" --sort-by='.lastTimestamp'" "$events_dir/recent-events.txt" "Recent events (last hour)"
+    
+    # All cluster events (with time filter if specified)
+    safe_exec "kubectl get events --all-namespaces $base_selector --sort-by='.lastTimestamp'" "$events_dir/all-events.txt" "All cluster events (sorted by time)"
+    safe_exec "kubectl get events --all-namespaces $base_selector --sort-by='.lastTimestamp' -o yaml" "$events_dir/all-events.yaml" "All cluster events (YAML)"
+    
+    # Filter events by type (combining with time filter if present)
+    local warning_selector="type=Warning"
+    local error_selector="type=Error"
+    local normal_selector="type=Normal"
+    
+    if [[ -n "$time_filter" ]]; then
+        warning_selector="$warning_selector,$time_filter"
+        error_selector="$error_selector,$time_filter"
+        normal_selector="$normal_selector,$time_filter"
+    fi
+    
+    safe_exec "kubectl get events --all-namespaces --field-selector \"$warning_selector\" --sort-by='.lastTimestamp'" "$events_dir/warning-events.txt" "Warning events"
+    safe_exec "kubectl get events --all-namespaces --field-selector \"$error_selector\" --sort-by='.lastTimestamp'" "$events_dir/error-events.txt" "Error events"
+    safe_exec "kubectl get events --all-namespaces --field-selector \"$normal_selector\" --sort-by='.lastTimestamp'" "$events_dir/normal-events.txt" "Normal events"
+    
+    # Recent events (last 1 hour) - only if no time constraints are already specified
+    if [[ -z "$time_filter" ]]; then
+        local one_hour_ago=""
+        if date -u -d '1 hour ago' '+%Y-%m-%dT%H:%M:%SZ' >/dev/null 2>&1; then
+            # GNU date (Linux)
+            one_hour_ago=$(date -u -d '1 hour ago' '+%Y-%m-%dT%H:%M:%SZ')
+        elif date -u -v-1H '+%Y-%m-%dT%H:%M:%SZ' >/dev/null 2>&1; then
+            # BSD date (macOS)
+            one_hour_ago=$(date -u -v-1H '+%Y-%m-%dT%H:%M:%SZ')
+        else
+            # Neither syntax works, skip recent events filter
+            log_debug "Unable to calculate timestamp for recent events filter"
+        fi
+        if [[ -n "$one_hour_ago" ]]; then
+            safe_exec "kubectl get events --all-namespaces --field-selector \"lastTimestamp>='$one_hour_ago'\" --sort-by='.lastTimestamp'" "$events_dir/recent-events.txt" "Recent events (last hour)"
+        fi
     fi
 }
 
@@ -52,18 +74,46 @@ collect_rhdh_namespace_events() {
     
     local events_dir="$MUST_GATHER_DIR/events"
     
-    # RHDH namespace events
-    safe_exec "kubectl get events -n '$namespace' --sort-by='.lastTimestamp'" "$events_dir/rhdh-events.txt" "RHDH namespace events"
-    safe_exec "kubectl get events -n '$namespace' --sort-by='.lastTimestamp' -o yaml" "$events_dir/rhdh-events.yaml" "RHDH namespace events (YAML)"
+    # Get time constraint filter for events
+    local time_filter
+    time_filter=$(get_kubectl_events_time_filter)
     
-    # Filter RHDH events by type
-    safe_exec "kubectl get events -n '$namespace' --field-selector type=Warning --sort-by='.lastTimestamp'" "$events_dir/rhdh-warning-events.txt" "RHDH warning events"
-    safe_exec "kubectl get events -n '$namespace' --field-selector type=Error --sort-by='.lastTimestamp'" "$events_dir/rhdh-error-events.txt" "RHDH error events"
+    local base_selector=""
+    if [[ -n "$time_filter" ]]; then
+        base_selector="--field-selector $time_filter"
+        log_debug "Applying time constraints to namespace events: $time_filter"
+    fi
     
-    # Events related to specific resources
-    safe_exec "kubectl get events -n '$namespace' --field-selector involvedObject.kind=Pod --sort-by='.lastTimestamp'" "$events_dir/rhdh-pod-events.txt" "RHDH pod events"
-    safe_exec "kubectl get events -n '$namespace' --field-selector involvedObject.kind=Deployment --sort-by='.lastTimestamp'" "$events_dir/rhdh-deployment-events.txt" "RHDH deployment events"
-    safe_exec "kubectl get events -n '$namespace' --field-selector involvedObject.kind=Service --sort-by='.lastTimestamp'" "$events_dir/rhdh-service-events.txt" "RHDH service events"
+    # RHDH namespace events (with time filter if specified)
+    safe_exec "kubectl get events -n '$namespace' $base_selector --sort-by='.lastTimestamp'" "$events_dir/rhdh-events.txt" "RHDH namespace events"
+    safe_exec "kubectl get events -n '$namespace' $base_selector --sort-by='.lastTimestamp' -o yaml" "$events_dir/rhdh-events.yaml" "RHDH namespace events (YAML)"
+    
+    # Filter RHDH events by type (combining with time filter if present)
+    local warning_selector="type=Warning"
+    local error_selector="type=Error"
+    
+    if [[ -n "$time_filter" ]]; then
+        warning_selector="$warning_selector,$time_filter"
+        error_selector="$error_selector,$time_filter"
+    fi
+    
+    safe_exec "kubectl get events -n '$namespace' --field-selector \"$warning_selector\" --sort-by='.lastTimestamp'" "$events_dir/rhdh-warning-events.txt" "RHDH warning events"
+    safe_exec "kubectl get events -n '$namespace' --field-selector \"$error_selector\" --sort-by='.lastTimestamp'" "$events_dir/rhdh-error-events.txt" "RHDH error events"
+    
+    # Events related to specific resources (combining with time filter if present)
+    local pod_selector="involvedObject.kind=Pod"
+    local deployment_selector="involvedObject.kind=Deployment"
+    local service_selector="involvedObject.kind=Service"
+    
+    if [[ -n "$time_filter" ]]; then
+        pod_selector="$pod_selector,$time_filter"
+        deployment_selector="$deployment_selector,$time_filter"
+        service_selector="$service_selector,$time_filter"
+    fi
+    
+    safe_exec "kubectl get events -n '$namespace' --field-selector \"$pod_selector\" --sort-by='.lastTimestamp'" "$events_dir/rhdh-pod-events.txt" "RHDH pod events"
+    safe_exec "kubectl get events -n '$namespace' --field-selector \"$deployment_selector\" --sort-by='.lastTimestamp'" "$events_dir/rhdh-deployment-events.txt" "RHDH deployment events"
+    safe_exec "kubectl get events -n '$namespace' --field-selector \"$service_selector\" --sort-by='.lastTimestamp'" "$events_dir/rhdh-service-events.txt" "RHDH service events"
 }
 
 collect_pod_logs() {
@@ -75,6 +125,14 @@ collect_pod_logs() {
     fi
     
     log_info "Collecting pod logs from namespace: $namespace"
+    
+    # Get time constraint arguments for kubectl logs
+    local since_args
+    since_args=$(get_kubectl_logs_since_args)
+    
+    if [[ -n "$since_args" ]]; then
+        log_info "Applying time constraints to log collection: $since_args"
+    fi
     
     local logs_dir="$MUST_GATHER_DIR/logs"
     ensure_directory "$logs_dir"
@@ -93,12 +151,26 @@ collect_pod_logs() {
             local pod_logs_dir="$ns_logs_dir/$pod_name"
             ensure_directory "$pod_logs_dir"
             
+            # Build kubectl logs command with time constraints
+            local base_cmd="kubectl logs '$pod' -n '$namespace'"
+            if [[ -n "$since_args" ]]; then
+                base_cmd="$base_cmd $since_args"
+            else
+                base_cmd="$base_cmd --tail=2000"
+            fi
+            
             # Current logs
-            safe_exec "kubectl logs '$pod' -n '$namespace' --tail=2000" "$pod_logs_dir/current.log" "Current logs for $pod_name"
+            safe_exec "$base_cmd" "$pod_logs_dir/current.log" "Current logs for $pod_name"
             
             # Previous logs if available (pod restarted)
             if kubectl logs "$pod" -n "$namespace" --previous >/dev/null 2>&1; then
-                safe_exec "kubectl logs '$pod' -n '$namespace' --previous --tail=2000" "$pod_logs_dir/previous.log" "Previous logs for $pod_name"
+                local prev_cmd="kubectl logs '$pod' -n '$namespace' --previous"
+                if [[ -n "$since_args" ]]; then
+                    prev_cmd="$prev_cmd $since_args"
+                else
+                    prev_cmd="$prev_cmd --tail=2000"
+                fi
+                safe_exec "$prev_cmd" "$pod_logs_dir/previous.log" "Previous logs for $pod_name"
             fi
             
             # Container-specific logs if multiple containers
@@ -108,11 +180,23 @@ collect_pod_logs() {
             if [[ $container_count -gt 1 ]]; then
                 log_debug "Pod $pod_name has $container_count containers, collecting per-container logs"
                 for container in $containers; do
-                    safe_exec "kubectl logs '$pod' -n '$namespace' -c '$container' --tail=2000" "$pod_logs_dir/${container}.log" "Logs for container $container in $pod_name"
+                    local container_cmd="kubectl logs '$pod' -n '$namespace' -c '$container'"
+                    if [[ -n "$since_args" ]]; then
+                        container_cmd="$container_cmd $since_args"
+                    else
+                        container_cmd="$container_cmd --tail=2000"
+                    fi
+                    safe_exec "$container_cmd" "$pod_logs_dir/${container}.log" "Logs for container $container in $pod_name"
                     
                     # Previous logs for container
                     if kubectl logs "$pod" -n "$namespace" -c "$container" --previous >/dev/null 2>&1; then
-                        safe_exec "kubectl logs '$pod' -n '$namespace' -c '$container' --previous --tail=2000" "$pod_logs_dir/${container}-previous.log" "Previous logs for container $container in $pod_name"
+                        local prev_container_cmd="kubectl logs '$pod' -n '$namespace' -c '$container' --previous"
+                        if [[ -n "$since_args" ]]; then
+                            prev_container_cmd="$prev_container_cmd $since_args"
+                        else
+                            prev_container_cmd="$prev_container_cmd --tail=2000"
+                        fi
+                        safe_exec "$prev_container_cmd" "$pod_logs_dir/${container}-previous.log" "Previous logs for container $container in $pod_name"
                     fi
                 done
             fi
@@ -122,7 +206,11 @@ collect_pod_logs() {
             if [[ -n "$init_containers" ]]; then
                 log_debug "Pod $pod_name has init containers, collecting init container logs"
                 for init_container in $init_containers; do
-                    safe_exec "kubectl logs '$pod' -n '$namespace' -c '$init_container'" "$pod_logs_dir/init-${init_container}.log" "Init container $init_container logs in $pod_name"
+                    local init_cmd="kubectl logs '$pod' -n '$namespace' -c '$init_container'"
+                    if [[ -n "$since_args" ]]; then
+                        init_cmd="$init_cmd $since_args"
+                    fi
+                    safe_exec "$init_cmd" "$pod_logs_dir/init-${init_container}.log" "Init container $init_container logs in $pod_name"
                 done
             fi
         fi

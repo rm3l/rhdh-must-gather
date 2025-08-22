@@ -25,6 +25,15 @@ oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --timeout=10m
 
 # Collect with custom source directory
 oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --source-dir=/tmp/rhdh-data
+
+# Collect logs and events from last 2 hours only
+oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --since=2h
+
+# Collect logs and events from last 30 minutes only
+oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --since=30m
+
+# Collect logs and events since specific timestamp
+oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --since-time=2025-08-21T20:00:00Z
 ```
 
 ## OpenShift-Specific Features

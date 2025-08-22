@@ -19,8 +19,11 @@ This tool helps support teams and engineers collect essential information from R
 # Use the published image
 oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest
 
-# Use a specific namespace (if RHDH is not in default locations)
-oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest -- /usr/local/bin/gather
+# Collect only logs and events from last 2 hours
+oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --since=2h
+
+# Collect logs and events since specific time
+oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --since-time=2025-08-21T20:00:00Z
 ```
 
 ### Using with Kubernetes
@@ -146,6 +149,8 @@ make build-push REGISTRY=your-registry.com/namespace
 | `MUST_GATHER_DIR` | `/must-gather` | Output directory for collected data |
 | `LOG_LEVEL` | `INFO` | Logging level (INFO, WARN, ERROR) |
 | `COLLECTION_TIMEOUT` | `300` | Timeout for individual commands (seconds) |
+| `SINCE` | - | Relative time for log/event collection (e.g., "2h", "30m") |
+| `SINCE_TIME` | - | Absolute timestamp for log/event collection (RFC3339) |
 
 ### Command Line Options
 
@@ -160,6 +165,9 @@ MUST_GATHER_DIR=/custom/path /usr/local/bin/gather
 
 # With debug logging
 LOG_LEVEL=DEBUG /usr/local/bin/gather
+
+# With time constraints
+SINCE=2h /usr/local/bin/gather
 ```
 
 ## Output Structure

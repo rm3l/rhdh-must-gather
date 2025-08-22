@@ -256,6 +256,9 @@ main() {
     log_info "Output directory: $MUST_GATHER_DIR"
     log_info "Log level: $LOG_LEVEL"
     
+    # Log time constraints if present
+    log_time_constraints
+    
     # Initialize must-gather environment
     if ! init_must_gather; then
         log_error "Failed to initialize must-gather environment"

@@ -248,6 +248,13 @@ save_detection_results() {
     # Save primary instance info (for backward compatibility)
     write_detection_result "DEPLOYMENT_TYPE" "$primary_type"
     write_detection_result "RHDH_NAMESPACE" "$primary_namespace"
+    
+    # Set a basic cluster type for compatibility (can be detected from kubectl version if needed)
+    if kubectl version -o json 2>/dev/null | grep -q '"gitVersion".*"openshift"'; then
+        write_detection_result "CLUSTER_TYPE" "openshift"
+    else
+        write_detection_result "CLUSTER_TYPE" "kubernetes"
+    fi
     write_detection_result "RHDH_INSTANCES_COUNT" "$total_instances"
     
     # Save all instances

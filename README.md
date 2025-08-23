@@ -1,15 +1,17 @@
 # RHDH Must-Gather Tool
 
-A comprehensive diagnostic data collection tool for Red Hat Developer Hub (RHDH) deployments on Kubernetes and OpenShift clusters.
+A specialized diagnostic data collection tool for Red Hat Developer Hub (RHDH) deployments on Kubernetes and OpenShift clusters.
 
 ## Overview
 
-This tool helps support teams and engineers collect essential information from RHDH deployments to troubleshoot issues effectively. It supports:
+This tool helps support teams and engineers collect essential RHDH-specific information to troubleshoot issues effectively. It focuses exclusively on RHDH resources and can be combined with generic cluster information collection. It supports:
 
 - **Multi-platform**: OpenShift and standard Kubernetes (AKS, GKE, EKS)
 - **Multi-deployment**: Helm-based and Operator-based RHDH instances
-- **Comprehensive collection**: Cluster info, logs, configurations, and resources
+- **RHDH-focused collection**: Only RHDH-specific logs, configurations, and resources
 - **Privacy-aware**: Automatic sanitization of sensitive data
+
+> **Note**: This tool collects only RHDH-specific data. For cluster-wide information, use the generic OpenShift must-gather: `oc adm must-gather`
 
 ## Quick Start
 
@@ -70,12 +72,7 @@ make build test-container
 
 ## What Data is Collected
 
-### Cluster Information
-- Node details and status
-- Kubernetes/OpenShift version
-- Storage classes and network policies
-- RBAC configurations
-- Cluster operators (OpenShift)
+This tool focuses exclusively on RHDH-related resources. For cluster-wide information, combine with generic must-gather.
 
 ### RHDH-Specific Data
 
@@ -91,12 +88,13 @@ make build test-container
 - Backstage Custom Resources
 - Operand configurations and status
 
-#### Common Resources
-- All resources in RHDH namespace
-- Pod logs (current and previous)
-- Events and descriptions
-- Services and networking
-- Persistent Volume Claims
+#### Common RHDH Resources
+- All resources in RHDH namespaces
+- RHDH pod logs (current and previous)
+- RHDH-related events
+- RHDH services and networking
+- RHDH Persistent Volume Claims
+- Multi-container and init container logs
 
 ## Privacy and Security
 
@@ -117,18 +115,19 @@ Original files are backed up before sanitization for debugging if needed.
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Detection     │    │   Collection    │    │  Sanitization   │
 │                 │    │                 │    │                 │
-│ • Cluster type  │───▶│ • Cluster info  │───▶│ • Remove secrets│
-│ • RHDH namespace│    │ • RHDH resources│    │ • Mask tokens   │
-│ • Deploy method │    │ • Logs & events │    │ • Redact PII    │
+│ • RHDH namespace│───▶│ • RHDH resources│───▶│ • Remove secrets│
+│ • Deploy method │    │ • RHDH logs     │    │ • Mask tokens   │
+│ • Multi-instance│    │ • RHDH events   │    │ • Redact PII    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
 ### Key Components
 
-- **`collection/gather`**: Main collection script
+- **`collection/gather`**: Main orchestrator script
+- **`collection/detect-rhdh`**: RHDH deployment detection
+- **`collection/collect-*`**: Specialized collection scripts
 - **`collection/sanitize`**: Data sanitization utility
-- **`Dockerfile`**: Container image definition
-- **`Makefile`**: Build and test automation
+- **`collection/lib/utils.sh`**: Shared utilities and functions
 
 ## Building the Image
 
@@ -176,31 +175,31 @@ SINCE=2h /usr/local/bin/gather
 must-gather/
 ├── collection-summary.txt          # Summary of what was collected
 ├── sanitization-report.txt         # Details of data sanitization
-├── cluster-info/                   # Cluster-wide information
-│   ├── cluster-info.txt
-│   ├── nodes.yaml
-│   ├── storageclasses.yaml
-│   └── ...
+├── rhdh-deployment-details.txt     # RHDH deployment detection results
+├── rhdh-instances.env              # All detected RHDH instances
 ├── rhdh/                           # RHDH-specific data
-│   ├── helm/                       # Helm deployment data
+│   ├── helm/                       # Helm deployment data (if detected)
 │   │   ├── releases.yaml
 │   │   ├── values.yaml
-│   │   └── manifest.yaml
-│   ├── operator/                   # Operator deployment data
+│   │   └── manifests/
+│   ├── operator/                   # Operator deployment data (if detected)
 │   │   ├── deployments.yaml
-│   │   ├── backstage-crd.yaml
-│   │   └── logs-*.log
+│   │   ├── backstage-crs.yaml
+│   │   └── operator-logs/
 │   └── resources/                  # RHDH namespace resources
-│       ├── all-resources.yaml
-│       ├── services.yaml
-│       └── ...
-├── logs/                           # Pod logs
-│   ├── backstage-*.log
-│   └── ...
-└── events/                         # Kubernetes events
-    ├── all-events.txt
-    └── rhdh-events.txt
+│       ├── [namespace]/            # Per-namespace resources
+│       └── all-resources.yaml
+├── logs/                           # RHDH pod logs only
+│   ├── [namespace]/                # Per-namespace logs
+│   │   └── [pod-name]/             # Per-pod logs
+│   └── collection-summary.txt
+└── events/                         # RHDH-related events only
+    ├── events-[namespace].txt      # Per-namespace events
+    ├── warning-events-*.txt        # Warning events
+    └── error-events-*.txt          # Error events
 ```
+
+> **Note**: For cluster-wide information (nodes, storage classes, etc.), use: `oc adm must-gather`
 
 ## Troubleshooting
 

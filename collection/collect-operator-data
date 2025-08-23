@@ -239,40 +239,79 @@ collect_operator_metrics() {
 }
 
 generate_operator_summary() {
-    local namespace="$1"
+    local namespaces=("$@")
     local operator_dir="$MUST_GATHER_DIR/rhdh/operator"
     
     log_info "Generating operator collection summary..."
     
-    local pods_count=$(kubectl get pods -n "$namespace" --no-headers 2>/dev/null | wc -l || echo "0")
-    local deployments_count=$(kubectl get deployment -n "$namespace" --no-headers 2>/dev/null | wc -l || echo "0")
-    local backstage_count=$(kubectl get backstage -n "$namespace" --no-headers 2>/dev/null | wc -l || echo "0")
+    local total_pods=0
+    local total_deployments=0
+    local total_backstage_crs=0
     
     cat > "$operator_dir/collection-summary.txt" << EOF
-Operator Data Collection Summary
-===============================
+Operator Data Collection Summary - Multiple Instances
+=====================================================
 Collection Time: $(date)
+Total Operator Instances: ${#namespaces[@]}
+
+=== DETECTED OPERATOR INSTANCES ===
+EOF
+    
+    # Add details for each namespace
+    for namespace in "${namespaces[@]}"; do
+        local pods_count=$(kubectl get pods -n "$namespace" --no-headers 2>/dev/null | wc -l || echo "0")
+        local deployments_count=$(kubectl get deployment -n "$namespace" --no-headers 2>/dev/null | wc -l || echo "0")
+        local backstage_count=$(kubectl get backstage -n "$namespace" --no-headers 2>/dev/null | wc -l || echo "0")
+        
+        total_pods=$((total_pods + pods_count))
+        total_deployments=$((total_deployments + deployments_count))
+        total_backstage_crs=$((total_backstage_crs + backstage_count))
+        
+        cat >> "$operator_dir/collection-summary.txt" << EOF
+
 Namespace: $namespace
+Pods: $pods_count
+Deployments: $deployments_count  
+Backstage CRs: $backstage_count
+EOF
+    done
+    
+    cat >> "$operator_dir/collection-summary.txt" << EOF
 
-Statistics:
-- Pods in namespace: $pods_count
-- Deployments in namespace: $deployments_count
-- Backstage CRs in namespace: $backstage_count
+=== OVERALL STATISTICS ===
+- Total pods across all operator namespaces: $total_pods
+- Total deployments across all operator namespaces: $total_deployments
+- Total Backstage CRs across all operator namespaces: $total_backstage_crs
 
-Collected Data:
+=== COLLECTED DATA ===
+For each detected namespace:
 - Operator deployments and pod information
 - Operator logs (current and previous)
-- Custom Resource Definitions (CRDs)
 - Backstage Custom Resources and status
 - Operator configuration (ConfigMaps, RBAC)
 - OLM information (CSVs, Subscriptions, InstallPlans)
 - Metrics configuration
 
-Files Created:
-$(find "$operator_dir" -type f 2>/dev/null | wc -l) files in rhdh/operator directory
+Cluster-wide:
+- Custom Resource Definitions (CRDs)
 
-Note: Sensitive data in secrets has been excluded from collection.
-Pod logs are limited to last 1000-2000 lines per container.
+=== FILE ORGANIZATION ===
+rhdh/operator/
+├── deployments.yaml           # All operator deployments
+├── pods.yaml                  # All operator pods
+├── logs/                      # Operator pod logs
+├── crds/                      # Custom Resource Definitions
+├── custom-resources/          # Backstage CRs
+├── configuration/             # ConfigMaps, Secrets, RBAC
+└── olm/                       # OLM information
+
+Files Created: $(find "$operator_dir" -type f 2>/dev/null | wc -l) files in rhdh/operator directory
+
+=== SECURITY NOTES ===
+- Sensitive data in secrets has been excluded from collection
+- Pod logs are limited to last 1000-2000 lines per container
+- ConfigMap data and secret metadata collected (not secret data)
+
 EOF
 }
 
@@ -285,34 +324,46 @@ main() {
         exit 1
     fi
     
-    # Load detection results
+    # Load detection results and check for operator instances
     load_detection_results
-    local namespace="${RHDH_NAMESPACE:-}"
-    local deployment_type="${DEPLOYMENT_TYPE:-}"
     
-    if [[ "$deployment_type" != "operator" ]]; then
-        log_warn "Deployment type is not Operator ($deployment_type), skipping Operator collection"
+    # Find all operator-based RHDH instances
+    local operator_namespaces=()
+    if [[ -f "$MUST_GATHER_DIR/rhdh-instances.env" ]]; then
+        # Extract operator namespaces from instances file
+        while IFS=':' read -r namespace deployment_type details; do
+            if [[ "$deployment_type" == "operator" && -n "$namespace" ]]; then
+                operator_namespaces+=("$namespace")
+            fi
+        done < <(grep ":operator:" "$MUST_GATHER_DIR/rhdh-instances.env" || true)
+    fi
+    
+    if [[ ${#operator_namespaces[@]} -eq 0 ]]; then
+        log_warn "No Operator-based RHDH instances detected, skipping Operator collection"
         exit 0
     fi
     
-    if [[ -z "$namespace" ]]; then
-        log_error "RHDH namespace not detected, cannot collect Operator data"
-        exit 1
-    fi
+    log_info "Found ${#operator_namespaces[@]} Operator-based RHDH instance(s)"
     
-    log_info "Collecting Operator data for namespace: $namespace"
-    
-    # Collect all operator data
-    collect_operator_deployments "$namespace"
-    collect_operator_logs "$namespace"
+    # Collect CRDs first (cluster-wide)
     collect_crds
-    collect_backstage_custom_resources "$namespace"
-    collect_operator_configuration "$namespace"
-    collect_olm_information "$namespace"
-    collect_operator_metrics "$namespace"
-    generate_operator_summary "$namespace"
     
-    log_success "Operator data collection completed"
+    # Collect data from each operator namespace
+    for namespace in "${operator_namespaces[@]}"; do
+        log_info "Collecting Operator data for namespace: $namespace"
+        
+        collect_operator_deployments "$namespace"
+        collect_operator_logs "$namespace"
+        collect_backstage_custom_resources "$namespace"
+        collect_operator_configuration "$namespace"
+        collect_olm_information "$namespace"
+        collect_operator_metrics "$namespace"
+    done
+    
+    # Generate summary for all operator instances
+    generate_operator_summary "${operator_namespaces[@]}"
+    
+    log_success "Operator data collection completed for ${#operator_namespaces[@]} instance(s)"
 }
 
 # Show help

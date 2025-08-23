@@ -113,15 +113,9 @@ collect_pod_logs() {
                         base_cmd="$base_cmd --tail=2000"
                     fi
                     
-                    if [[ "$containers" =~ [[:space:]] ]]; then
-                        # Multiple containers, specify container name
-                        safe_exec "$base_cmd -c '$container'" "$pod_logs_dir/${container}.log" "Current logs for container $container in $pod_name"
-                        safe_exec "$base_cmd -c '$container' --previous" "$pod_logs_dir/${container}-previous.log" "Previous logs for container $container in $pod_name" || true
-                    else
-                        # Single container
-                        safe_exec "$base_cmd" "$pod_logs_dir/${container}.log" "Current logs for $pod_name"
-                        safe_exec "$base_cmd --previous" "$pod_logs_dir/${container}-previous.log" "Previous logs for $pod_name" || true
-                    fi
+                    # Always specify container name to avoid ambiguity with init containers
+                    safe_exec "$base_cmd -c '$container'" "$pod_logs_dir/${container}.log" "Current logs for container $container in $pod_name"
+                    safe_exec "$base_cmd -c '$container' --previous" "$pod_logs_dir/${container}-previous.log" "Previous logs for container $container in $pod_name" || true
                 done
             fi
             

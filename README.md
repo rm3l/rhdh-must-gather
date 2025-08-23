@@ -148,6 +148,7 @@ make build-push REGISTRY=your-registry.com/namespace
 | `MUST_GATHER_DIR` | `/must-gather` | Output directory for collected data |
 | `LOG_LEVEL` | `INFO` | Logging level (INFO, WARN, ERROR) |
 | `COLLECTION_TIMEOUT` | `300` | Timeout for individual commands (seconds) |
+| `COLLECT_RESOURCES` | `false` | Collect detailed RHDH resources (can be slow) |
 | `SINCE` | - | Relative time for log/event collection (e.g., "2h", "30m") |
 | `SINCE_TIME` | - | Absolute timestamp for log/event collection (RFC3339) |
 
@@ -156,17 +157,20 @@ make build-push REGISTRY=your-registry.com/namespace
 The gather script accepts the following options:
 
 ```bash
-# Default collection
+# Default collection (logs, events, Helm/Operator data)
 /usr/local/bin/gather
 
-# With custom output directory
-MUST_GATHER_DIR=/custom/path /usr/local/bin/gather
+# With detailed resource collection (slower)
+COLLECT_RESOURCES=true /usr/local/bin/gather
+
+# With time constraints (last 2 hours)
+SINCE=2h /usr/local/bin/gather
 
 # With debug logging
 LOG_LEVEL=DEBUG /usr/local/bin/gather
 
-# With time constraints
-SINCE=2h /usr/local/bin/gather
+# Combined example
+COLLECT_RESOURCES=true SINCE=1h LOG_LEVEL=DEBUG /usr/local/bin/gather
 ```
 
 ## Output Structure

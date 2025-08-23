@@ -1,17 +1,21 @@
 # Using RHDH Must-Gather with OpenShift
 
-This document provides specific examples for using the RHDH must-gather tool with OpenShift clusters.
+This document provides specific examples for using the RHDH must-gather tool with OpenShift clusters. This tool collects only RHDH-specific data; combine with generic must-gather for complete cluster diagnostics.
 
 ## Basic Usage
 
 ### Standard Collection
 
 ```bash
-# Basic must-gather collection
+# Basic RHDH-specific collection
 oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest
 
-# Collection with custom output directory
+# RHDH collection with custom output directory
 oc adm must-gather --dest-dir=./rhdh-diagnostics --image=quay.io/asoro/rhdh-must-gather:latest
+
+# For complete diagnostics, combine with generic cluster collection
+oc adm must-gather --dest-dir=./complete-diagnostics
+oc adm must-gather --dest-dir=./complete-diagnostics --image=quay.io/asoro/rhdh-must-gather:latest
 ```
 
 ### Advanced Usage
@@ -38,13 +42,14 @@ oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --since-time=20
 
 ## OpenShift-Specific Features
 
-The tool automatically detects OpenShift and collects additional information:
+The tool automatically detects OpenShift and collects RHDH-related information:
 
-- **Cluster Version**: OpenShift version and update status
-- **Cluster Operators**: Status of all cluster operators
-- **Routes**: OpenShift routes for RHDH services
-- **Image Streams**: Custom image streams used by RHDH
-- **Security Context Constraints**: SCCs relevant to RHDH
+- **RHDH Routes**: OpenShift routes specific to RHDH services
+- **RHDH Image Streams**: Custom image streams used by RHDH
+- **RHDH Security Context Constraints**: SCCs relevant to RHDH workloads
+- **Operator Data**: RHDH operator information if using operator deployment
+
+> **Note**: For cluster operators, cluster version, and cluster-wide information, use the generic must-gather command
 
 ## RBAC Requirements
 
@@ -81,12 +86,14 @@ rules:
 ### Scenario 1: RHDH Performance Issues
 
 ```bash
-# Collect comprehensive diagnostics
+# Collect RHDH-specific diagnostics
 oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest
 
-# Focus on specific namespace if known
-oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest -- \
-  bash -c "RHDH_NAMESPACE=my-rhdh-namespace /usr/local/bin/gather"
+# Also collect cluster information for complete picture
+oc adm must-gather
+
+# Focus on recent logs (last hour)
+oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --since=1h
 ```
 
 ### Scenario 2: RHDH Not Starting
@@ -100,10 +107,10 @@ oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest -- \
 ### Scenario 3: Network Connectivity Issues
 
 ```bash
-# Standard collection (includes network policies, routes, services)
+# Collect RHDH network resources (routes, services, network policies)
 oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest
 
-# Additionally, you might want to collect network diagnostics
+# For complete network diagnostics, also collect cluster-wide network data
 oc adm must-gather --image=registry.redhat.io/openshift4/network-tools-rhel8:latest
 ```
 
@@ -111,21 +118,24 @@ oc adm must-gather --image=registry.redhat.io/openshift4/network-tools-rhel8:lat
 
 ### Key Files for OpenShift
 
-After collection, focus on these OpenShift-specific files:
+After collection, focus on these RHDH-specific OpenShift files:
 
 ```
 must-gather/
-├── cluster-info/
-│   ├── clusterversion.yaml         # OpenShift version
-│   ├── clusteroperators.yaml       # Operator status
-│   └── routes.yaml                 # RHDH routes
+├── rhdh-deployment-details.txt     # RHDH deployment summary
 ├── rhdh/
-│   └── resources/
-│       ├── routes.yaml             # RHDH-specific routes
-│       └── imagestreams.yaml       # Custom images
+│   ├── resources/
+│   │   ├── [namespace]/
+│   │   │   ├── routes.yaml         # RHDH routes
+│   │   │   ├── imagestreams.yaml   # RHDH image streams
+│   │   │   └── securitycontextconstraints.yaml
+│   │   └── operator/               # If operator-based
+│   └── helm/                       # If Helm-based
 └── logs/
-    └── cluster-operators/          # Operator logs
+    └── [namespace]/                # RHDH pod logs
 ```
+
+> **Note**: For cluster version, cluster operators, and cluster-wide routes, use the generic must-gather output
 
 ### Common OpenShift Issues
 

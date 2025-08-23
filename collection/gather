@@ -47,7 +47,6 @@ setup_base_directories() {
     log_info "Setting up base directory structure..."
     
     ensure_directory "$MUST_GATHER_DIR"
-    ensure_directory "$MUST_GATHER_DIR/cluster-info"
     ensure_directory "$MUST_GATHER_DIR/rhdh"
     ensure_directory "$MUST_GATHER_DIR/logs"
     ensure_directory "$MUST_GATHER_DIR/events"
@@ -59,13 +58,7 @@ setup_base_directories() {
 run_detection_phase() {
     log_info "=== DETECTION PHASE ==="
     
-    # Cluster type detection
-    if ! run_collection_script "detect-cluster" "Cluster type detection"; then
-        log_error "Cluster detection failed"
-        return 1
-    fi
-    
-    # RHDH deployment detection
+    # Only detect RHDH deployments (cluster info available via generic must-gather)
     if ! run_collection_script "detect-rhdh" "RHDH deployment detection"; then
         log_warn "RHDH deployment detection completed with warnings (may not be deployed)"
     fi
@@ -74,7 +67,6 @@ run_detection_phase() {
     load_detection_results
     
     log_info "Detection phase completed"
-    log_info "Cluster Type: ${CLUSTER_TYPE:-unknown}"
     log_info "RHDH Deployment Type: ${DEPLOYMENT_TYPE:-none}"
     log_info "RHDH Namespace: ${RHDH_NAMESPACE:-none}"
     
@@ -85,29 +77,43 @@ run_detection_phase() {
 run_collection_phase() {
     log_info "=== COLLECTION PHASE ==="
     
-    # Always collect cluster information
-    if ! run_collection_script "collect-cluster-info" "Cluster information collection"; then
-        log_error "Cluster information collection failed"
-        return 1
-    fi
-    
     # Load detection results
     load_detection_results
     local deployment_type="${DEPLOYMENT_TYPE:-none}"
     local namespace="${RHDH_NAMESPACE:-}"
     
-    # Deployment-specific collection
-    if [[ "$deployment_type" == "helm" ]]; then
-        log_info "Detected Helm deployment, collecting Helm-specific data..."
+    # Only collect RHDH-specific data (cluster info available via generic oc adm must-gather)
+    
+    # Deployment-specific collection - check for ALL detected types
+    local has_helm=false
+    local has_operator=false
+    
+    # Check rhdh-instances.env for all deployment types
+    if [[ -f "$MUST_GATHER_DIR/rhdh-instances.env" ]]; then
+        if grep -q ":helm:" "$MUST_GATHER_DIR/rhdh-instances.env"; then
+            has_helm=true
+        fi
+        if grep -q ":operator:" "$MUST_GATHER_DIR/rhdh-instances.env"; then
+            has_operator=true
+        fi
+    fi
+    
+    # Collect from all detected deployment types
+    if [[ "$has_helm" == "true" ]]; then
+        log_info "Detected Helm deployment(s), collecting Helm-specific data..."
         if ! run_collection_script "collect-helm-data" "Helm data collection"; then
             log_error "Helm data collection failed"
         fi
-    elif [[ "$deployment_type" == "operator" ]]; then
-        log_info "Detected Operator deployment, collecting Operator-specific data..."
+    fi
+    
+    if [[ "$has_operator" == "true" ]]; then
+        log_info "Detected Operator deployment(s), collecting Operator-specific data..."
         if ! run_collection_script "collect-operator-data" "Operator data collection"; then
             log_error "Operator data collection failed"
         fi
-    else
+    fi
+    
+    if [[ "$has_helm" == "false" && "$has_operator" == "false" ]]; then
         log_warn "No RHDH deployment detected, skipping deployment-specific collection"
     fi
     
@@ -152,7 +158,6 @@ generate_final_summary() {
     
     # Load detection results
     load_detection_results
-    local cluster_type="${CLUSTER_TYPE:-unknown}"
     local deployment_type="${DEPLOYMENT_TYPE:-none}"
     local namespace="${RHDH_NAMESPACE:-none}"
     
@@ -168,8 +173,10 @@ Collection Date: $(date)
 Collection Tool Version: 1.0.0
 Must-Gather Directory: $MUST_GATHER_DIR
 
+Note: This tool collects only RHDH-specific data. For cluster-wide information,
+use the generic OpenShift must-gather: oc adm must-gather
+
 === DETECTION RESULTS ===
-Cluster Type: $cluster_type
 RHDH Deployment Type: $deployment_type
 RHDH Namespace: $namespace
 
@@ -179,16 +186,6 @@ Log Files: $log_files
 YAML Files: $yaml_files
 
 === COLLECTED DATA ===
-✓ Cluster Information:
-  - Basic cluster info and API server details
-  - Node information and resource usage
-  - Storage classes and persistent volumes
-  - Networking configuration and policies
-  - RBAC (roles, bindings, service accounts)
-  - Resource quotas and limits
-  - Cluster-wide events
-$([[ "$cluster_type" == "openshift" ]] && echo "  - OpenShift-specific resources (operators, routes, SCCs)")
-
 EOF
 
     if [[ "$deployment_type" != "none" && -n "$namespace" ]]; then
@@ -213,15 +210,15 @@ EOF
     fi
 
     cat >> "$MUST_GATHER_DIR/collection-summary.txt" << EOF
+
 === DATA ORGANIZATION ===
-cluster-info/          # Cluster-wide information
-logs/                  # Pod and system logs
-events/                # Kubernetes events
 rhdh/                  # RHDH-specific data
 ├── resources/         # RHDH namespace resources
 $([[ "$deployment_type" == "helm" ]] && echo "├── helm/              # Helm deployment data")
 $([[ "$deployment_type" == "operator" ]] && echo "├── operator/          # Operator deployment data")
 $([[ "$deployment_type" == "operator" ]] && echo "└── backstage-crs/     # Backstage Custom Resources")
+logs/                  # RHDH pod and system logs
+events/                # RHDH-related Kubernetes events
 
 === SECURITY NOTES ===
 - Sensitive data has been automatically sanitized
@@ -231,6 +228,12 @@ $([[ "$deployment_type" == "operator" ]] && echo "└── backstage-crs/     #
 
 === COLLECTION STATUS ===
 Collection completed successfully at $(date)
+
+=== USAGE NOTES ===
+- This collection focuses only on RHDH-specific resources
+- For cluster-wide diagnostics, combine with generic must-gather:
+  oc adm must-gather
+- For complete troubleshooting, provide both collections to support
 
 For support or analysis of this data, please provide this
 entire directory to your support team or engineers.

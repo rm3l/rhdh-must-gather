@@ -117,13 +117,18 @@ run_collection_phase() {
         log_warn "No RHDH deployment detected, skipping deployment-specific collection"
     fi
     
-    # RHDH resources collection (if namespace is known)
-    if [[ -n "$namespace" ]]; then
-        if ! run_collection_script "collect-rhdh-resources" "RHDH resources collection"; then
-            log_error "RHDH resources collection failed"
+    # RHDH resources collection (optional, controlled by COLLECT_RESOURCES)
+    local collect_resources="${COLLECT_RESOURCES:-false}"
+    if [[ "$collect_resources" == "true" ]]; then
+        if [[ -n "$namespace" ]]; then
+            if ! run_collection_script "collect-rhdh-resources" "RHDH resources collection"; then
+                log_error "RHDH resources collection failed"
+            fi
+        else
+            log_warn "RHDH namespace not detected, skipping RHDH resource collection"
         fi
     else
-        log_warn "RHDH namespace not detected, skipping RHDH resource collection"
+        log_info "RHDH resources collection disabled (set COLLECT_RESOURCES=true to enable)"
     fi
     
     # Always collect logs and events
@@ -320,17 +325,20 @@ Environment Variables:
   MUST_GATHER_DIR       Output directory (default: /must-gather)
   LOG_LEVEL            Logging level: DEBUG, INFO, WARN, ERROR (default: INFO)
   COLLECTION_TIMEOUT   Timeout for individual commands in seconds (default: 300)
+  COLLECT_RESOURCES    Collect detailed RHDH resources (default: false)
+  SINCE                Relative time for log/event collection (e.g., "2h", "30m")
+  SINCE_TIME           Absolute timestamp for log/event collection (RFC3339)
 
 Collection Phases:
   1. Detection Phase:
-     - Detect cluster type (OpenShift vs Kubernetes)
-     - Detect RHDH deployment type and namespace
+     - Detect RHDH deployment types and namespaces
+     - Support multiple instances (Helm and Operator)
   
   2. Collection Phase:
-     - Collect cluster-wide information
      - Collect deployment-specific data (Helm or Operator)
-     - Collect RHDH resources and logs
-     - Collect events and system information
+     - Collect RHDH resources (optional, use COLLECT_RESOURCES=true)
+     - Collect RHDH logs and events
+     - Focus on RHDH-specific data only
   
   3. Sanitization Phase:
      - Remove or mask sensitive information
@@ -341,9 +349,11 @@ Collection Phases:
      - Document what was collected and where
 
 Examples:
-  $0                              # Standard collection
-  LOG_LEVEL=DEBUG $0             # Debug mode
-  MUST_GATHER_DIR=/tmp/rhdh $0   # Custom output directory
+  $0                              # Standard collection (logs, events, Helm/Operator data)
+  COLLECT_RESOURCES=true $0       # Include detailed resource collection  
+  SINCE=2h $0                     # Collect logs/events from last 2 hours
+  LOG_LEVEL=DEBUG $0              # Debug mode
+  MUST_GATHER_DIR=/tmp/rhdh $0    # Custom output directory
 
 For more information about individual collection scripts, run:
   $0 [script-name] --help

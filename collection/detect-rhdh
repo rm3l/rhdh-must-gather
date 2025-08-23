@@ -38,117 +38,164 @@ add_rhdh_instance() {
 detect_helm_deployments_comprehensive() {
     log_info "Searching for Helm-based RHDH deployments across all namespaces..."
     
-    local found=0
+    # Initialize temp file
+    : > /tmp/rhdh_instances.tmp
     
-    # Method 1: Search through Helm secrets
-    kubectl get secret --all-namespaces -l "app.kubernetes.io/managed-by=Helm" -o jsonpath='{range .items[*]}{.metadata.namespace}{" "}{.metadata.name}{" "}{.metadata.labels.name}{"\n"}{end}' 2>/dev/null | while IFS= read -r line; do
-        if [[ -n "$line" ]]; then
-            local namespace=$(echo "$line" | awk '{print $1}')
-            local secret_name=$(echo "$line" | awk '{print $2}')
-            local release_name=$(echo "$line" | awk '{print $3}')
-            
-            # Check if the release name or secret name contains RHDH/Backstage patterns
-            if [[ "$secret_name" =~ (backstage|rhdh|developer-hub|janus) ]] || [[ "$release_name" =~ (backstage|rhdh|developer-hub|janus) ]]; then
-                echo "$namespace:helm:release=$release_name" >> /tmp/rhdh_instances.tmp
-                ((found++))
-            fi
-        fi
-    done
+    # Method 1: Look for Helm release secrets directly 
+    log_debug "Searching for Helm release secrets..."
+    local helm_secrets
+    helm_secrets=$(kubectl get secret --all-namespaces -l "owner=helm" -o jsonpath='{range .items[*]}{.metadata.namespace}{" "}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)
     
-    # Method 2: Use Helm CLI if available
-    if command_exists helm; then
-        log_debug "Using Helm CLI to search for RHDH releases..."
-        
-        # Get all namespaces and check each one
-        kubectl get namespaces -o jsonpath='{.items[*].metadata.name}' 2>/dev/null | tr ' ' '\n' | while IFS= read -r namespace; do
-            if [[ -n "$namespace" ]]; then
-                # List Helm releases in this namespace
-                helm list -n "$namespace" -o json 2>/dev/null | jq -r '.[] | "\(.name) \(.chart)"' 2>/dev/null | while IFS= read -r release_info; do
-                    if [[ -n "$release_info" ]]; then
-                        local release_name=$(echo "$release_info" | awk '{print $1}')
-                        local chart_name=$(echo "$release_info" | awk '{print $2}')
-                        
-                        # Check if release or chart contains RHDH/Backstage patterns
-                        if [[ "$release_name" =~ (backstage|rhdh|developer-hub|janus) ]] || [[ "$chart_name" =~ (backstage|rhdh|developer-hub|janus) ]]; then
-                            echo "$namespace:helm:release=$release_name,chart=$chart_name" >> /tmp/rhdh_instances.tmp
-                            ((found++))
-                        fi
+    if [[ -n "$helm_secrets" ]]; then
+        echo "$helm_secrets" | while IFS= read -r line; do
+            if [[ -n "$line" ]]; then
+                local namespace=$(echo "$line" | awk '{print $1}')
+                local secret_name=$(echo "$line" | awk '{print $2}')
+                
+                # Check if it's a Helm release secret and extract release name
+                if [[ "$secret_name" == sh.helm.release.v*.v* ]]; then
+                    local release_name=$(echo "$secret_name" | sed 's/sh\.helm\.release\.v[0-9]*\.\(.*\)\.v[0-9]*/\1/')
+                    
+                    # Check if release name contains RHDH/Backstage patterns
+                    if [[ "$release_name" =~ (backstage|rhdh|developer-hub|janus) ]]; then
+                        echo "$namespace:helm:release=$release_name" >> /tmp/rhdh_instances.tmp
+                        log_debug "Found Helm release: $release_name in namespace: $namespace"
                     fi
-                done
+                fi
             fi
         done
     fi
     
-    # Method 3: Look for common Backstage/RHDH resources that indicate Helm deployment
-    kubectl get pods --all-namespaces -o jsonpath='{range .items[*]}{.metadata.namespace}{" "}{.metadata.name}{" "}{.metadata.labels}{"\n"}{end}' 2>/dev/null | while IFS= read -r line; do
-        if [[ -n "$line" ]]; then
-            local namespace=$(echo "$line" | awk '{print $1}')
-            local pod_name=$(echo "$line" | awk '{print $2}')
-            local labels=$(echo "$line" | cut -d' ' -f3-)
-            
-            # Check for Backstage/RHDH pods with Helm labels
-            if [[ "$pod_name" =~ (backstage|rhdh|developer-hub) ]] && [[ "$labels" =~ "app.kubernetes.io/managed-by.*Helm" ]]; then
-                echo "$namespace:helm:pod=$pod_name" >> /tmp/rhdh_instances.tmp
-                ((found++))
-            fi
-        fi
-    done
+    # Method 2: Search through application secrets with Helm management
+    log_debug "Searching through application secrets..."
+    local app_secrets
+    app_secrets=$(kubectl get secret --all-namespaces -l "app.kubernetes.io/managed-by=Helm" -o jsonpath='{range .items[*]}{.metadata.namespace}{" "}{.metadata.name}{" "}{.metadata.annotations.meta\.helm\.sh/release-name}{"\n"}{end}' 2>/dev/null || true)
     
-    return $found
+    if [[ -n "$app_secrets" ]]; then
+        echo "$app_secrets" | while IFS= read -r line; do
+            if [[ -n "$line" ]]; then
+                local namespace=$(echo "$line" | awk '{print $1}')
+                local secret_name=$(echo "$line" | awk '{print $2}')
+                local release_name=$(echo "$line" | awk '{print $3}')
+                
+                # Check if the release name or secret name contains RHDH/Backstage patterns
+                if [[ "$secret_name" =~ (backstage|rhdh|developer-hub|janus) ]] || [[ "$release_name" =~ (backstage|rhdh|developer-hub|janus) ]]; then
+                    if [[ -n "$release_name" ]]; then
+                        echo "$namespace:helm:release=$release_name" >> /tmp/rhdh_instances.tmp
+                        log_debug "Found Helm release from secret: $release_name in namespace: $namespace"
+                    fi
+                fi
+            fi
+        done
+    fi
+    
+    # Method 3: Look for RHDH pods with Helm labels
+    log_debug "Searching for RHDH pods with Helm management..."
+    local helm_pods
+    helm_pods=$(kubectl get pods --all-namespaces -l "app.kubernetes.io/managed-by=Helm" -o jsonpath='{range .items[*]}{.metadata.namespace}{" "}{.metadata.name}{" "}{.metadata.labels.app\.kubernetes\.io/instance}{"\n"}{end}' 2>/dev/null || true)
+    
+    if [[ -n "$helm_pods" ]]; then
+        echo "$helm_pods" | while IFS= read -r line; do
+            if [[ -n "$line" ]]; then
+                local namespace=$(echo "$line" | awk '{print $1}')
+                local pod_name=$(echo "$line" | awk '{print $2}')
+                local instance_name=$(echo "$line" | awk '{print $3}')
+                
+                # Check for Backstage/RHDH patterns in pod or instance name
+                if [[ "$pod_name" =~ (backstage|rhdh|developer-hub|janus) ]] || [[ "$instance_name" =~ (backstage|rhdh|developer-hub|janus) ]]; then
+                    if [[ -n "$instance_name" ]]; then
+                        echo "$namespace:helm:release=$instance_name" >> /tmp/rhdh_instances.tmp
+                        log_debug "Found Helm instance from pod: $instance_name in namespace: $namespace"
+                    fi
+                fi
+            fi
+        done
+    fi
+    
+    # Count found instances from temp file
+    local found=0
+    if [[ -f /tmp/rhdh_instances.tmp ]]; then
+        found=$(grep -c ":helm:" /tmp/rhdh_instances.tmp 2>/dev/null || echo "0")
+    fi
+    
+    log_debug "Helm detection completed. Found: $found instances"
+    return 0
 }
 
 # Comprehensive Operator deployment detection
 detect_operator_deployments_comprehensive() {
     log_info "Searching for Operator-based RHDH deployments across all namespaces..."
     
-    local found=0
-    
     # Method 1: Look for Backstage Custom Resources
+    log_debug "Searching for Backstage Custom Resources..."
     if kubectl api-resources | grep -q backstage; then
-        kubectl get backstage --all-namespaces -o jsonpath='{range .items[*]}{.metadata.namespace}{" "}{.metadata.name}{"\n"}{end}' 2>/dev/null | while IFS= read -r line; do
-            if [[ -n "$line" ]]; then
-                local namespace=$(echo "$line" | awk '{print $1}')
-                local cr_name=$(echo "$line" | awk '{print $2}')
-                echo "$namespace:operator:backstage-cr=$cr_name" >> /tmp/rhdh_instances.tmp
-                ((found++))
-            fi
-        done
+        local backstage_crs
+        backstage_crs=$(kubectl get backstages --all-namespaces -o jsonpath='{range .items[*]}{.metadata.namespace}{" "}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)
+        
+        if [[ -n "$backstage_crs" ]]; then
+            echo "$backstage_crs" | while IFS= read -r line; do
+                if [[ -n "$line" ]]; then
+                    local namespace=$(echo "$line" | awk '{print $1}')
+                    local cr_name=$(echo "$line" | awk '{print $2}')
+                    echo "$namespace:operator:backstage-cr=$cr_name" >> /tmp/rhdh_instances.tmp
+                    log_debug "Found Backstage CR: $cr_name in namespace: $namespace"
+                fi
+            done
+        fi
     fi
     
     # Method 2: Look for RHDH Operator deployments
-    kubectl get deployments --all-namespaces -o jsonpath='{range .items[*]}{.metadata.namespace}{" "}{.metadata.name}{" "}{.metadata.labels}{"\n"}{end}' 2>/dev/null | while IFS= read -r line; do
-        if [[ -n "$line" ]]; then
-            local namespace=$(echo "$line" | awk '{print $1}')
-            local deployment_name=$(echo "$line" | awk '{print $2}')
-            local labels=$(echo "$line" | cut -d' ' -f3-)
-            
-            # Look for operator patterns
-            if [[ "$deployment_name" =~ (rhdh.*operator|backstage.*operator|.*controller.*manager) ]] || [[ "$labels" =~ "control-plane.*controller-manager" ]]; then
-                # Additional check to confirm it's RHDH-related
-                if kubectl get deployment "$deployment_name" -n "$namespace" -o yaml 2>/dev/null | grep -q -E "(backstage|rhdh|developer-hub|janus)"; then
-                    echo "$namespace:operator:operator-deployment=$deployment_name" >> /tmp/rhdh_instances.tmp
-                    ((found++))
-                fi
-            fi
-        fi
-    done
+    log_debug "Searching for RHDH Operator deployments..."
+    local operator_deployments
+    operator_deployments=$(kubectl get deployments --all-namespaces -o jsonpath='{range .items[*]}{.metadata.namespace}{" "}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)
     
-    # Method 3: Look for RHDH-related CSVs (ClusterServiceVersions)
-    if kubectl api-resources | grep -q clusterserviceversion; then
-        kubectl get csv --all-namespaces -o jsonpath='{range .items[*]}{.metadata.namespace}{" "}{.metadata.name}{"\n"}{end}' 2>/dev/null | while IFS= read -r line; do
+    if [[ -n "$operator_deployments" ]]; then
+        echo "$operator_deployments" | while IFS= read -r line; do
             if [[ -n "$line" ]]; then
                 local namespace=$(echo "$line" | awk '{print $1}')
-                local csv_name=$(echo "$line" | awk '{print $2}')
+                local deployment_name=$(echo "$line" | awk '{print $2}')
                 
-                if [[ "$csv_name" =~ (rhdh|backstage|developer-hub|janus) ]]; then
-                    echo "$namespace:operator:csv=$csv_name" >> /tmp/rhdh_instances.tmp
-                    ((found++))
+                # Look for operator patterns
+                if [[ "$deployment_name" =~ (rhdh.*operator|backstage.*operator|.*controller.*manager) ]]; then
+                    # Additional check to confirm it's RHDH-related
+                    if kubectl get deployment "$deployment_name" -n "$namespace" -o yaml 2>/dev/null | grep -q -E "(backstage|rhdh|developer-hub|janus)"; then
+                        echo "$namespace:operator:operator-deployment=$deployment_name" >> /tmp/rhdh_instances.tmp
+                        log_debug "Found Operator deployment: $deployment_name in namespace: $namespace"
+                    fi
                 fi
             fi
         done
     fi
     
-    return $found
+    # Method 3: Look for RHDH-related CSVs (ClusterServiceVersions)
+    log_debug "Searching for RHDH-related CSVs..."
+    if kubectl api-resources 2>/dev/null | grep -q clusterserviceversion; then
+        local csvs
+        csvs=$(kubectl get csv --all-namespaces -o jsonpath='{range .items[*]}{.metadata.namespace}{" "}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)
+        
+        if [[ -n "$csvs" ]]; then
+            echo "$csvs" | while IFS= read -r line; do
+                if [[ -n "$line" ]]; then
+                    local namespace=$(echo "$line" | awk '{print $1}')
+                    local csv_name=$(echo "$line" | awk '{print $2}')
+                    
+                    if [[ "$csv_name" =~ (rhdh|backstage|developer-hub|janus) ]]; then
+                        echo "$namespace:operator:csv=$csv_name" >> /tmp/rhdh_instances.tmp
+                        log_debug "Found CSV: $csv_name in namespace: $namespace"
+                    fi
+                fi
+            done
+        fi
+    fi
+    
+    # Count found instances from temp file
+    local found=0
+    if [[ -f /tmp/rhdh_instances.tmp ]]; then
+        found=$(grep -c ":operator:" /tmp/rhdh_instances.tmp 2>/dev/null || echo "0")
+    fi
+    
+    log_debug "Operator detection completed. Found: $found instances"
+    return 0
 }
 
 # Process and deduplicate found instances
@@ -159,8 +206,12 @@ process_rhdh_instances() {
     
     log_info "Processing detected RHDH instances..."
     
-    # Sort and deduplicate by namespace:type combination
-    sort /tmp/rhdh_instances.tmp | uniq | while IFS= read -r instance; do
+    # Read instances into a temporary array to avoid subshell issues
+    local temp_instances
+    mapfile -t temp_instances < <(sort /tmp/rhdh_instances.tmp | uniq)
+    
+    # Process each instance
+    for instance in "${temp_instances[@]}"; do
         if [[ -n "$instance" ]]; then
             local namespace=$(echo "$instance" | cut -d':' -f1)
             local deployment_type=$(echo "$instance" | cut -d':' -f2)

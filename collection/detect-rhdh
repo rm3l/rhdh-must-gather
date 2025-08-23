@@ -128,20 +128,29 @@ detect_operator_deployments_comprehensive() {
     
     # Method 1: Look for Backstage Custom Resources
     log_debug "Searching for Backstage Custom Resources..."
-    if kubectl api-resources | grep -q backstage; then
+    local api_check
+    api_check=$(kubectl api-resources 2>/dev/null | grep backstage || true)
+    if [[ -n "$api_check" ]]; then
+        log_debug "Backstage API resource found, checking for instances..."
         local backstage_crs
         backstage_crs=$(kubectl get backstages --all-namespaces -o jsonpath='{range .items[*]}{.metadata.namespace}{" "}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)
+        log_debug "Backstage CRs result: '$backstage_crs'"
         
         if [[ -n "$backstage_crs" ]]; then
-            echo "$backstage_crs" | while IFS= read -r line; do
+            log_debug "Processing Backstage CRs..."
+            while IFS= read -r line; do
                 if [[ -n "$line" ]]; then
                     local namespace=$(echo "$line" | awk '{print $1}')
                     local cr_name=$(echo "$line" | awk '{print $2}')
                     echo "$namespace:operator:backstage-cr=$cr_name" >> /tmp/rhdh_instances.tmp
                     log_debug "Found Backstage CR: $cr_name in namespace: $namespace"
                 fi
-            done
+            done <<< "$backstage_crs"
+        else
+            log_debug "No Backstage CRs found"
         fi
+    else
+        log_debug "Backstage API resource not found"
     fi
     
     # Method 2: Look for RHDH Operator deployments
@@ -150,7 +159,7 @@ detect_operator_deployments_comprehensive() {
     operator_deployments=$(kubectl get deployments --all-namespaces -o jsonpath='{range .items[*]}{.metadata.namespace}{" "}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)
     
     if [[ -n "$operator_deployments" ]]; then
-        echo "$operator_deployments" | while IFS= read -r line; do
+        while IFS= read -r line; do
             if [[ -n "$line" ]]; then
                 local namespace=$(echo "$line" | awk '{print $1}')
                 local deployment_name=$(echo "$line" | awk '{print $2}')
@@ -164,7 +173,7 @@ detect_operator_deployments_comprehensive() {
                     fi
                 fi
             fi
-        done
+        done <<< "$operator_deployments"
     fi
     
     # Method 3: Look for RHDH-related CSVs (ClusterServiceVersions)
@@ -174,7 +183,7 @@ detect_operator_deployments_comprehensive() {
         csvs=$(kubectl get csv --all-namespaces -o jsonpath='{range .items[*]}{.metadata.namespace}{" "}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)
         
         if [[ -n "$csvs" ]]; then
-            echo "$csvs" | while IFS= read -r line; do
+            while IFS= read -r line; do
                 if [[ -n "$line" ]]; then
                     local namespace=$(echo "$line" | awk '{print $1}')
                     local csv_name=$(echo "$line" | awk '{print $2}')
@@ -184,7 +193,7 @@ detect_operator_deployments_comprehensive() {
                         log_debug "Found CSV: $csv_name in namespace: $namespace"
                     fi
                 fi
-            done
+            done <<< "$csvs"
         fi
     fi
     

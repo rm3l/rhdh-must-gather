@@ -87,8 +87,6 @@ collect_crds() {
     # Specific RHDH CRDs
     local rhdh_crds=(
         "backstages.rhdh.redhat.com"
-        "backstages.backstage.io" 
-        "backstages.janus-idp.io"
     )
     
     for crd in "${rhdh_crds[@]}"; do

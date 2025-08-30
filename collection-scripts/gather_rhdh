@@ -1,0 +1,125 @@
+#!/bin/bash
+
+# RHDH Must-Gather Tool - Main Orchestrator
+# Collects diagnostic information for Red Hat Developer Hub troubleshooting
+# Supports both OpenShift and standard Kubernetes clusters
+# Handles both Helm and Operator deployments
+
+set -euo pipefail
+
+export BASE_COLLECTION_PATH="${BASE_COLLECTION_PATH:-/must-gather}"
+#export PROS=${PROS:-5}
+
+# Get script directory for calling other scripts
+DIR_NAME=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+source "${DIR_NAME}/common.sh"
+
+export_log_collection_args
+
+# generate /version file
+source "${DIR_NAME}/version"
+echo "rhdh/must-gather" > "${BASE_COLLECTION_PATH}/version"
+version >> "${BASE_COLLECTION_PATH}/version"
+
+abort() {
+  log_error "ERROR: $*"
+  exit 1
+}
+
+trap 'log "An unexpected error occurred. See logs above."' ERR
+
+function main() {
+  log_info "Starting RHDH must-gather collection..."
+  log_info "Output directory: $BASE_COLLECTION_PATH"
+  log_info "Log level: $LOG_LEVEL"
+
+  # Initialize must-gather environment
+  if ! init_must_gather; then
+      log_error "Failed to initialize must-gather environment"
+      exit 1
+  fi
+
+  declare mandatory_scripts=(
+    "helm"
+    "operator"
+  )
+  declare requested_scripts=("${mandatory_scripts[@]}")
+
+  parse_flags "$@"
+  run_scripts
+  run_logs
+
+  sync
+  exit 0
+}
+
+function parse_flags {
+  while :; do
+    case ${1:-} in
+      --help|-h)
+        help
+        exit 0
+        ;;
+      --cluster-info)
+        requested_scripts+=("cluster-info")
+        ;;
+      --)
+        shift
+        break
+        ;;
+      -?*)
+        printf 'WARN: Unknown option (ignored): %s\n' "$1" >&2
+        ;;
+      *) # Default case: No more options, so break out of the loop.
+        break
+    esac
+    shift
+  done
+}
+
+function help {
+    echo "\
+Usage: oc adm must-gather --image=quay.io/asoro/rhdh-must-gather -- /usr/bin/gather [params...]
+
+  A client tool for gathering RHDH information in an OpenShift or Kubernetes cluster
+
+  Available options:
+
+  > To see this help menu and exit, use:
+  --help
+
+  > The tool will always collect all control-plane logs and information.
+  > This will include:"
+    for collector in "${mandatory_scripts[@]}" ; do
+    echo "  > - $collector"
+    done
+    echo "\
+
+  > You can also choose to enable optional collectors combining one
+  > or more of the following parameters:
+  --cluster-info
+  --vms_details
+"
+}
+
+function run_scripts {
+  for script in "${requested_scripts[@]}";
+  do
+    script_name="gather_${script}"
+    log_info "running ${script_name}"
+    eval USR_BIN_GATHER=1 "${DIR_NAME}/${script_name}"
+  done
+}
+
+function run_logs {
+  log_info "running logs"
+  USR_BIN_GATHER=1 "${DIR_NAME}"/logs.sh
+}
+
+if [[ "$LOG_LEVEL" == "trace" ]]; then
+  set -x
+fi
+
+main "$@"
+# set +x

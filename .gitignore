@@ -3,6 +3,7 @@
 *.tmp
 test-output/
 must-gather-*/
+must-gather.local.*/
 
 # OS files
 .DS_Store
@@ -26,3 +27,6 @@ Thumbs.db
 # Test data
 test-data/
 sample-output/
+
+inspect.local*
+

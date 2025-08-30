@@ -1,65 +1,33 @@
-FROM registry.redhat.io/ubi8/ubi:latest
+FROM quay.io/openshift/origin-must-gather:4.20
+
+ENV RHDH_MUST_GATHER_VERSION=0.1.0
 
 # Must-gather image for Red Hat Developer Hub (RHDH)
 LABEL name="rhdh-must-gather" \
       vendor="Red Hat" \
-      version="1.0.0" \
-      release="1" \
-      summary="Red Hat Developer Hub must-gather tool" \
+      version="$RHDH_MUST_GATHER_VERSION" \
+      summary="Red Hat Developer Hub (RHDH) must-gather tool" \
       description="Collects diagnostic information from RHDH deployments on Kubernetes and OpenShift clusters"
 
-# Install required packages
-RUN dnf update -y && \
-    dnf install -y \
-        curl \
-        wget \
-        tar \
-        gzip \
-        jq \
-        which \
-        bash \
-        coreutils \
-    && dnf clean all \
-    && rm -rf /var/cache/yum
+# Save original gather script
+RUN mv /usr/bin/gather /usr/bin/gather_original
 
-# Install kubectl
-RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" \
-    && chmod +x kubectl \
-    && mv kubectl /usr/local/bin/
-
-# Install oc client (OpenShift CLI)
-RUN curl -L https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz \
-    | tar -xzC /usr/local/bin/ \
-    && chmod +x /usr/local/bin/oc
+# Install yq
+RUN curl -sSLo- https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_amd64.tar.gz | tar xz \
+    && mv -f yq_linux_amd64 /usr/local/bin/yq \
+    && yq --version
 
 # Install Helm
 RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 \
     && chmod 700 get_helm.sh \
     && ./get_helm.sh \
-    && rm get_helm.sh
+    && rm get_helm.sh \
+    && helm version
 
-# Create must-gather user and directories
-RUN useradd -r -u 1001 -g 0 must-gather \
-    && mkdir -p /must-gather \
-    && chown -R 1001:0 /must-gather \
-    && chmod -R g+w /must-gather
-
+# Use our gather script in place of the original one
 # Copy collection scripts
-COPY collection/ /usr/local/bin/
-RUN chmod +x /usr/local/bin/gather
+COPY collection-scripts/* /usr/bin/
 
-# Copy licenses
-COPY licenses/ /licenses/
+RUN mv /usr/bin/gather_rhdh /usr/bin/gather
 
-# Set working directory
-WORKDIR /must-gather
-
-# Use non-root user
-USER 1001
-
-# Set environment variables
-ENV MUST_GATHER_DIR=/must-gather
-ENV PATH="/usr/local/bin:${PATH}"
-
-# Default command
-CMD ["/usr/local/bin/gather"]
+ENTRYPOINT exec /usr/bin/gather

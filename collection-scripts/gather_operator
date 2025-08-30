@@ -1,0 +1,247 @@
+#!/bin/bash
+
+# Operator Data Collection Script
+# Collects Operator-specific information for RHDH deployments
+
+set -euo pipefail
+
+# Get script directory for calling other scripts
+DIR_NAME=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+source "${DIR_NAME}/common.sh"
+export_log_collection_args
+
+log_info "Starting Operator data collection..."
+
+operator_dir="$BASE_COLLECTION_PATH/rhdh/operator"
+ensure_directory "$operator_dir"
+
+function gather_olm_information() {
+    log_info "Collecting OLM (Operator Lifecycle Manager) information..."
+
+    local olm_dir="$operator_dir/olm"
+    ensure_directory "$olm_dir"
+
+    # ClusterServiceVersions
+    safe_exec "kubectl get csv --all-namespaces | grep -E '(rhdh|backstage|developer-hub)'" "$olm_dir/rhdh-csv-all.txt" "RHDH CSVs in all namespaces" || echo "No RHDH CSVs found" > "$olm_dir/rhdh-csv-all.txt"
+
+    # Subscriptions
+    safe_exec "kubectl get subscription --all-namespaces | grep -E '(rhdh|backstage|developer-hub)'" "$olm_dir/rhdh-subscriptions-all.txt" "RHDH subscriptions in all namespaces" || echo "No RHDH subscriptions found" > "$olm_dir/rhdh-subscriptions-all.txt"
+
+    # InstallPlans
+    safe_exec "kubectl get installplan --all-namespaces" "$olm_dir/installplans-all.txt" "InstallPlans in all namespaces"
+
+    # OperatorGroups
+    safe_exec "kubectl get operatorgroup --all-namespaces" "$olm_dir/operatorgroups-all.txt" "OperatorGroups in all namespaces"
+
+    # CatalogSources
+    safe_exec "kubectl get catalogsource --all-namespaces" "$olm_dir/catalogsources-all.txt" "CatalogSources in all namespaces"
+}
+
+function gather_crds() {
+  log_info "\tCollecting RHDH-related Custom Resource Definitions..."
+
+  local crds_dir="$operator_dir/crds"
+  ensure_directory "$crds_dir"
+
+  # RHDH/Backstage CRDs
+  safe_exec "kubectl get crd" "$crds_dir/all-crds.txt" "All CRDs in cluster"
+
+  # Specific RHDH CRDs
+  local rhdh_crds=(
+      "backstages.rhdh.redhat.com"
+  )
+
+  for crd in "${rhdh_crds[@]}"; do
+      if kubectl get crd "$crd" >/dev/null 2>&1; then
+          safe_exec "kubectl get crd '$crd' -o yaml" "$crds_dir/${crd}.yaml" "CRD definition for $crd"
+          safe_exec "kubectl describe crd '$crd'" "$crds_dir/${crd}.describe.txt" "CRD description for $crd"
+      else
+          echo "CRD $crd not found" > "$crds_dir/${crd}--not-found.txt"
+      fi
+  done
+}
+
+function gather_operator_config() {
+  local dir=$1
+  local ns=$2
+  log_info "\tCollecting all Operator config ConfigMaps in $ns..."
+
+  local configs_dir="$dir/configs"
+  ensure_directory "$configs_dir"
+
+  safe_exec "kubectl get configmap -n $ns" "$configs_dir/all-configmaps.txt" "All ConfigMaps in $ns"
+
+  local rhdh_cms=(
+      "rhdh-default-config"
+      "rhdh-plugin-deps"
+  )
+
+  for cm in "${rhdh_cms[@]}"; do
+        if kubectl -n "$ns" get configmap "$cm" >/dev/null 2>&1; then
+            safe_exec "kubectl -n $ns get configmap '$cm' -o yaml" "$configs_dir/${cm}.yaml" "CM definition for $cm"
+            safe_exec "kubectl -n $ns describe configmap '$cm'" "$configs_dir/${cm}.describe.txt" "CM description for $cm"
+        else
+            echo "CM $cm not found" > "$configs_dir/${cm}--not-found.txt"
+        fi
+  done
+}
+
+function gather_deployments() {
+  local dir=$1
+  local ns=$2
+  log_info "\tCollecting Operator Deployments in $ns..."
+
+  local deployments_dir="$dir/deployments"
+  ensure_directory "$deployments_dir"
+
+  safe_exec "kubectl get deployments -n $ns" "$deployments_dir/all-deployments.txt" "All Deployments in $ns"
+
+  safe_exec "kubectl get deployments -n $ns -l app=rhdh-operator -o yaml" "$deployments_dir/app=rhdh-operator.yaml" \
+    "Deployments with label app=rhdh-operator $ns"
+
+  safe_exec "kubectl describe deployments -n $ns -l app=rhdh-operator" "$deployments_dir/app=rhdh-operator.describe.txt" \
+    "Deployment description with label app=rhdh-operator in $ns"
+}
+
+function gather_operator_logs() {
+  local dir=$1
+  local ns=$2
+  log_info "\tCollecting Operator Logs in $ns..."
+
+  # TODO(asoro): Support '--since' and '--since-time'
+  safe_exec "kubectl -n $ns logs -l app=rhdh-operator --all-containers ${log_collection_args:-}" "$dir/logs.txt" \
+    "Logs of pods with label app=rhdh-operator in $ns"
+}
+
+function gather_backstage_crs() {
+  log_info "Searching for Backstage Custom Resources (CRs) in all namespaces..."
+
+  crs_dir="$operator_dir/backstage-crs"
+  ensure_directory "$crs_dir"
+
+  kubectl get backstages.rhdh.redhat.com --all-namespaces > "$crs_dir/all-backstage-crs.txt"
+  kubectl get backstages.rhdh.redhat.com --all-namespaces -o json | jq -r '.items[]' > "$crs_dir/all-backstage-crs.json"
+
+  crs=$(jq -r '"\(.metadata.namespace)/\(.metadata.name)"' < "$crs_dir/all-backstage-crs.json" || echo "")
+  rm -rf "$crs_dir/all-backstage-crs.json"
+
+  if [[ -z "$crs" ]]; then
+      log_warn "No Backstage CR found" > "$crs_dir/no-crs.txt"
+      return 0
+  fi
+
+  # Process each cr
+  echo "$crs" | while IFS= read -r cr_info; do
+      if [[ -z "$cr_info" ]]; then
+          continue
+      fi
+
+      cr_ns=""
+      cr_name="$cr_info"
+
+      # Handle namespace/cr format from all-namespaces search
+      if [[ "$cr_info" == *"/"* ]]; then
+          cr_ns=$(echo "$cr_info" | cut -d'/' -f1)
+          cr_name=$(echo "$cr_info" | cut -d'/' -f2)
+      fi
+
+      log_info "Processing Backstage CR: $cr_name in namespace $cr_ns"
+
+      cr_dir="$crs_dir/ns=$cr_ns/$cr_name"
+      ensure_directory "$cr_dir"
+
+      safe_exec "kubectl -n '$cr_ns' get backstages.rhdh.redhat.com '$cr_name' -o yaml" "$cr_dir/$cr_name.yaml" "Details of CR $cr_name"
+
+      safe_exec "kubectl -n '$cr_ns' describe backstages.rhdh.redhat.com '$cr_name'" "$cr_dir/describe.txt" "Details of CR $cr_name"
+
+      cr_cm_dir="$cr_dir/configmaps"
+      ensure_directory "$cr_cm_dir"
+      cms=$(oc get configmaps -n "$cr_ns" -o jsonpath="{.items[*].metadata.name}" 2>/dev/null || true)
+      if [[ -n "$cms" ]]; then
+        for cm in $cms; do
+          safe_exec "kubectl -n '$cr_ns' get configmap '$cm' -o yaml" "$cr_cm_dir/$cm.yaml" "Details of CM $cm"
+          safe_exec "kubectl -n '$cr_ns' describe configmap '$cm'" "$cr_cm_dir/describe.txt" "Details of CM $cm"
+        done
+      fi
+
+      cr_sec_dir="$cr_dir/secrets"
+      ensure_directory "$cr_sec_dir"
+      sec_list=$(oc get secrets -n "$cr_ns" -o jsonpath="{.items[*].metadata.name}" 2>/dev/null || true)
+      if [[ -n "$sec_list" ]]; then
+        for sec in $sec_list; do
+          safe_exec "kubectl -n '$cr_ns' get secret '$sec' -o yaml" "$cr_sec_dir/$sec.yaml" "Details of CM $sec"
+          safe_exec "kubectl -n '$cr_ns' describe secret '$sec'" "$cr_sec_dir/describe.txt" "Details of CM $sec"
+        done
+      fi
+
+      # Get Deployment logs
+      deploy="backstage-$cr_name"
+      deploy_dir="$cr_dir/deployment"
+      ensure_directory "$deploy_dir"
+      safe_exec "kubectl -n '$cr_ns' logs deployments/$deploy --all-containers ${log_collection_args:-}" "$deploy_dir/logs-deployment.txt" "app deployment logs for $cr_name"
+      safe_exec "kubectl -n '$cr_ns' get deployment $deploy -o yaml" "$deploy_dir/deployment.yaml" "app deployment for $cr_name"
+      safe_exec "kubectl -n '$cr_ns' describe deployment $deploy" "$deploy_dir/deployment.describe.txt" "app deployment for $cr_name"
+
+      labels=$(
+        kubectl -n "$cr_ns" get deployment "$deploy" -o json \
+          | jq -r '.spec.selector.matchLabels | to_entries | map("\(.key)=\(.value)") | join(",")'
+      )
+      if [[ -n "$labels" ]]; then
+        pods_dir="$deploy_dir/pods"
+        ensure_directory "$pods_dir"
+
+        safe_exec "kubectl -n '$cr_ns' get pods -l '$labels'" "$pods_dir/pods.txt" "app deployment pods for $cr_name"
+        safe_exec "kubectl -n '$cr_ns' get pods -l '$labels' -o yaml" "$pods_dir/pods.yaml" "app deployment pods for $cr_name"
+        safe_exec "kubectl -n '$cr_ns' describe pods -l '$labels'" "$pods_dir/pods.describe.txt" "app deployment pods for $cr_name"
+      fi
+
+      # Get DB StatefulSet logs
+      statefulset="backstage-psql-$cr_name"
+      statefulset_dir="$cr_dir/db-statefulset"
+      ensure_directory "$statefulset_dir"
+      safe_exec "kubectl -n '$cr_ns' logs statefulsets/$statefulset --all-containers ${log_collection_args:-}" "$statefulset_dir/logs-db-statefulset.txt" "DB statefulset logs for $cr_name"
+      safe_exec "kubectl -n '$cr_ns' get statefulset $statefulset -o yaml" "$statefulset_dir/db-statefulset.yaml" "DB statefulset for $cr_name"
+      safe_exec "kubectl -n '$cr_ns' describe statefulset $statefulset" "$statefulset_dir/db-statefulset.describe.txt" "DB statefulset for $cr_name"
+
+      labels=$(
+        kubectl -n "$cr_ns" get statefulset "$statefulset" -o json \
+          | jq -r '.spec.selector.matchLabels | to_entries | map("\(.key)=\(.value)") | join(",")'
+      )
+      if [[ -n "$labels" ]]; then
+        pods_dir="$statefulset_dir/pods"
+        ensure_directory "$pods_dir"
+
+        safe_exec "kubectl -n '$cr_ns' get pods -l '$labels'" "$pods_dir/pods.txt" "DB statefulset pods for $cr_name"
+        safe_exec "kubectl -n '$cr_ns' get pods -l '$labels' -o yaml" "$pods_dir/pods.yaml" "DB statefulset pods for $cr_name"
+        safe_exec "kubectl -n '$cr_ns' describe pods -l '$labels'" "$pods_dir/pods.describe.txt" "DB statefulset pods for $cr_name"
+      fi
+  done
+}
+
+gather_olm_information
+gather_crds
+
+safe_exec "kubectl get deployments --all-namespaces -l app=rhdh-operator" "$operator_dir/all-deployments.txt" "All RHDH Operator Deployments"
+
+operatorNamespaces=$(oc get deployments --all-namespaces -l app=rhdh-operator -o jsonpath="{.items[*].metadata.namespace}" 2>/dev/null || true)
+log_info "Found Operator namespaces: $operatorNamespaces"
+
+if [[ -z "${operatorNamespaces}" ]]; then
+    log_warn "No Operator instance detected, skipping Operator collection"
+    exit 0
+fi
+
+for operatorNamespace in $operatorNamespaces; do
+  operator_ns_dir="$operator_dir/ns=$operatorNamespace"
+  ensure_directory "$operator_ns_dir"
+
+  safe_exec "kubectl get all -n \"${operatorNamespace}\"" "$operator_ns_dir/all-resources.txt" "All resources in $operatorNamespace"
+
+  gather_operator_config "$operator_ns_dir" "$operatorNamespace"
+  gather_deployments "$operator_ns_dir" "$operatorNamespace"
+  gather_operator_logs "$operator_ns_dir" "$operatorNamespace"
+done
+
+gather_backstage_crs
+
+log_success "... Operator data collection done."

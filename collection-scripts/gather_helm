@@ -1,0 +1,122 @@
+#!/bin/bash
+
+# Helm Data Collection Script
+# Collects Helm-specific information for RHDH deployments
+
+set -euo pipefail
+
+# Get script directory for calling other scripts
+DIR_NAME=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+source "${DIR_NAME}/common.sh"
+export_log_collection_args
+
+log_info "Starting Helm data collection..."
+
+helm_dir="$BASE_COLLECTION_PATH/rhdh/helm"
+ensure_directory "$helm_dir"
+
+# Try to find releases with backstage/rhdh patterns in all namespaces
+log_info "Searching for RHDH-related Helm releases in all namespaces..."
+helm list --all-namespaces | grep -E 'REVISION|backstage|rhdh|developer-hub' > "$helm_dir/all-rhdh-releases.txt"
+helm list --all-namespaces -o json | jq -r '.[] | select(.chart | test("backstage|rhdh|developer-hub"; "i"))' > "$helm_dir/all-rhdh-releases.json"
+
+releases=$(jq -r '"\(.namespace)/\(.name)"' < "$helm_dir/all-rhdh-releases.json" || echo "")
+rm -rf "$helm_dir/all-rhdh-releases.json"
+
+if [[ -z "$releases" ]]; then
+    log_warn "No RHDH-related Helm releases found" > "$helm_dir/no-releases.txt"
+    exit 0
+fi
+
+# Process each release
+echo "$releases" | while IFS= read -r release_info; do
+    if [[ -z "$release_info" ]]; then
+        continue
+    fi
+
+    release_ns=""
+    release_name="$release_info"
+
+    # Handle namespace/release format from all-namespaces search
+    if [[ "$release_info" == *"/"* ]]; then
+        release_ns=$(echo "$release_info" | cut -d'/' -f1)
+        release_name=$(echo "$release_info" | cut -d'/' -f2)
+    fi
+
+    log_info "Processing Helm release: $release_name in namespace $release_ns"
+
+    release_dir="$helm_dir/releases/ns=$release_ns/$release_name"
+    ensure_directory "$release_dir"
+
+    # Get Helm values
+    safe_exec "helm get values '$release_name' -n '$release_ns'" "$release_dir/values.yaml" "Helm values for $release_name"
+    safe_exec "helm get values '$release_name' -n '$release_ns' --all" "$release_dir/all-values.yaml" "All Helm values for $release_name"
+
+    # Get manifest
+    safe_exec "helm get manifest '$release_name' -n '$release_ns'" "$release_dir/manifest.yaml" "Helm manifest for $release_name"
+
+    # Get hooks
+    safe_exec "helm get hooks '$release_name' -n '$release_ns'" "$release_dir/hooks.yaml" "Helm hooks for $release_name"
+
+    # Get notes
+    safe_exec "helm get notes '$release_name' -n '$release_ns'" "$release_dir/notes.txt" "Helm notes for $release_name"
+
+    # Get release history
+    safe_exec "helm history '$release_name' -n '$release_ns'" "$release_dir/history.txt" "Helm history for $release_name"
+    safe_exec "helm history '$release_name' -n '$release_ns' -o yaml" "$release_dir/history.yaml" "Helm history (YAML) for $release_name"
+
+    # Get status
+    safe_exec "helm status '$release_name' -n '$release_ns'" "$release_dir/status.txt" "Helm status for $release_name"
+    safe_exec "helm status '$release_name' -n '$release_ns' -o yaml" "$release_dir/status.yaml" "Helm status (YAML) for $release_name"
+
+    # Get Deployment logs
+    deploy=$(yq -r 'select(.kind=="Deployment") | .metadata.name' < "$release_dir/manifest.yaml" || true)
+    log_debug "\tdeploy=$deploy"
+    if [[ -n "$deploy" ]]; then
+      deploy_dir="$release_dir/deployment"
+      ensure_directory "$deploy_dir"
+      safe_exec "kubectl -n '$release_ns' get deployment $deploy -o yaml" "$deploy_dir/deployment.yaml" "app deployment for $release_name"
+      safe_exec "kubectl -n '$release_ns' describe deployment $deploy" "$deploy_dir/deployment.describe.txt" "app deployment for $release_name"
+      safe_exec "kubectl -n '$release_ns' logs deployments/$deploy --all-containers ${log_collection_args:-}" "$deploy_dir/logs-deployment.txt" "app deployment logs for $release_name"
+
+      labels=$(
+        kubectl -n "$release_ns" get deployment "$deploy" -o json \
+          | jq -r '.spec.selector.matchLabels | to_entries | map("\(.key)=\(.value)") | join(",")'
+      )
+      if [[ -n "$labels" ]]; then
+        pods_dir="$deploy_dir/pods"
+        ensure_directory "$pods_dir"
+
+        safe_exec "kubectl -n '$release_ns' get pods -l '$labels'" "$pods_dir/pods.txt" "app deployment pods for $release_name"
+        safe_exec "kubectl -n '$release_ns' get pods -l '$labels' -o yaml" "$pods_dir/pods.yaml" "app deployment pods for $release_name"
+        safe_exec "kubectl -n '$release_ns' describe pods -l '$labels'" "$pods_dir/pods.describe.txt" "app deployment pods for $release_name"
+      fi
+
+    fi
+
+    # Get DB StatefulSet logs
+    statefulset=$(yq -r 'select(.kind=="StatefulSet") | .metadata.name' < "$release_dir/manifest.yaml" || true)
+    log_debug "\tstatefulset=$statefulset"
+    if [[ -n "$statefulset" ]]; then
+      statefulset_dir="$release_dir/db-statefulset"
+      ensure_directory "$statefulset_dir"
+      safe_exec "kubectl -n '$release_ns' get statefulset $statefulset -o yaml" "$statefulset_dir/db-statefulset.yaml" "DB statefulset for $release_name"
+      safe_exec "kubectl -n '$release_ns' describe statefulset $statefulset" "$statefulset_dir/db-statefulset.describe.txt" "DB statefulset for $release_name"
+      safe_exec "kubectl -n '$release_ns' logs statefulsets/$statefulset --all-containers ${log_collection_args:-}" "$statefulset_dir/logs-db.txt" "DB StatefulSet logs for $release_name"
+
+      labels=$(
+        kubectl -n "$release_ns" get statefulset "$statefulset" -o json \
+          | jq -r '.spec.selector.matchLabels | to_entries | map("\(.key)=\(.value)") | join(",")'
+      )
+      if [[ -n "$labels" ]]; then
+        pods_dir="$statefulset_dir/pods"
+        ensure_directory "$pods_dir"
+
+        safe_exec "kubectl -n '$release_ns' get pods -l '$labels'" "$pods_dir/pods.txt" "DB statefulset pods for $release_name"
+        safe_exec "kubectl -n '$release_ns' get pods -l '$labels' -o yaml" "$pods_dir/pods.yaml" "DB statefulset pods for $release_name"
+        safe_exec "kubectl -n '$release_ns' describe pods -l '$labels'" "$pods_dir/pods.describe.txt" "DB statefulset pods for $release_name"
+      fi
+    fi
+done
+
+log_success "Helm data collection completed."

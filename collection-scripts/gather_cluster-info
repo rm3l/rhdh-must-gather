@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -euo pipefail
+
+oc cluster-info dump --all-namespaces --output-directory="${BASE_COLLECTION_PATH}/cluster-info"

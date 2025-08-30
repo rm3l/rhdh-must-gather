@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -euo pipefail
+
+function version() {
+  if [[ ! -z "${RHDH_MUST_GATHER_VERSION:-}" ]] ; then
+    echo "${RHDH_MUST_GATHER_VERSION}"
+  else
+    echo "0.0.0-unknown"
+  fi
+}

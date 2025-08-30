@@ -260,4 +260,4 @@ make openshift-test
 
 ## License
 
-Apache License 2.0 - see [LICENSE](licenses/LICENSE) for details.
+Apache License 2.0 - see [LICENSE](LICENSE) for details.

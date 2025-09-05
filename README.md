@@ -9,7 +9,7 @@ This tool helps support teams and engineers collect essential RHDH-specific info
 - **Multi-platform**: OpenShift and standard Kubernetes (AKS, GKE, EKS)
 - **Multi-deployment**: Helm-based and Operator-based RHDH instances
 - **RHDH-focused collection**: Only RHDH-specific logs, configurations, and resources
-- **Privacy-aware**: Automatic sanitization of sensitive data
+- **Privacy-aware**: Automatic sanitization of secrets, tokens, and sensitive data
 
 > **Note**: This tool collects only RHDH-specific data. For cluster-wide information, use the generic OpenShift must-gather: `oc adm must-gather`
 
@@ -102,16 +102,36 @@ This tool focuses exclusively on RHDH-related resources. For cluster-wide inform
 
 ## Privacy and Security
 
-**Note**: The current implementation does not include automatic data sanitization. All collected data is stored as-is from the cluster. Users should review the output before sharing and manually redact any sensitive information such as:
+### Automatic Data Sanitization
 
-- Passwords and secrets
-- Tokens and API keys
-- Base64 encoded sensitive data
-- JWT tokens
-- URLs with embedded credentials
-- Kubernetes secret data
+The tool includes automatic sanitization of sensitive information to make the collected data safe for sharing:
 
-**Important**: Review all collected data before sharing externally, especially ConfigMaps, Secrets, and environment variables that may contain sensitive information.
+**Automatically Sanitized Data:**
+- **Kubernetes Secret data values** - All `data:` fields in Secret resources are replaced with `[REDACTED]`
+- **Base64 encoded sensitive data** - Long base64 strings (40+ characters) that likely contain sensitive information
+- **JWT tokens** - Complete JWT tokens matching the standard format
+- **Bearer tokens** - Authorization headers with bearer tokens
+- **SSH private keys** - Complete SSH key blocks from BEGIN to END
+- **Database connection strings** - URLs containing embedded credentials
+- **URLs with credentials** - HTTP/HTTPS URLs with username:password@ format
+
+**Sanitization Features:**
+- **Precision targeting** - Avoids false positives on legitimate data like Kubernetes status fields
+- **Structure preservation** - Maintains YAML/JSON structure for diagnostic value
+- **Comprehensive coverage** - Processes all YAML, JSON, and text files in the collected data
+- **Detailed reporting** - Provides sanitization summary with file and item counts
+
+### Using the Sanitize Script
+
+```bash
+# Sanitize collected data (automatically called during collection)
+./collection-scripts/sanitize /path/to/must-gather-output
+
+# The script generates a sanitization report at:
+# /path/to/must-gather-output/sanitization-report.txt
+```
+
+**Important**: While automatic sanitization catches common sensitive patterns, always review the sanitization report and manually check for any domain-specific sensitive information before sharing externally.
 
 ## Architecture
 
@@ -130,10 +150,11 @@ The tool consists of specialized collection scripts that gather data from differ
 
 ### Key Components
 
-- **`collection-scripts/gather_rhdh`**: Main orchestrator script that coordinates all collection activities
+- **`collection-scripts/gather_rhdh`**: Main orchestrator script that coordinates all collection activities and applies sanitization
 - **`collection-scripts/gather_helm`**: Collects Helm-specific RHDH deployment data including releases, values, manifests, and associated pod logs
 - **`collection-scripts/gather_operator`**: Collects Operator-specific data including CRDs, Backstage Custom Resources, OLM information, and operator logs
 - **`collection-scripts/gather_cluster-info`**: Collects cluster-wide information using `oc cluster-info dump`
+- **`collection-scripts/sanitize`**: Automatically sanitizes sensitive data (secrets, tokens, credentials) from collected files
 - **`collection-scripts/common.sh`**: Shared utilities, logging functions, and environment setup
 - **`collection-scripts/logs.sh`**: Collects must-gather container logs
 - **`collection-scripts/version`**: Version information for the tool
@@ -191,9 +212,10 @@ oc adm must-gather --image=quay.io/asoro/rhdh-must-gather -- /usr/bin/gather --h
 /must-gather/
 ├── version                         # Tool version information
 ├── must-gather.log                 # Must-gather container logs (if running in pod)
+├── sanitization-report.txt         # Data sanitization summary and details
 ├── cluster-info/                   # Cluster-wide information (if --cluster-info used)
 │   └── [cluster-info dump output]
-└── rhdh/                           # RHDH-specific data
+└── rhdh/                           # RHDH-specific data (automatically sanitized)
     ├── helm/                       # Helm deployment data (if RHDH Helm releases found)
     │   ├── all-rhdh-releases.txt   # List of detected RHDH Helm releases
     │   └── releases/               # Per-release data
@@ -270,11 +292,12 @@ oc adm must-gather --image=quay.io/asoro/rhdh-must-gather -- /usr/bin/gather --h
 
 1. Check the tool output files in `/must-gather/rhdh/` for what was detected
 2. Review the `must-gather.log` file for container execution logs
-3. Check individual script outputs:
+3. Check the `sanitization-report.txt` file for data sanitization summary
+4. Check individual script outputs:
    - `/must-gather/rhdh/helm/all-rhdh-releases.txt` for Helm deployment detection
    - `/must-gather/rhdh/operator/all-deployments.txt` for Operator deployment detection
-4. Verify cluster connectivity with `kubectl cluster-info`
-5. Run with debug logging: `LOG_LEVEL=debug` to see detailed execution information
+5. Verify cluster connectivity with `kubectl cluster-info`
+6. Run with debug logging: `LOG_LEVEL=debug` to see detailed execution information
 
 ## Development
 

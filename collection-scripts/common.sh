@@ -7,7 +7,6 @@ export BASE_COLLECTION_PATH="${BASE_COLLECTION_PATH:-/must-gather}"
 export PROS=${PROS:-5}
 export INSTALLATION_NAMESPACE=${INSTALLATION_NAMESPACE:-rhdh-operator}
 
-export LOG_LEVEL="${LOG_LEVEL:-info}"
 # Command timeout (seconds) for kubectl/helm calls
 CMD_TIMEOUT="${CMD_TIMEOUT:-30}"
 
@@ -17,6 +16,11 @@ export GREEN='\033[0;32m'
 export YELLOW='\033[1;33m'
 export BLUE='\033[0;34m'
 export NC='\033[0m' # No Color
+
+export LOG_LEVEL="${LOG_LEVEL:-info}"
+if [[ "$LOG_LEVEL" == "trace" ]]; then
+  set -x
+fi
 
 # Logging functions
 log() {

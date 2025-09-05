@@ -22,11 +22,7 @@ source "${DIR_NAME}/version"
 echo "rhdh/must-gather" > "${BASE_COLLECTION_PATH}/version"
 version >> "${BASE_COLLECTION_PATH}/version"
 
-abort() {
-  log_error "ERROR: $*"
-  exit 1
-}
-
+trap "echo 'done with data collection. Now sanitizing data...' && '${DIR_NAME}'/sanitize '${BASE_COLLECTION_PATH}' || true" EXIT
 trap 'log "An unexpected error occurred. See logs above."' ERR
 
 function main() {
@@ -82,14 +78,14 @@ function help {
     echo "\
 Usage: oc adm must-gather --image=quay.io/asoro/rhdh-must-gather -- /usr/bin/gather [params...]
 
-  A client tool for gathering RHDH information in an OpenShift or Kubernetes cluster
+  A client tool for gathering RHDH information from Helm and Operator installations in an OpenShift or Kubernetes cluster
 
   Available options:
 
   > To see this help menu and exit, use:
   --help
 
-  > The tool will always collect all control-plane logs and information.
+  > The tool will always collect RHDH-specific information.
   > This will include:"
     for collector in "${mandatory_scripts[@]}" ; do
     echo "  > - $collector"
@@ -99,7 +95,6 @@ Usage: oc adm must-gather --image=quay.io/asoro/rhdh-must-gather -- /usr/bin/gat
   > You can also choose to enable optional collectors combining one
   > or more of the following parameters:
   --cluster-info
-  --vms_details
 "
 }
 
@@ -117,9 +112,10 @@ function run_logs {
   USR_BIN_GATHER=1 "${DIR_NAME}"/logs.sh
 }
 
-if [[ "$LOG_LEVEL" == "trace" ]]; then
-  set -x
-fi
+function sanitize {
+  log_info "sanitizing data"
+  "${DIR_NAME}"/sanitize "${BASE_COLLECTION_PATH}"
+}
 
 main "$@"
 # set +x

@@ -2,8 +2,10 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: rhdh-must-gather
-  namespace: default
+  namespace: ${NS}
+
 ---
+
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -30,7 +32,9 @@ rules:
 - apiGroups: ["operators.coreos.com"]
   resources: ["*"]
   verbs: ["get", "list", "describe"]
+
 ---
+
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -42,22 +46,30 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: rhdh-must-gather
-  namespace: default
+  namespace: ${NS}
 ---
+
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: rhdh-must-gather
-  namespace: default
+  name: rhdh-must-gather-${JOB_ID}
+  namespace: ${NS}
 spec:
+  activeDeadlineSeconds: 3600
+  backoffLimit: 3
   template:
     spec:
       serviceAccountName: rhdh-must-gather
+      restartPolicy: Never
       containers:
-      - name: must-gather
-        image: quay.io/asoro/rhdh-must-gather:latest
+      - name: gather
+        image: ${FULL_IMAGE_NAME}
         env:
-        - name: MUST_GATHER_DIR
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: BASE_COLLECTION_PATH
           value: "/must-gather"
         - name: LOG_LEVEL
           value: "INFO"
@@ -74,5 +86,3 @@ spec:
       volumes:
       - name: output
         emptyDir: {}
-      restartPolicy: Never
-  backoffLimit: 3

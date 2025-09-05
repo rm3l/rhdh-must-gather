@@ -112,10 +112,5 @@ function run_logs {
   USR_BIN_GATHER=1 "${DIR_NAME}"/logs.sh
 }
 
-function sanitize {
-  log_info "sanitizing data"
-  "${DIR_NAME}"/sanitize "${BASE_COLLECTION_PATH}"
-}
-
 main "$@"
 # set +x

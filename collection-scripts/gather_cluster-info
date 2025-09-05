@@ -2,4 +2,9 @@
 
 set -euo pipefail
 
+# Get script directory for calling other scripts
+DIR_NAME=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+source "${DIR_NAME}/common.sh"
+export_log_collection_args
+
 oc cluster-info dump --all-namespaces --output-directory="${BASE_COLLECTION_PATH}/cluster-info"

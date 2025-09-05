@@ -76,58 +76,67 @@ This tool focuses exclusively on RHDH-related resources. For cluster-wide inform
 
 ### RHDH-Specific Data
 
-#### Helm Deployments
-- Helm release information
-- Values files and configurations
-- Deployed manifests
-- Release history
+#### Helm Deployments (gather_helm)
+- Helm release information and history
+- Values files (user-provided and computed values)
+- Deployed manifests and hooks
+- Release notes and status
+- Application deployment logs and pod details
+- Database StatefulSet logs and pod details
 
-#### Operator Deployments
-- Operator logs and status
-- Custom Resource Definitions (CRDs)
-- Backstage Custom Resources
-- Operand configurations and status
+#### Operator Deployments (gather_operator)
+- OLM (Operator Lifecycle Manager) information including CSVs, subscriptions, and install plans
+- Custom Resource Definitions (CRDs) for RHDH
+- Backstage Custom Resources and their configurations
+- Operator deployment logs and status
+- RHDH operator ConfigMaps and secrets in all detected namespaces
+- Application and database deployment logs for each Backstage CR
 
-#### Common RHDH Resources
-- All resources in RHDH namespaces
-- RHDH pod logs (current and previous)
-- RHDH-related events
-- RHDH services and networking
-- RHDH Persistent Volume Claims
-- Multi-container and init container logs
+#### Cluster Information (optional)
+- Cluster-wide diagnostic dump using `oc cluster-info dump` (enabled with `--cluster-info` flag)
+
+#### Logs and Runtime Data
+- Must-gather container logs
+- Pod logs with configurable time windows (`MUST_GATHER_SINCE`, `MUST_GATHER_SINCE_TIME`)
+- Multi-container and init container logs for all RHDH-related pods
 
 ## Privacy and Security
 
-The tool includes automatic sanitization to protect sensitive information:
+**Note**: The current implementation does not include automatic data sanitization. All collected data is stored as-is from the cluster. Users should review the output before sharing and manually redact any sensitive information such as:
 
-- **Passwords and secrets** are masked
-- **Tokens and API keys** are redacted
-- **Base64 encoded data** is marked as redacted
-- **JWT tokens** are identified and masked
-- **URLs with credentials** are sanitized
-- **Kubernetes secret data** sections are removed
+- Passwords and secrets
+- Tokens and API keys
+- Base64 encoded sensitive data
+- JWT tokens
+- URLs with embedded credentials
+- Kubernetes secret data
 
-Original files are backed up before sanitization for debugging if needed.
+**Important**: Review all collected data before sharing externally, especially ConfigMaps, Secrets, and environment variables that may contain sensitive information.
 
 ## Architecture
 
+The tool consists of specialized collection scripts that gather data from different RHDH deployment methods:
+
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Detection     │    │   Collection    │    │  Sanitization   │
+│   Detection     │    │   Collection    │    │    Output       │
 │                 │    │                 │    │                 │
-│ • RHDH namespace│───▶│ • RHDH resources│───▶│ • Remove secrets│
-│ • Deploy method │    │ • RHDH logs     │    │ • Mask tokens   │
-│ • Multi-instance│    │ • RHDH events   │    │ • Redact PII    │
+│ • Helm releases │───▶│ • Helm data     │───▶│ • Structured    │
+│ • Operator CRDs │    │ • Operator data │    │   output        │
+│ • Backstage CRs │    │ • Pod logs      │    │ • Organized by  │
+│                 │    │ • Cluster info  │    │   deployment    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
 ### Key Components
 
-- **`collection/gather`**: Main orchestrator script
-- **`collection/detect-rhdh`**: RHDH deployment detection
-- **`collection/collect-*`**: Specialized collection scripts
-- **`collection/sanitize`**: Data sanitization utility
-- **`collection/lib/utils.sh`**: Shared utilities and functions
+- **`collection-scripts/gather_rhdh`**: Main orchestrator script that coordinates all collection activities
+- **`collection-scripts/gather_helm`**: Collects Helm-specific RHDH deployment data including releases, values, manifests, and associated pod logs
+- **`collection-scripts/gather_operator`**: Collects Operator-specific data including CRDs, Backstage Custom Resources, OLM information, and operator logs
+- **`collection-scripts/gather_cluster-info`**: Collects cluster-wide information using `oc cluster-info dump`
+- **`collection-scripts/common.sh`**: Shared utilities, logging functions, and environment setup
+- **`collection-scripts/logs.sh`**: Collects must-gather container logs
+- **`collection-scripts/version`**: Version information for the tool
 
 ## Building the Image
 
@@ -137,73 +146,107 @@ make build
 
 # Build and push to registry
 make build-push REGISTRY=your-registry.com/namespace
+
+# Build and push with custom image name and tag
+make build-push REGISTRY=your-registry.com/namespace IMAGE_NAME=my-rhdh-must-gather IMAGE_TAG=v1.0.0
 ```
 
 ## Configuration
 
 ### Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `MUST_GATHER_DIR` | `/must-gather` | Output directory for collected data |
-| `LOG_LEVEL` | `INFO` | Logging level (INFO, WARN, ERROR) |
-| `COLLECTION_TIMEOUT` | `300` | Timeout for individual commands (seconds) |
-| `COLLECT_RESOURCES` | `false` | Collect detailed RHDH resources (can be slow) |
-| `SINCE` | - | Relative time for log/event collection (e.g., "2h", "30m") |
-| `SINCE_TIME` | - | Absolute timestamp for log/event collection (RFC3339) |
+| Variable                 | Default         | Description                                            |
+|--------------------------|-----------------|--------------------------------------------------------|
+| `BASE_COLLECTION_PATH`   | `/must-gather`  | Output directory for collected data                    |
+| `LOG_LEVEL`              | `info`          | Logging level (info, debug, trace)                     |
+| `CMD_TIMEOUT`            | `30`            | Timeout for individual kubectl/helm commands (seconds) |
+| `MUST_GATHER_SINCE`      | -               | Relative time for log collection (e.g., "2h", "30m")   |
+| `MUST_GATHER_SINCE_TIME` | -               | Absolute timestamp for log collection (RFC3339)        |
+| `INSTALLATION_NAMESPACE` | `rhdh-operator` | Default namespace for RHDH operator installation       |
 
 ### Command Line Options
 
 The gather script accepts the following options:
 
 ```bash
-# Default collection (logs, events, Helm/Operator data)
-/usr/local/bin/gather
+# Default collection (Helm and Operator data)
+oc adm must-gather --image=quay.io/asoro/rhdh-must-gather
 
-# With detailed resource collection (slower)
-COLLECT_RESOURCES=true /usr/local/bin/gather
+# With cluster-wide information
+oc adm must-gather --image=quay.io/asoro/rhdh-must-gather -- /usr/bin/gather --cluster-info
 
 # With time constraints (last 2 hours)
-SINCE=2h /usr/local/bin/gather
+oc adm must-gather --image=quay.io/asoro/rhdh-must-gather --since=2h
 
 # With debug logging
-LOG_LEVEL=DEBUG /usr/local/bin/gather
+oc adm must-gather --image=quay.io/asoro/rhdh-must-gather -- LOG_LEVEL=debug /usr/bin/gather
 
-# Combined example
-COLLECT_RESOURCES=true SINCE=1h LOG_LEVEL=DEBUG /usr/local/bin/gather
+# Help information
+oc adm must-gather --image=quay.io/asoro/rhdh-must-gather -- /usr/bin/gather --help
 ```
 
 ## Output Structure
 
 ```
-must-gather/
-├── collection-summary.txt          # Summary of what was collected
-├── sanitization-report.txt         # Details of data sanitization
-├── rhdh-deployment-details.txt     # RHDH deployment detection results
-├── rhdh-instances.env              # All detected RHDH instances
-├── rhdh/                           # RHDH-specific data
-│   ├── helm/                       # Helm deployment data (if detected)
-│   │   ├── releases.yaml
-│   │   ├── values.yaml
-│   │   └── manifests/
-│   ├── operator/                   # Operator deployment data (if detected)
-│   │   ├── deployments.yaml
-│   │   ├── backstage-crs.yaml
-│   │   └── operator-logs/
-│   └── resources/                  # RHDH namespace resources
-│       ├── [namespace]/            # Per-namespace resources
-│       └── all-resources.yaml
-├── logs/                           # RHDH pod logs only
-│   ├── [namespace]/                # Per-namespace logs
-│   │   └── [pod-name]/             # Per-pod logs
-│   └── collection-summary.txt
-└── events/                         # RHDH-related events only
-    ├── events-[namespace].txt      # Per-namespace events
-    ├── warning-events-*.txt        # Warning events
-    └── error-events-*.txt          # Error events
+/must-gather/
+├── version                         # Tool version information
+├── must-gather.log                 # Must-gather container logs (if running in pod)
+├── cluster-info/                   # Cluster-wide information (if --cluster-info used)
+│   └── [cluster-info dump output]
+└── rhdh/                           # RHDH-specific data
+    ├── helm/                       # Helm deployment data (if RHDH Helm releases found)
+    │   ├── all-rhdh-releases.txt   # List of detected RHDH Helm releases
+    │   └── releases/               # Per-release data
+    │       └── ns=[namespace]/     # Per-namespace organization
+    │           └── [release-name]/ # Per-release directory
+    │               ├── values.yaml         # User-provided values
+    │               ├── all-values.yaml     # All computed values
+    │               ├── manifest.yaml       # Deployed manifest
+    │               ├── hooks.yaml          # Helm hooks
+    │               ├── history.txt         # Release history
+    │               ├── status.yaml         # Release status
+    │               ├── deployment/         # Application deployment info
+    │               │   ├── deployment.yaml
+    │               │   ├── logs-deployment.txt
+    │               │   └── pods/           # Pod details and logs
+    │               └── db-statefulset/     # Database StatefulSet info
+    │                   ├── db-statefulset.yaml
+    │                   ├── logs-db.txt
+    │                   └── pods/           # Database pod details
+    └── operator/                   # Operator deployment data (if RHDH operators found)
+        ├── all-deployments.txt     # List of all RHDH operator deployments
+        ├── olm/                    # OLM information
+        │   ├── rhdh-csv-all.txt    # ClusterServiceVersions
+        │   ├── rhdh-subscriptions-all.txt # Subscriptions
+        │   ├── installplans-all.txt # InstallPlans
+        │   └── catalogsources-all.txt # CatalogSources
+        ├── crds/                   # Custom Resource Definitions
+        │   ├── all-crds.txt        # All CRDs in cluster
+        │   └── backstages.rhdh.redhat.com.yaml # RHDH CRD definition
+        ├── ns=[namespace]/         # Per-operator-namespace data
+        │   ├── all-resources.txt   # All resources in namespace
+        │   ├── configs/            # ConfigMaps
+        │   ├── deployments/        # Operator deployments
+        │   └── logs.txt           # Operator logs
+        └── backstage-crs/          # Backstage Custom Resources
+            ├── all-backstage-crs.txt # List of all Backstage CRs
+            └── ns=[namespace]/     # Per-CR-namespace data
+                └── [cr-name]/      # Per-CR directory
+                    ├── [cr-name].yaml      # CR definition
+                    ├── describe.txt        # CR description
+                    ├── configmaps/         # Associated ConfigMaps
+                    ├── secrets/            # Associated Secrets
+                    ├── deployment/         # Application deployment
+                    │   ├── deployment.yaml
+                    │   ├── logs-deployment.txt
+                    │   └── pods/           # Application pods
+                    └── db-statefulset/     # Database StatefulSet
+                        ├── db-statefulset.yaml
+                        ├── logs-db-statefulset.txt
+                        └── pods/           # Database pods
 ```
 
-> **Note**: For cluster-wide information (nodes, storage classes, etc.), use: `oc adm must-gather`
+> **Note**: The tool automatically detects and collects data for both Helm and Operator-based RHDH deployments. For cluster-wide information, use the `--cluster-info` flag or combine with standard `oc adm must-gather`.
 
 ## Troubleshooting
 
@@ -215,7 +258,7 @@ must-gather/
 - Ensure proper RBAC permissions
 
 **Command timeouts**
-- Increase `COLLECTION_TIMEOUT` environment variable
+- Increase `CMD_TIMEOUT` environment variable (default: 30 seconds)
 - Check cluster network connectivity
 - Verify sufficient resources
 
@@ -225,23 +268,50 @@ must-gather/
 
 ### Getting Help
 
-1. Check the `collection-summary.txt` for what was detected
-2. Review logs for error messages
-3. Verify cluster connectivity with `kubectl cluster-info`
+1. Check the tool output files in `/must-gather/rhdh/` for what was detected
+2. Review the `must-gather.log` file for container execution logs
+3. Check individual script outputs:
+   - `/must-gather/rhdh/helm/all-rhdh-releases.txt` for Helm deployment detection
+   - `/must-gather/rhdh/operator/all-deployments.txt` for Operator deployment detection
+4. Verify cluster connectivity with `kubectl cluster-info`
+5. Run with debug logging: `LOG_LEVEL=debug` to see detailed execution information
 
 ## Development
 
 ### Testing
 
 ```bash
-# Test locally
-make test-local
+# Test locally (requires kubectl access to cluster)
+make test-local-all
 
-# Test in container
-make test-container
+# Test specific script locally
+make test-local-script SCRIPT=helm    # Test only gather_helm
+make test-local-script SCRIPT=operator # Test only gather_operator
 
-# Test with OpenShift
+# Test in container with local cluster access
+make test-container-all
+
+# Test with OpenShift using oc adm must-gather
 make openshift-test
+
+# Test on regular Kubernetes (non-OpenShift) by creating a Job in the cluster
+make k8s-test
+
+# Clean up test artifacts and images
+make clean
+```
+
+### Available Variables
+
+```bash
+# Customize registry and image details
+make build REGISTRY=your-registry.com IMAGE_NAME=custom-name IMAGE_TAG=v1.0.0
+
+# Set log level for testing
+make test-local-all LOG_LEVEL=debug
+
+# View all available targets
+make help
 ```
 
 ### Contributing

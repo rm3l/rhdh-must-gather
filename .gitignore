@@ -30,3 +30,5 @@ sample-output/
 
 inspect.local*
 
+*.local.*
+

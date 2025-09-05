@@ -10,5 +10,5 @@ NAMESPACE_FILE=/var/run/secrets/kubernetes.io/serviceaccount/namespace
 
 # if running in a pod
 if [[ -f ${NAMESPACE_FILE} ]]; then
-  oc logs --timestamps=true -n "$(cat ${NAMESPACE_FILE})" "${POD_NAME}" -c gather > "${BASE_COLLECTION_PATH}/must-gather.log"
+  safe_exec "oc logs --timestamps=true -n '$(cat ${NAMESPACE_FILE})' '${POD_NAME:-}' -c gather" "${BASE_COLLECTION_PATH}/must-gather.log" "must-gather pod logs"
 fi

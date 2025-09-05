@@ -74,6 +74,23 @@ openshift-test: ## Test using the 'oc adm must-gather' command
 	fi
 	oc adm must-gather --image=$(FULL_IMAGE_NAME)
 
+.PHONY: k8s-test
+k8s-test: ## Test on a non-OCP K8s cluster
+	@echo "Testing against a regular K8s cluster..."
+	@if ! command -v envsubst >/dev/null 2>&1; then \
+		echo "Error: envsubst command not found."; \
+		exit 1; \
+	fi
+	@if ! command -v kubectl >/dev/null 2>&1; then \
+		echo "Error: kubectl command not found."; \
+		exit 1; \
+	fi
+	@if ! kubectl get namespace rhdh-must-gather &> /dev/null; then \
+		kubectl create namespace rhdh-must-gather; \
+	fi
+	JOB_ID=$(shell date +%s) FULL_IMAGE_NAME=$(FULL_IMAGE_NAME) NS=rhdh-must-gather envsubst < examples/kubernetes-job.yaml \
+		| kubectl apply -f -
+
 .PHONY: help
 help: ## Show this help message
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {sub("\\\\n",sprintf("\n%22c"," "), $$2);printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)

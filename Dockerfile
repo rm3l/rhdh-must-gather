@@ -28,6 +28,6 @@ RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/s
 # Copy collection scripts
 COPY collection-scripts/* /usr/bin/
 
-RUN mv /usr/bin/gather_rhdh /usr/bin/gather
+RUN mv /usr/bin/must_gather /usr/bin/gather
 
 ENTRYPOINT exec /usr/bin/gather

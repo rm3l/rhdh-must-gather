@@ -19,13 +19,13 @@ This tool helps support teams and engineers collect essential RHDH-specific info
 
 ```bash
 # Use the published image
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:latest
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main
 
 # Collect only logs and events from last 2 hours
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:latest --since=2h
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main --since=2h
 
 # Collect logs and events since specific time
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:latest --since-time=2025-08-21T20:00:00Z
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main --since-time=2025-08-21T20:00:00Z
 ```
 
 ### Using with Kubernetes
@@ -42,7 +42,7 @@ spec:
     spec:
       containers:
       - name: must-gather
-        image: ghcr.io/rm3l/rhdh-must-gather:latest
+        image: ghcr.io/rm3l/rhdh-must-gather:main
         volumeMounts:
         - name: output
           mountPath: /must-gather

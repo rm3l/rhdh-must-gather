@@ -131,7 +131,7 @@ function gather_backstage_crs() {
   fi
 
   # Process each cr
-  echo "$crs" | while IFS= read -r cr_info; do
+  for cr_info in $crs; do
       if [[ -z "$cr_info" ]]; then
           continue
       fi
@@ -145,7 +145,7 @@ function gather_backstage_crs() {
           cr_name=$(echo "$cr_info" | cut -d'/' -f2)
       fi
 
-      log_info "Processing Backstage CR: $cr_name in namespace $cr_ns"
+      log_info "--> Processing Backstage CR $cr_name in namespace $cr_ns"
 
       cr_dir="$crs_dir/ns=$cr_ns/$cr_name"
       ensure_directory "$cr_dir"

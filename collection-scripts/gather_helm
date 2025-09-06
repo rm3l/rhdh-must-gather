@@ -28,10 +28,13 @@ if [[ -z "$releases" ]]; then
     exit 0
 fi
 
+log_debug "releases: $releases"
+
 # Process each release
-echo "$releases" | while IFS= read -r release_info; do
+for release_info in $releases; do
+    log_debug "release_info: $release_info"
     if [[ -z "$release_info" ]]; then
-        continue
+      continue
     fi
 
     release_ns=""
@@ -43,7 +46,7 @@ echo "$releases" | while IFS= read -r release_info; do
         release_name=$(echo "$release_info" | cut -d'/' -f2)
     fi
 
-    log_info "Processing Helm release: $release_name in namespace $release_ns"
+    log_info "--> Processing Helm release $release_name in namespace $release_ns"
 
     release_dir="$helm_dir/releases/ns=$release_ns/$release_name"
     ensure_directory "$release_dir"

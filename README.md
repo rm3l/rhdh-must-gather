@@ -19,13 +19,13 @@ This tool helps support teams and engineers collect essential RHDH-specific info
 
 ```bash
 # Use the published image
-oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:latest
 
 # Collect only logs and events from last 2 hours
-oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --since=2h
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:latest --since=2h
 
 # Collect logs and events since specific time
-oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --since-time=2025-08-21T20:00:00Z
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:latest --since-time=2025-08-21T20:00:00Z
 ```
 
 ### Using with Kubernetes
@@ -42,7 +42,7 @@ spec:
     spec:
       containers:
       - name: must-gather
-        image: quay.io/asoro/rhdh-must-gather:latest
+        image: ghcr.io/rm3l/rhdh-must-gather:latest
         volumeMounts:
         - name: output
           mountPath: /must-gather
@@ -228,19 +228,19 @@ The gather script accepts the following options:
 
 ```bash
 # Default collection (Helm and Operator data)
-oc adm must-gather --image=quay.io/asoro/rhdh-must-gather
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather
 
 # With cluster-wide information
-oc adm must-gather --image=quay.io/asoro/rhdh-must-gather -- /usr/bin/gather --cluster-info
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --cluster-info
 
 # With time constraints (last 2 hours)
-oc adm must-gather --image=quay.io/asoro/rhdh-must-gather --since=2h
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather --since=2h
 
 # With debug logging
-oc adm must-gather --image=quay.io/asoro/rhdh-must-gather -- LOG_LEVEL=debug /usr/bin/gather
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- LOG_LEVEL=debug /usr/bin/gather
 
 # Help information
-oc adm must-gather --image=quay.io/asoro/rhdh-must-gather -- /usr/bin/gather --help
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --help
 ```
 
 ## Output Structure

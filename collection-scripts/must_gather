@@ -76,7 +76,7 @@ function parse_flags {
 
 function help {
     echo "\
-Usage: oc adm must-gather --image=quay.io/asoro/rhdh-must-gather -- /usr/bin/gather [params...]
+Usage: oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather [params...]
 
   A client tool for gathering RHDH information from Helm and Operator installations in an OpenShift or Kubernetes cluster
 

@@ -8,36 +8,36 @@ This document provides specific examples for using the RHDH must-gather tool wit
 
 ```bash
 # Basic RHDH-specific collection
-oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:latest
 
 # RHDH collection with custom output directory
-oc adm must-gather --dest-dir=./rhdh-diagnostics --image=quay.io/asoro/rhdh-must-gather:latest
+oc adm must-gather --dest-dir=./rhdh-diagnostics --image=ghcr.io/rm3l/rhdh-must-gather:latest
 
 # For complete diagnostics, combine with generic cluster collection
 oc adm must-gather --dest-dir=./complete-diagnostics
-oc adm must-gather --dest-dir=./complete-diagnostics --image=quay.io/asoro/rhdh-must-gather:latest
+oc adm must-gather --dest-dir=./complete-diagnostics --image=ghcr.io/rm3l/rhdh-must-gather:latest
 ```
 
 ### Advanced Usage
 
 ```bash
 # Collect from specific node
-oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --node-name=worker-1
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:latest --node-name=worker-1
 
 # Collect with timeout
-oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --timeout=10m
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:latest --timeout=10m
 
 # Collect with custom source directory
-oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --source-dir=/tmp/rhdh-data
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:latest --source-dir=/tmp/rhdh-data
 
 # Collect logs and events from last 2 hours only
-oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --since=2h
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:latest --since=2h
 
 # Collect logs and events from last 30 minutes only
-oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --since=30m
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:latest --since=30m
 
 # Collect logs and events since specific timestamp
-oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --since-time=2025-08-21T20:00:00Z
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:latest --since-time=2025-08-21T20:00:00Z
 ```
 
 ## OpenShift-Specific Features
@@ -87,20 +87,20 @@ rules:
 
 ```bash
 # Collect RHDH-specific diagnostics
-oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:latest
 
 # Also collect cluster information for complete picture
 oc adm must-gather
 
 # Focus on recent logs (last hour)
-oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --since=1h
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:latest --since=1h
 ```
 
 ### Scenario 2: RHDH Not Starting
 
 ```bash
 # Collect data with debug logging
-oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest -- \
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:latest -- \
   bash -c "LOG_LEVEL=DEBUG /usr/local/bin/gather"
 ```
 
@@ -108,7 +108,7 @@ oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest -- \
 
 ```bash
 # Collect RHDH network resources (routes, services, network policies)
-oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:latest
 
 # For complete network diagnostics, also collect cluster-wide network data
 oc adm must-gather --image=registry.redhat.io/openshift4/network-tools-rhel8:latest
@@ -181,16 +181,16 @@ oc describe pod -n openshift-must-gather-* <pod-name>
 oc auth can-i "*" "*" --all-namespaces
 
 # Use system:admin if needed (for cluster administrators)
-oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --as=system:admin
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:latest --as=system:admin
 ```
 
 ### Collection Timeout
 
 ```bash
 # Increase timeout for large clusters
-oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest --timeout=20m
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:latest --timeout=20m
 
 # Or use environment variables
-oc adm must-gather --image=quay.io/asoro/rhdh-must-gather:latest -- \
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:latest -- \
   bash -c "COLLECTION_TIMEOUT=600 /usr/local/bin/gather"
 ```

@@ -21,6 +21,7 @@ helm list --all-namespaces | grep -E 'REVISION|backstage|rhdh|developer-hub' > "
 helm list --all-namespaces -o json | jq -r '.[] | select(.chart | test("backstage|rhdh|developer-hub"; "i"))' > "$helm_dir/all-rhdh-releases.json"
 
 releases=$(jq -r '"\(.namespace)/\(.name)"' < "$helm_dir/all-rhdh-releases.json" || echo "")
+release_namespaces=$((jq -r '"\(.namespace)"' < "$helm_dir/all-rhdh-releases.json" || echo "") | sort | uniq)
 rm -rf "$helm_dir/all-rhdh-releases.json"
 
 if [[ -z "$releases" ]]; then
@@ -28,11 +29,21 @@ if [[ -z "$releases" ]]; then
     exit 0
 fi
 
+log_debug "release_namespaces: $release_namespaces"
 log_debug "releases: $releases"
+
+# Process each release namespace
+for release_ns in $release_namespaces; do
+  log_info "--> Processing namespace $release_ns containing at least one Helm release"
+
+  release_ns_dir="$helm_dir/releases/ns=$release_ns/"
+  ensure_directory "$release_ns_dir"
+
+  collect_namespace_data "$release_ns" "$release_ns_dir"
+done
 
 # Process each release
 for release_info in $releases; do
-    log_debug "release_info: $release_info"
     if [[ -z "$release_info" ]]; then
       continue
     fi

@@ -162,17 +162,17 @@ safe_exec() {
     local description="${3:-}"
 
     if [[ -n "$description" ]]; then
-        log_info "Collecting: $description"
+        log_info "\tCollecting: $description"
     fi
 
-    log_debug "Executing: $cmd"
-    log_debug "Output file: $output_file"
+    log_debug "\tExecuting: $cmd"
+    log_debug "\tOutput file: $output_file"
 
     # Ensure output directory exists
     mkdir -p "$(dirname "$output_file")"
 
     if ! timeout "$CMD_TIMEOUT" bash -c "$cmd" > "$output_file" 2>&1; then
-        log_warn "Command timed out or failed: $cmd"
+        log_warn "\tCommand timed out or failed: $cmd"
         echo "Command failed or timed out: $cmd" > "$output_file"
         echo "Timestamp: $(date)" >> "$output_file"
         echo "Timeout: ${CMD_TIMEOUT}s" >> "$output_file"
@@ -272,6 +272,33 @@ collect_rhdh_data() {
       safe_exec "kubectl -n '$ns' get pods -l '$labels' -o yaml" "$pods_dir/pods.yaml" "DB statefulset pods for $ns/$statefulset"
       safe_exec "kubectl -n '$ns' describe pods -l '$labels'" "$pods_dir/pods.describe.txt" "DB statefulset pods for $ns/$statefulset"
     fi
+  fi
+}
+
+collect_namespace_data() {
+  local ns="$1"
+  local ns_dir="$2"
+
+  ensure_directory "$ns_dir"
+
+  cm_dir="$ns_dir/_configmaps"
+  ensure_directory "$cm_dir"
+  cms=$(oc get configmaps -n "$ns" -o jsonpath="{.items[*].metadata.name}" 2>/dev/null || true)
+  if [[ -n "$cms" ]]; then
+    for cm in $cms; do
+      safe_exec "kubectl -n '$ns' get configmap '$cm' -o yaml" "$cm_dir/$cm.yaml" "CM $cm"
+      safe_exec "kubectl -n '$ns' describe configmap '$cm'" "$cm_dir/$cm.describe.txt" "Details of CM $cm"
+    done
+  fi
+
+  sec_dir="$ns_dir/_secrets"
+  ensure_directory "$sec_dir"
+  sec_list=$(oc get secrets -n "$ns" -o jsonpath="{.items[*].metadata.name}" 2>/dev/null || true)
+  if [[ -n "$sec_list" ]]; then
+    for sec in $sec_list; do
+      safe_exec "kubectl -n '$ns' get secret '$sec' -o yaml" "$sec_dir/$sec.yaml" "Secret $sec"
+      safe_exec "kubectl -n '$ns' describe secret '$sec'" "$sec_dir/$sec.describe.txt" "Details of Secret $sec"
+    done
   fi
 }
 

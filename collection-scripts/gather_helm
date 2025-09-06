@@ -69,54 +69,10 @@ echo "$releases" | while IFS= read -r release_info; do
     safe_exec "helm status '$release_name' -n '$release_ns'" "$release_dir/status.txt" "Helm status for $release_name"
     safe_exec "helm status '$release_name' -n '$release_ns' -o yaml" "$release_dir/status.yaml" "Helm status (YAML) for $release_name"
 
-    # Get Deployment logs
+    # Collect app-specific info
     deploy=$(yq -r 'select(.kind=="Deployment") | .metadata.name' < "$release_dir/manifest.yaml" || true)
-    log_debug "\tdeploy=$deploy"
-    if [[ -n "$deploy" ]]; then
-      deploy_dir="$release_dir/deployment"
-      ensure_directory "$deploy_dir"
-      safe_exec "kubectl -n '$release_ns' get deployment $deploy -o yaml" "$deploy_dir/deployment.yaml" "app deployment for $release_name"
-      safe_exec "kubectl -n '$release_ns' describe deployment $deploy" "$deploy_dir/deployment.describe.txt" "app deployment for $release_name"
-      safe_exec "kubectl -n '$release_ns' logs deployments/$deploy --all-containers ${log_collection_args:-}" "$deploy_dir/logs-deployment.txt" "app deployment logs for $release_name"
-
-      labels=$(
-        kubectl -n "$release_ns" get deployment "$deploy" -o json \
-          | jq -r '.spec.selector.matchLabels | to_entries | map("\(.key)=\(.value)") | join(",")'
-      )
-      if [[ -n "$labels" ]]; then
-        pods_dir="$deploy_dir/pods"
-        ensure_directory "$pods_dir"
-
-        safe_exec "kubectl -n '$release_ns' get pods -l '$labels'" "$pods_dir/pods.txt" "app deployment pods for $release_name"
-        safe_exec "kubectl -n '$release_ns' get pods -l '$labels' -o yaml" "$pods_dir/pods.yaml" "app deployment pods for $release_name"
-        safe_exec "kubectl -n '$release_ns' describe pods -l '$labels'" "$pods_dir/pods.describe.txt" "app deployment pods for $release_name"
-      fi
-
-    fi
-
-    # Get DB StatefulSet logs
     statefulset=$(yq -r 'select(.kind=="StatefulSet") | .metadata.name' < "$release_dir/manifest.yaml" || true)
-    log_debug "\tstatefulset=$statefulset"
-    if [[ -n "$statefulset" ]]; then
-      statefulset_dir="$release_dir/db-statefulset"
-      ensure_directory "$statefulset_dir"
-      safe_exec "kubectl -n '$release_ns' get statefulset $statefulset -o yaml" "$statefulset_dir/db-statefulset.yaml" "DB statefulset for $release_name"
-      safe_exec "kubectl -n '$release_ns' describe statefulset $statefulset" "$statefulset_dir/db-statefulset.describe.txt" "DB statefulset for $release_name"
-      safe_exec "kubectl -n '$release_ns' logs statefulsets/$statefulset --all-containers ${log_collection_args:-}" "$statefulset_dir/logs-db.txt" "DB StatefulSet logs for $release_name"
-
-      labels=$(
-        kubectl -n "$release_ns" get statefulset "$statefulset" -o json \
-          | jq -r '.spec.selector.matchLabels | to_entries | map("\(.key)=\(.value)") | join(",")'
-      )
-      if [[ -n "$labels" ]]; then
-        pods_dir="$statefulset_dir/pods"
-        ensure_directory "$pods_dir"
-
-        safe_exec "kubectl -n '$release_ns' get pods -l '$labels'" "$pods_dir/pods.txt" "DB statefulset pods for $release_name"
-        safe_exec "kubectl -n '$release_ns' get pods -l '$labels' -o yaml" "$pods_dir/pods.yaml" "DB statefulset pods for $release_name"
-        safe_exec "kubectl -n '$release_ns' describe pods -l '$labels'" "$pods_dir/pods.describe.txt" "DB statefulset pods for $release_name"
-      fi
-    fi
+    collect_rhdh_data "$release_ns" "$deploy" "$statefulset" "$release_dir"
 done
 
 log_success "Helm data collection completed."

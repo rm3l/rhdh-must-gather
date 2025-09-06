@@ -174,47 +174,10 @@ function gather_backstage_crs() {
         done
       fi
 
-      # Get Deployment logs
+      # Collect app-specific info
       deploy="backstage-$cr_name"
-      deploy_dir="$cr_dir/deployment"
-      ensure_directory "$deploy_dir"
-      safe_exec "kubectl -n '$cr_ns' logs deployments/$deploy --all-containers ${log_collection_args:-}" "$deploy_dir/logs-deployment.txt" "app deployment logs for $cr_name"
-      safe_exec "kubectl -n '$cr_ns' get deployment $deploy -o yaml" "$deploy_dir/deployment.yaml" "app deployment for $cr_name"
-      safe_exec "kubectl -n '$cr_ns' describe deployment $deploy" "$deploy_dir/deployment.describe.txt" "app deployment for $cr_name"
-
-      labels=$(
-        kubectl -n "$cr_ns" get deployment "$deploy" -o json \
-          | jq -r '.spec.selector.matchLabels | to_entries | map("\(.key)=\(.value)") | join(",")'
-      )
-      if [[ -n "$labels" ]]; then
-        pods_dir="$deploy_dir/pods"
-        ensure_directory "$pods_dir"
-
-        safe_exec "kubectl -n '$cr_ns' get pods -l '$labels'" "$pods_dir/pods.txt" "app deployment pods for $cr_name"
-        safe_exec "kubectl -n '$cr_ns' get pods -l '$labels' -o yaml" "$pods_dir/pods.yaml" "app deployment pods for $cr_name"
-        safe_exec "kubectl -n '$cr_ns' describe pods -l '$labels'" "$pods_dir/pods.describe.txt" "app deployment pods for $cr_name"
-      fi
-
-      # Get DB StatefulSet logs
       statefulset="backstage-psql-$cr_name"
-      statefulset_dir="$cr_dir/db-statefulset"
-      ensure_directory "$statefulset_dir"
-      safe_exec "kubectl -n '$cr_ns' logs statefulsets/$statefulset --all-containers ${log_collection_args:-}" "$statefulset_dir/logs-db-statefulset.txt" "DB statefulset logs for $cr_name"
-      safe_exec "kubectl -n '$cr_ns' get statefulset $statefulset -o yaml" "$statefulset_dir/db-statefulset.yaml" "DB statefulset for $cr_name"
-      safe_exec "kubectl -n '$cr_ns' describe statefulset $statefulset" "$statefulset_dir/db-statefulset.describe.txt" "DB statefulset for $cr_name"
-
-      labels=$(
-        kubectl -n "$cr_ns" get statefulset "$statefulset" -o json \
-          | jq -r '.spec.selector.matchLabels | to_entries | map("\(.key)=\(.value)") | join(",")'
-      )
-      if [[ -n "$labels" ]]; then
-        pods_dir="$statefulset_dir/pods"
-        ensure_directory "$pods_dir"
-
-        safe_exec "kubectl -n '$cr_ns' get pods -l '$labels'" "$pods_dir/pods.txt" "DB statefulset pods for $cr_name"
-        safe_exec "kubectl -n '$cr_ns' get pods -l '$labels' -o yaml" "$pods_dir/pods.yaml" "DB statefulset pods for $cr_name"
-        safe_exec "kubectl -n '$cr_ns' describe pods -l '$labels'" "$pods_dir/pods.describe.txt" "DB statefulset pods for $cr_name"
-      fi
+      collect_rhdh_data "$cr_ns" "$deploy" "$statefulset" "$cr_dir"
   done
 }
 

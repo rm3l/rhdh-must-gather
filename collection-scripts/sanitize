@@ -30,7 +30,7 @@ sanitize_structured_file() {
         log_debug "Sanitizing Secret data in: $file"
         # Use sed for direct in-place sanitization of Secret data values
         # This approach has been tested and works reliably
-        sed -i '/^data:/,/^[a-zA-Z]/ { /^  [a-zA-Z0-9_-]\+: / s/: .*/: [REDACTED]/ }' "$file"
+        sed -i '/^data:/,/^[a-zA-Z]/ { /^  [a-zA-Z0-9_.-]\+: / s/: .*/: [REDACTED]/ }' "$file"
         sanitized=true
         items_sanitized=$((items_sanitized + 1))
         log_debug "SANITIZED: $file"

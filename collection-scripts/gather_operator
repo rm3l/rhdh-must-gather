@@ -123,12 +123,26 @@ function gather_backstage_crs() {
   kubectl get backstages.rhdh.redhat.com --all-namespaces -o json | jq -r '.items[]' > "$crs_dir/all-backstage-crs.json"
 
   crs=$(jq -r '"\(.metadata.namespace)/\(.metadata.name)"' < "$crs_dir/all-backstage-crs.json" || echo "")
+  cr_namespaces=$((jq -r '"\(.metadata.namespace)"' < "$crs_dir/all-backstage-crs.json" || echo "") | sort | uniq)
   rm -rf "$crs_dir/all-backstage-crs.json"
 
   if [[ -z "$crs" ]]; then
       log_warn "No Backstage CR found" > "$crs_dir/no-crs.txt"
       return 0
   fi
+
+  log_debug "cr_namespaces: $cr_namespaces"
+  log_debug "crs: $crs"
+
+  # Process each namespace
+  for cr_ns in $cr_namespaces; do
+    log_info "--> Processing namespace $cr_ns containing at least one Backstage CR"
+
+    cr_ns_dir="$crs_dir/ns=$cr_ns/"
+    ensure_directory "$cr_ns_dir"
+
+    collect_namespace_data "$cr_ns" "$cr_ns_dir"
+  done
 
   # Process each cr
   for cr_info in $crs; do
@@ -153,26 +167,6 @@ function gather_backstage_crs() {
       safe_exec "kubectl -n '$cr_ns' get backstages.rhdh.redhat.com '$cr_name' -o yaml" "$cr_dir/$cr_name.yaml" "Details of CR $cr_name"
 
       safe_exec "kubectl -n '$cr_ns' describe backstages.rhdh.redhat.com '$cr_name'" "$cr_dir/describe.txt" "Details of CR $cr_name"
-
-      cr_cm_dir="$cr_dir/configmaps"
-      ensure_directory "$cr_cm_dir"
-      cms=$(oc get configmaps -n "$cr_ns" -o jsonpath="{.items[*].metadata.name}" 2>/dev/null || true)
-      if [[ -n "$cms" ]]; then
-        for cm in $cms; do
-          safe_exec "kubectl -n '$cr_ns' get configmap '$cm' -o yaml" "$cr_cm_dir/$cm.yaml" "Details of CM $cm"
-          safe_exec "kubectl -n '$cr_ns' describe configmap '$cm'" "$cr_cm_dir/describe.txt" "Details of CM $cm"
-        done
-      fi
-
-      cr_sec_dir="$cr_dir/secrets"
-      ensure_directory "$cr_sec_dir"
-      sec_list=$(oc get secrets -n "$cr_ns" -o jsonpath="{.items[*].metadata.name}" 2>/dev/null || true)
-      if [[ -n "$sec_list" ]]; then
-        for sec in $sec_list; do
-          safe_exec "kubectl -n '$cr_ns' get secret '$sec' -o yaml" "$cr_sec_dir/$sec.yaml" "Details of CM $sec"
-          safe_exec "kubectl -n '$cr_ns' describe secret '$sec'" "$cr_sec_dir/describe.txt" "Details of CM $sec"
-        done
-      fi
 
       # Collect app-specific info
       deploy="backstage-$cr_name"

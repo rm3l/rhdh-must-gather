@@ -3,7 +3,7 @@
 # Variables
 SCRIPT ?= rhdh
 IMAGE_NAME ?= rhdh-must-gather
-IMAGE_TAG ?= latest
+IMAGE_TAG ?= main
 REGISTRY ?= ghcr.io/rm3l
 FULL_IMAGE_NAME = $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
 LOG_LEVEL ?= info

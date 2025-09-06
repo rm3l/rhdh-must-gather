@@ -176,10 +176,10 @@ safe_exec() {
         echo "Command failed or timed out: $cmd" > "$output_file"
         echo "Timestamp: $(date)" >> "$output_file"
         echo "Timeout: ${CMD_TIMEOUT}s" >> "$output_file"
-        return 1
+        #return 1
     fi
 
-    return 0
+    #return 0
 }
 
 collect_rhdh_info_from_running_pods() {

@@ -63,6 +63,12 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
+      # Get version information from Git
+      - name: Get version information from repo
+        id: ver
+        run: |
+          echo "RHDH_MUST_GATHER_VERSION=0.0.0-$(git describe --no-match --always --abbrev=9 --dirty --broken 2>/dev/null || echo unknown)" >> "$GITHUB_ENV"
+
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image
@@ -70,6 +76,7 @@ jobs:
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
           context: .
+          build-args: 'RHDH_MUST_GATHER_VERSION=${{ env.RHDH_MUST_GATHER_VERSION }}'
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

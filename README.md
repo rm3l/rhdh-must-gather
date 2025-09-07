@@ -182,6 +182,15 @@ This tool focuses exclusively on RHDH-related resources. For cluster-wide inform
 
 ### RHDH-Specific Data
 
+#### Platform Information (gather_platform)
+- **Platform Detection**: Automatically identifies the Kubernetes platform type:
+  - **OpenShift**: OCP, ROSA (Red Hat OpenShift Service on AWS), ARO (Azure Red Hat OpenShift), ROKS (Red Hat OpenShift on IBM Cloud)
+  - **Managed Kubernetes**: EKS (AWS), GKE (Google Cloud), AKS (Azure)
+  - **Vanilla Kubernetes**: Standard Kubernetes installations
+- **Infrastructure Detection**: Identifies underlying cloud providers (AWS, GCP, Azure, IBM Cloud, vSphere)
+- **Version Information**: Collects OpenShift and Kubernetes version details
+- **Output Formats**: Both JSON (`platform.json`) and human-readable (`platform.txt`) formats
+
 #### Helm Deployments (gather_helm)
 - **Release Information**: Helm releases, history, status (text and YAML formats)
 - **Configuration**: User-provided values, computed values, manifests, hooks, and notes
@@ -284,16 +293,18 @@ The tool consists of specialized collection scripts that gather data from differ
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Detection     │    │   Collection    │    │    Output       │
 │                 │    │                 │    │                 │
-│ • Helm releases │───▶│ • Helm data     │───▶│ • Structured    │
-│ • Operator CRDs │    │ • Operator data │    │   output        │
-│ • Backstage CRs │    │ • Pod logs      │    │ • Organized by  │
-│                 │    │ • Cluster info  │    │   deployment    │
+│ • Platform type │───▶│ • Platform info │───▶│ • Structured    │
+│ • Helm releases │    │ • Helm data     │    │   output        │
+│ • Operator CRDs │    │ • Operator data │    │ • Organized by  │
+│ • Backstage CRs │    │ • Pod logs      │    │   deployment    │
+│                 │    │ • Cluster info  │    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
 ### Key Components
 
-- **`collection-scripts/gather_rhdh`**: Main orchestrator script that coordinates all collection activities and applies sanitization
+- **`collection-scripts/must_gather`**: Main orchestrator script that coordinates all collection activities and applies sanitization
+- **`collection-scripts/gather_platform`**: Detects and collects platform information (OpenShift/Kubernetes type, cloud provider, versions)
 - **`collection-scripts/gather_helm`**: Collects Helm-specific RHDH deployment data including releases, values, manifests, and associated pod logs
 - **`collection-scripts/gather_operator`**: Collects Operator-specific data including CRDs, Backstage Custom Resources, OLM information, and operator logs
 - **`collection-scripts/gather_cluster-info`**: Collects cluster-wide information using `oc cluster-info dump`
@@ -359,6 +370,9 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --he
 ├── cluster-info/                   # Cluster-wide information (if --cluster-info used)
 │   └── [cluster-info dump output]
 └── rhdh/                           # RHDH-specific data (automatically sanitized)
+    ├── platform/                   # Platform and infrastructure information
+    │   ├── platform.json           # Structured platform data (platform, underlying, versions)
+    │   └── platform.txt            # Human-readable platform summary
     ├── helm/                       # Helm deployment data (if RHDH Helm releases found)
     │   ├── all-rhdh-releases.txt   # List of detected RHDH Helm releases with namespaces, revisions, status
     │   └── releases/               # Per-release data

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # RHDH Must-Gather Tool - Main Orchestrator
 # Collects diagnostic information for Red Hat Developer Hub troubleshooting
@@ -37,6 +37,7 @@ function main() {
   fi
 
   declare mandatory_scripts=(
+    "platform"
     "helm"
     "operator"
   )

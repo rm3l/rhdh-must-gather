@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Helm Data Collection Script
 # Collects Helm-specific information for RHDH deployments
@@ -21,7 +21,8 @@ helm list --all-namespaces | grep -E 'REVISION|backstage|rhdh|developer-hub' > "
 helm list --all-namespaces -o json | jq -r '.[] | select(.chart | test("backstage|rhdh|developer-hub"; "i"))' > "$helm_dir/all-rhdh-releases.json"
 
 releases=$(jq -r '"\(.namespace)/\(.name)"' < "$helm_dir/all-rhdh-releases.json" || echo "")
-release_namespaces=$((jq -r '"\(.namespace)"' < "$helm_dir/all-rhdh-releases.json" || echo "") | sort | uniq)
+release_namespaces=$(jq -r '"\(.namespace)"' < "$helm_dir/all-rhdh-releases.json" || echo "")
+release_namespaces=$(echo "$release_namespaces" | sort | uniq)
 rm -rf "$helm_dir/all-rhdh-releases.json"
 
 if [[ -z "$releases" ]]; then

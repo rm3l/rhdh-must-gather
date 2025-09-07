@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Operator Data Collection Script
 # Collects Operator-specific information for RHDH deployments
@@ -123,7 +123,8 @@ function gather_backstage_crs() {
   kubectl get backstages.rhdh.redhat.com --all-namespaces -o json | jq -r '.items[]' > "$crs_dir/all-backstage-crs.json"
 
   crs=$(jq -r '"\(.metadata.namespace)/\(.metadata.name)"' < "$crs_dir/all-backstage-crs.json" || echo "")
-  cr_namespaces=$((jq -r '"\(.metadata.namespace)"' < "$crs_dir/all-backstage-crs.json" || echo "") | sort | uniq)
+  cr_namespaces=$(jq -r '"\(.metadata.namespace)"' < "$crs_dir/all-backstage-crs.json" || echo "")
+  cr_namespaces=$(echo "$cr_namespaces" | sort | uniq)
   rm -rf "$crs_dir/all-backstage-crs.json"
 
   if [[ -z "$crs" ]]; then

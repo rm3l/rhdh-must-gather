@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # RHDH Must-Gather Data Sanitization Script
 # Removes sensitive information from collected data while preserving diagnostic value

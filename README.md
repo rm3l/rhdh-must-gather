@@ -30,9 +30,22 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main --since-time=2025-
 
 ### Using with Kubernetes
 
+#### Option 1: Using PersistentVolume (Recommended)
+
 ```bash
-# Run as a Job
+# Create PVC for persistent storage
 kubectl apply -f - <<EOF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rhdh-must-gather-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -48,12 +61,105 @@ spec:
           mountPath: /must-gather
       volumes:
       - name: output
+        persistentVolumeClaim:
+          claimName: rhdh-must-gather-pvc
+      restartPolicy: Never
+EOF
+
+# Wait for job completion
+kubectl wait --for=condition=complete job/rhdh-must-gather --timeout=600s
+
+# Create a temporary pod to access the data
+kubectl run data-retriever --image=busybox --rm -i --tty \
+  --overrides='{"spec":{"volumes":[{"name":"data","persistentVolumeClaim":{"claimName":"rhdh-must-gather-pvc"}}],"containers":[{"name":"data-retriever","image":"busybox","volumeMounts":[{"name":"data","mountPath":"/data"}],"stdin":true,"tty":true}]}}' \
+  -- tar -czf - -C /data . > must-gather-output.tar.gz
+
+# Clean up
+kubectl delete job rhdh-must-gather
+kubectl delete pvc rhdh-must-gather-pvc
+```
+
+#### Option 2: Copy Before Pod Termination
+
+```bash
+# Run job with longer completion time
+kubectl apply -f - <<EOF
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rhdh-must-gather
+spec:
+  template:
+    spec:
+      containers:
+      - name: must-gather
+        image: ghcr.io/rm3l/rhdh-must-gather:main
+        command: ["/bin/bash", "-c"]
+        args:
+        - |
+          /usr/bin/gather
+          echo "Data collection complete. Sleeping for 10 minutes to allow data retrieval..."
+          sleep 600
+        volumeMounts:
+        - name: output
+          mountPath: /must-gather
+      volumes:
+      - name: output
         emptyDir: {}
       restartPolicy: Never
 EOF
 
+# Wait for collection to complete (check logs)
+kubectl logs -f job/rhdh-must-gather
+
+# Copy the results while pod is still running
+POD_NAME=$(kubectl get pods -l job-name=rhdh-must-gather -o jsonpath='{.items[0].metadata.name}')
+kubectl cp $POD_NAME:/must-gather ./must-gather-output
+
+# Clean up
+kubectl delete job rhdh-must-gather
+```
+
+#### Option 3: Using initContainer with Shared Volume
+
+```bash
+# Use an init container pattern with a long-running sidecar
+kubectl apply -f - <<EOF
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rhdh-must-gather
+spec:
+  template:
+    spec:
+      initContainers:
+      - name: must-gather
+        image: ghcr.io/rm3l/rhdh-must-gather:main
+        volumeMounts:
+        - name: output
+          mountPath: /must-gather
+      containers:
+      - name: data-holder
+        image: busybox
+        command: ["sleep", "3600"]  # Sleep for 1 hour
+        volumeMounts:
+        - name: output
+          mountPath: /must-gather
+      volumes:
+      - name: output
+        emptyDir: {}
+      restartPolicy: Never
+EOF
+
+# Wait for init container to complete
+kubectl wait --for=condition=initialized pod -l job-name=rhdh-must-gather --timeout=600s
+
 # Copy the results
-kubectl cp rhdh-must-gather-<pod-name>:/must-gather ./must-gather-output
+POD_NAME=$(kubectl get pods -l job-name=rhdh-must-gather -o jsonpath='{.items[0].metadata.name}')
+kubectl cp $POD_NAME:/must-gather ./must-gather-output
+
+# Clean up
+kubectl delete job rhdh-must-gather
 ```
 
 ### Local Development/Testing

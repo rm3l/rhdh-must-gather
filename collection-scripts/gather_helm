@@ -12,7 +12,7 @@ export_log_collection_args
 
 log_info "Starting Helm data collection..."
 
-helm_dir="$BASE_COLLECTION_PATH/rhdh/helm"
+helm_dir="$BASE_COLLECTION_PATH/helm"
 ensure_directory "$helm_dir"
 
 # Try to find releases with backstage/rhdh patterns in all namespaces

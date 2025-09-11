@@ -12,7 +12,7 @@ export_log_collection_args
 
 log_info "Starting Operator data collection..."
 
-operator_dir="$BASE_COLLECTION_PATH/rhdh/operator"
+operator_dir="$BASE_COLLECTION_PATH/operator"
 ensure_directory "$operator_dir"
 
 function gather_olm_information() {

@@ -9,9 +9,9 @@ This tool helps support teams and engineers collect essential RHDH-specific info
 - **Multi-platform**: OpenShift and standard Kubernetes (AKS, GKE, EKS)
 - **Multi-deployment**: Helm-based and Operator-based RHDH instances
 - **RHDH-focused collection**: Only RHDH-specific logs, configurations, and resources
-- **Privacy-aware**: Automatic sanitization of secrets, tokens, and sensitive data
+- **Privacy-aware**: Automatic sanitization of secrets, tokens, and sensitive data (WIP)
 
-> **Note**: This tool collects only RHDH-specific data. For cluster-wide information, use the generic OpenShift must-gather: `oc adm must-gather`
+> **Note**: This tool collects only RHDH-specific data. For cluster-wide general information, use the generic OpenShift must-gather: `oc adm must-gather`
 
 ## Quick Start
 
@@ -28,7 +28,7 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main --since=2h
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main --since-time=2025-08-21T20:00:00Z
 ```
 
-### Using with Kubernetes
+### Using with Kubernetes (WIP)
 
 #### Option 1: Using PersistentVolume (Recommended)
 
@@ -79,48 +79,7 @@ kubectl delete job rhdh-must-gather
 kubectl delete pvc rhdh-must-gather-pvc
 ```
 
-#### Option 2: Copy Before Pod Termination
-
-```bash
-# Run job with longer completion time
-kubectl apply -f - <<EOF
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: rhdh-must-gather
-spec:
-  template:
-    spec:
-      containers:
-      - name: must-gather
-        image: ghcr.io/rm3l/rhdh-must-gather:main
-        command: ["/bin/bash", "-c"]
-        args:
-        - |
-          /usr/bin/gather
-          echo "Data collection complete. Sleeping for 10 minutes to allow data retrieval..."
-          sleep 600
-        volumeMounts:
-        - name: output
-          mountPath: /must-gather
-      volumes:
-      - name: output
-        emptyDir: {}
-      restartPolicy: Never
-EOF
-
-# Wait for collection to complete (check logs)
-kubectl logs -f job/rhdh-must-gather
-
-# Copy the results while pod is still running
-POD_NAME=$(kubectl get pods -l job-name=rhdh-must-gather -o jsonpath='{.items[0].metadata.name}')
-kubectl cp $POD_NAME:/must-gather ./must-gather-output
-
-# Clean up
-kubectl delete job rhdh-must-gather
-```
-
-#### Option 3: Using initContainer with Shared Volume
+#### Option 2: Using initContainer with Shared Volume
 
 ```bash
 # Use an init container pattern with a long-running sidecar
@@ -170,7 +129,7 @@ git clone <repository-url>
 cd rhdh-must-gather
 
 # Run locally (requires kubectl access)
-make test-local
+make test-local-all
 
 # Build and test in container
 make build test-container
@@ -242,7 +201,7 @@ This tool focuses exclusively on RHDH-related resources. For cluster-wide inform
 - **Database logs** from PostgreSQL StatefulSets
 - **Must-gather container logs** (when running in pod)
 
-#### Kubernetes Resources (Detailed)
+#### RHDH Kubernetes Resources (Detailed)
 - **Deployments and StatefulSets**: Full YAML definitions and kubectl describe output
 - **Pods**: Complete pod specifications, status, and logs for all related pods
 - **ConfigMaps**: Application configurations, dynamic plugins, and other config data
@@ -252,7 +211,7 @@ This tool focuses exclusively on RHDH-related resources. For cluster-wide inform
 #### Cluster Information (optional)
 - **Cluster-wide diagnostic dump** using `oc cluster-info dump` (enabled with `--cluster-info` flag)
 
-## Privacy and Security
+## Privacy and Security (WIP)
 
 ### Automatic Data Sanitization
 
@@ -284,22 +243,6 @@ The tool includes automatic sanitization of sensitive information to make the co
 ```
 
 **Important**: While automatic sanitization catches common sensitive patterns, always review the sanitization report and manually check for any domain-specific sensitive information before sharing externally.
-
-## Architecture
-
-The tool consists of specialized collection scripts that gather data from different RHDH deployment methods:
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Detection     │    │   Collection    │    │    Output       │
-│                 │    │                 │    │                 │
-│ • Platform type │───▶│ • Platform info │───▶│ • Structured    │
-│ • Helm releases │    │ • Helm data     │    │   output        │
-│ • Operator CRDs │    │ • Operator data │    │ • Organized by  │
-│ • Backstage CRs │    │ • Pod logs      │    │   deployment    │
-│                 │    │ • Cluster info  │    │                 │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
 
 ### Key Components
 

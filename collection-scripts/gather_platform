@@ -12,7 +12,7 @@ export_log_collection_args
 
 log_info "Starting Platform data collection..."
 
-OUT_DIR="$BASE_COLLECTION_PATH/rhdh/platform"
+OUT_DIR="$BASE_COLLECTION_PATH/platform"
 ensure_directory "$OUT_DIR"
 
 # --- Helpers ---

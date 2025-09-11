@@ -5,7 +5,6 @@ set -euo pipefail
 DIR_NAME=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 export BASE_COLLECTION_PATH="${BASE_COLLECTION_PATH:-/must-gather}"
 export PROS=${PROS:-5}
-export INSTALLATION_NAMESPACE=${INSTALLATION_NAMESPACE:-rhdh-operator}
 
 # Command timeout (seconds) for kubectl/helm calls
 CMD_TIMEOUT="${CMD_TIMEOUT:-30}"

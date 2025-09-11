@@ -337,7 +337,6 @@ make build-push REGISTRY=your-registry.com/namespace IMAGE_NAME=my-rhdh-must-gat
 | `CMD_TIMEOUT`            | `30`            | Timeout for individual kubectl/helm commands (seconds) |
 | `MUST_GATHER_SINCE`      | -               | Relative time for log collection (e.g., "2h", "30m")   |
 | `MUST_GATHER_SINCE_TIME` | -               | Absolute timestamp for log collection (RFC3339)        |
-| `INSTALLATION_NAMESPACE` | `rhdh-operator` | Default namespace for RHDH operator installation       |
 
 ### Command Line Options
 

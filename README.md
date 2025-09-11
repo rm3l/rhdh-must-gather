@@ -34,7 +34,7 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main --since-time=2025-
 
 ```bash
 # Create PVC for persistent storage
-kubectl apply -f - <<EOF
+cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -83,7 +83,7 @@ kubectl delete pvc rhdh-must-gather-pvc
 
 ```bash
 # Use an init container pattern with a long-running sidecar
-kubectl apply -f - <<EOF
+cat <<EOF | kubectl apply -f -
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -139,29 +139,21 @@ make build test-container
 
 This tool focuses exclusively on RHDH-related resources. For cluster-wide information, combine with generic must-gather.
 
-### RHDH-Specific Data
-
-#### Platform Information (gather_platform)
+### Platform Information (gather_platform)
 - **Platform Detection**: Automatically identifies the Kubernetes platform type:
-  - **OpenShift**: OCP, ROSA (Red Hat OpenShift Service on AWS), ARO (Azure Red Hat OpenShift), ROKS (Red Hat OpenShift on IBM Cloud)
-  - **Managed Kubernetes**: EKS (AWS), GKE (Google Cloud), AKS (Azure)
-  - **Vanilla Kubernetes**: Standard Kubernetes installations
+    - **OpenShift**: OCP, ROSA (Red Hat OpenShift Service on AWS), ARO (Azure Red Hat OpenShift), ROKS (Red Hat OpenShift on IBM Cloud)
+    - **Managed Kubernetes**: EKS (AWS), GKE (Google Cloud), AKS (Azure)
+    - **Vanilla Kubernetes**: Standard Kubernetes installations
 - **Infrastructure Detection**: Identifies underlying cloud providers (AWS, GCP, Azure, IBM Cloud, vSphere)
 - **Version Information**: Collects OpenShift and Kubernetes version details
-- **Output Formats**: Both JSON (`platform.json`) and human-readable (`platform.txt`) formats
+
+### RHDH-Specific Data
 
 #### Helm Deployments (gather_helm)
 - **Release Information**: Helm releases, history, status (text and YAML formats)
 - **Configuration**: User-provided values, computed values, manifests, hooks, and notes
-- **Application Runtime Data** (extracted from running containers):
-  - **RHDH version information**: `backstage.json` contains Backstage version
-  - **Build metadata**: `build-metadata.json` with RHDH version, Backstage version, upstream/midstream sources, and build timestamp
-  - **Node.js version**: Runtime Node.js version from `node --version`
-  - **Container user ID**: Security context information from `id` command
-  - **Dynamic plugins structure**: Directory listing of `dynamic-plugins-root` filesystem
-  - **Generated app-config**: `app-config.dynamic-plugins.yaml` created by dynamic plugins installer
 - **Kubernetes Resources**: Deployments, StatefulSets with full YAML definitions and descriptions
-- **Logs**: Multi-container logs including `backstage-backend` and `install-dynamic-plugins` containers, database pods
+- **[Application Runtime Data](#application-runtime-data-extracted-from-running-containers)**
 - **Namespace Resources**: All ConfigMaps and Secrets (sanitized) with descriptions
 
 #### Operator Deployments (gather_operator)
@@ -169,22 +161,16 @@ This tool focuses exclusively on RHDH-related resources. For cluster-wide inform
 - **Custom Resources**: Backstage CRDs with definitions and descriptions
 - **Backstage Custom Resources**: Full CR configurations and status
 - **Operator Infrastructure**: Deployments, logs, and configurations in operator namespaces
-- **Application Runtime Data** (extracted from running containers): Same data as Helm deployments
-  - RHDH version information, build metadata, Node.js version, container user ID
-  - Dynamic plugins structure and generated app-config
+- **[Application Runtime Data](#application-runtime-data-extracted-from-running-containers)**
 - **Namespace Resources**: ConfigMaps and Secrets (sanitized) for each namespace containing Backstage CRs
 
-#### Version and Build Information
-- **Must-gather tool version** and metadata (in `/must-gather/version` file)
-- **RHDH version** from running containers (`backstage.json` - contains Backstage version: "1.39.1")
-- **Build metadata** from `build-metadata.json` including:
-  - RHDH Version (e.g., "1.7.1")
-  - Backstage Version (e.g., "1.39.1")
-  - Upstream source repository and commit hash
-  - Midstream source repository and commit hash
-  - Build timestamp (RFC3339 format)
-- **Node.js version** from runtime environment (e.g., "v22.16.0")
-- **Container user ID** and security context (e.g., "uid=1001 gid=0(root) groups=0(root)")
+#### Application Runtime Data (extracted from running containers)
+- **RHDH version information**: `backstage.json` contains Backstage version
+- **Build metadata**: `build-metadata.json` with RHDH version, Backstage version, upstream/midstream sources, and build timestamp
+- **Node.js version**: Runtime Node.js version from `node --version`
+- **Container user ID**: Security context information from `id` command
+- **Dynamic plugins structure**: Directory listing of `dynamic-plugins-root` filesystem
+- **Generated app-config**: `app-config.dynamic-plugins.yaml` created by the dynamic plugins installer
 
 #### Dynamic Plugins and Configuration
 - **Dynamic plugins root directory** structure from filesystem (`ls -lhrta dynamic-plugins-root`)
@@ -208,7 +194,7 @@ This tool focuses exclusively on RHDH-related resources. For cluster-wide inform
 - **Secrets**: Sanitized secret resources (data fields redacted for security)
 - **Services, Routes, Ingresses**: Network configurations for RHDH access
 
-#### Cluster Information (optional)
+### Cluster Information (optional)
 - **Cluster-wide diagnostic dump** using `oc cluster-info dump` (enabled with `--cluster-info` flag)
 
 ## Privacy and Security (WIP)
@@ -232,42 +218,7 @@ The tool includes automatic sanitization of sensitive information to make the co
 - **Comprehensive coverage** - Processes all YAML, JSON, and text files in the collected data
 - **Detailed reporting** - Provides sanitization summary with file and item counts
 
-### Using the Sanitize Script
-
-```bash
-# Sanitize collected data (automatically called during collection)
-./collection-scripts/sanitize /path/to/must-gather-output
-
-# The script generates a sanitization report at:
-# /path/to/must-gather-output/sanitization-report.txt
-```
-
 **Important**: While automatic sanitization catches common sensitive patterns, always review the sanitization report and manually check for any domain-specific sensitive information before sharing externally.
-
-### Key Components
-
-- **`collection-scripts/must_gather`**: Main orchestrator script that coordinates all collection activities and applies sanitization
-- **`collection-scripts/gather_platform`**: Detects and collects platform information (OpenShift/Kubernetes type, cloud provider, versions)
-- **`collection-scripts/gather_helm`**: Collects Helm-specific RHDH deployment data including releases, values, manifests, and associated pod logs
-- **`collection-scripts/gather_operator`**: Collects Operator-specific data including CRDs, Backstage Custom Resources, OLM information, and operator logs
-- **`collection-scripts/gather_cluster-info`**: Collects cluster-wide information using `oc cluster-info dump`
-- **`collection-scripts/sanitize`**: Automatically sanitizes sensitive data (secrets, tokens, credentials) from collected files
-- **`collection-scripts/common.sh`**: Shared utilities, logging functions, and environment setup
-- **`collection-scripts/logs.sh`**: Collects must-gather container logs
-- **`collection-scripts/version`**: Version information for the tool
-
-## Building the Image
-
-```bash
-# Build locally
-make build
-
-# Build and push to registry
-make build-push REGISTRY=your-registry.com/namespace
-
-# Build and push with custom image name and tag
-make build-push REGISTRY=your-registry.com/namespace IMAGE_NAME=my-rhdh-must-gather IMAGE_TAG=v1.0.0
-```
 
 ## Configuration
 
@@ -420,35 +371,6 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --he
 
 > **Note**: The tool automatically detects and collects data for both Helm and Operator-based RHDH deployments. For cluster-wide information, use the `--cluster-info` flag or combine with standard `oc adm must-gather`.
 
-## Troubleshooting
-
-### Common Issues
-
-**No RHDH deployment detected**
-- Verify RHDH is running in the cluster
-- Check if it's in a non-standard namespace
-- Ensure proper RBAC permissions
-
-**Command timeouts**
-- Increase `CMD_TIMEOUT` environment variable (default: 30 seconds)
-- Check cluster network connectivity
-- Verify sufficient resources
-
-**Permission denied errors**
-- Ensure the tool has cluster-admin or sufficient RBAC permissions
-- Check ServiceAccount configuration in OpenShift
-
-### Getting Help
-
-1. Check the tool output files in `/must-gather/rhdh/` for what was detected
-2. Review the `must-gather.log` file for container execution logs
-3. Check the `sanitization-report.txt` file for data sanitization summary
-4. Check individual script outputs:
-   - `/must-gather/rhdh/helm/all-rhdh-releases.txt` for Helm deployment detection
-   - `/must-gather/rhdh/operator/all-deployments.txt` for Operator deployment detection
-5. Verify cluster connectivity with `kubectl cluster-info`
-6. Run with debug logging: `LOG_LEVEL=debug` to see detailed execution information
-
 ## Development
 
 ### Testing
@@ -474,6 +396,19 @@ make k8s-test
 make clean
 ```
 
+### Building the Image
+
+```bash
+# Build locally
+make build
+
+# Build and push to registry
+make build-push REGISTRY=your-registry.com/namespace
+
+# Build and push with custom image name and tag
+make build-push REGISTRY=your-registry.com/namespace IMAGE_NAME=my-rhdh-must-gather IMAGE_TAG=v1.0.0
+```
+
 ### Available Variables
 
 ```bash
@@ -486,20 +421,6 @@ make test-local-all LOG_LEVEL=debug
 # View all available targets
 make help
 ```
-
-### Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Submit a pull request
-
-## Requirements
-
-- Kubernetes 1.19+ or OpenShift 4.6+
-- `kubectl` or `oc` CLI access
-- Cluster-admin or equivalent permissions
-- Container runtime (for building images)
 
 ## License
 

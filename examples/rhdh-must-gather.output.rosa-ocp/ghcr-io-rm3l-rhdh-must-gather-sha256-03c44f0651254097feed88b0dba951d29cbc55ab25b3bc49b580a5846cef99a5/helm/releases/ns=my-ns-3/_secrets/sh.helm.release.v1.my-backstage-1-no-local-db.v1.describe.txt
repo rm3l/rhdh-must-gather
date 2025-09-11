@@ -1,0 +1,14 @@
+Name:         sh.helm.release.v1.my-backstage-1-no-local-db.v1
+Namespace:    my-ns-3
+Labels:       modifiedAt=1757623394
+              name=my-backstage-1-no-local-db
+              owner=helm
+              status=deployed
+              version=1
+Annotations:  <none>
+
+Type:  helm.sh/release.v1
+
+Data
+====
+release:  196604 bytes

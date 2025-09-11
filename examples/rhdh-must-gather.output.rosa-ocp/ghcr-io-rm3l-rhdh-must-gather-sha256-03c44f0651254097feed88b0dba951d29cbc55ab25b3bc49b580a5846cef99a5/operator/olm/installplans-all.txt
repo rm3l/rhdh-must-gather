@@ -1,0 +1,5 @@
+NAMESPACE                                  NAME            CSV                                                APPROVAL    APPROVED
+openshift-deployment-validation-operator   install-t6kpr   deployment-validation-operator.v0.1.496-gf43caef   Automatic   true
+openshift-serverless-logic                 install-6b99h   logic-operator-rhel8.v1.36.0                       Manual      false
+openshift-serverless                       install-8qgd2   serverless-operator.v1.36.0                        Manual      false
+rhdh-operator                              install-n6rjb   rhdh-operator.v1.7.0                               Automatic   true

@@ -1,0 +1,14 @@
+Name:         sh.helm.release.v1.my-backstage-1.v4
+Namespace:    my-ns-2
+Labels:       modifiedAt=1757626297
+              name=my-backstage-1
+              owner=helm
+              status=deployed
+              version=4
+Annotations:  <none>
+
+Type:  helm.sh/release.v1
+
+Data
+====
+release:  200916 bytes

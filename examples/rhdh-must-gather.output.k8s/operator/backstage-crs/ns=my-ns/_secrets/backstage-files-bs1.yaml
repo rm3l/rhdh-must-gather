@@ -1,0 +1,24 @@
+apiVersion: v1
+data:
+  .npmrc: [REDACTED]
+kind: Secret
+metadata:
+  annotations:
+    rhdh.redhat.com/containers: install-dynamic-plugins
+    rhdh.redhat.com/mount-path: /opt/app-root/src/.npmrc.dynamic-plugins
+  creationTimestamp: "2025-09-11T21:23:38Z"
+  labels:
+    app.kubernetes.io/instance: bs1
+    app.kubernetes.io/name: backstage
+  name: backstage-files-bs1
+  namespace: my-ns
+  ownerReferences:
+  - apiVersion: rhdh.redhat.com/v1alpha4
+    blockOwnerDeletion: true
+    controller: true
+    kind: Backstage
+    name: bs1
+    uid: 86c20e1f-7e52-4211-afa4-8d7e54511155
+  resourceVersion: "28684"
+  uid: 058c3402-9fe2-4de8-87b7-9381cbf79005
+type: Opaque

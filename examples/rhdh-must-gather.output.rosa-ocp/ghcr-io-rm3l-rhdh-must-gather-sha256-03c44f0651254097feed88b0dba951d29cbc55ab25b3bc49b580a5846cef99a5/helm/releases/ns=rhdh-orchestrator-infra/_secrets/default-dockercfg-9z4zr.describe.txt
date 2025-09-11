@@ -1,0 +1,11 @@
+Name:         default-dockercfg-9z4zr
+Namespace:    rhdh-orchestrator-infra
+Labels:       <none>
+Annotations:  openshift.io/internal-registry-auth-token.binding: bound
+              openshift.io/internal-registry-auth-token.service-account: default
+
+Type:  kubernetes.io/dockercfg
+
+Data
+====
+.dockercfg:  6270 bytes

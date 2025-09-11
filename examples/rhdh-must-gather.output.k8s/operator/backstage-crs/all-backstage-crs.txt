@@ -1,0 +1,2 @@
+NAMESPACE   NAME   AGE
+my-ns       bs1    12m

@@ -1,0 +1,19 @@
+apiVersion: rhdh.redhat.com/v1alpha4
+kind: Backstage
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"rhdh.redhat.com/v1alpha4","kind":"Backstage","metadata":{"annotations":{},"name":"bs1","namespace":"my-ns"}}
+  creationTimestamp: "2025-09-11T21:23:38Z"
+  generation: 1
+  name: bs1
+  namespace: my-ns
+  resourceVersion: "29266"
+  uid: 86c20e1f-7e52-4211-afa4-8d7e54511155
+status:
+  conditions:
+  - lastTransitionTime: "2025-09-11T21:28:16Z"
+    message: ""
+    reason: Deployed
+    status: "True"
+    type: Deployed

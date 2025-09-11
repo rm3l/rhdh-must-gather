@@ -1,0 +1,285 @@
+config:
+  global:
+    host: my-backstage-1.127.0.0.1.sslip.io
+  route:
+    enabled: false
+  upstream:
+    ingress:
+      enabled: true
+hooks:
+- events:
+  - test
+  kind: Pod
+  last_run:
+    completed_at: ""
+    phase: ""
+    started_at: ""
+  manifest: |-
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: "my-backstage-1-developer-hub-test-connection"
+      labels:
+        app.kubernetes.io/name: developer-hub
+        helm.sh/chart: backstage-4.5.8
+        app.kubernetes.io/instance: my-backstage-1
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/component: backstage
+      annotations:
+        helm.sh/hook: test
+    spec:
+      containers:
+        - name: curl
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 20Mi
+            limits:
+              cpu: 10m
+              memory: 20Mi
+          livenessProbe:
+            exec:
+              command:
+              - ls
+              - /usr/bin/curl
+          image: "quay.io/curl/curl:latest"
+          imagePullPolicy: Always
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              curl --connect-timeout 5 --max-time 20 --retry 20 --retry-delay 10 --retry-max-time 60 --retry-all-errors my-backstage-1-developer-hub:7007
+      restartPolicy: Never
+  name: my-backstage-1-developer-hub-test-connection
+  path: backstage/templates/tests/test-connection.yaml
+info:
+  deleted: ""
+  description: Upgrade complete
+  first_deployed: "2025-09-11T23:31:36.550696082+02:00"
+  last_deployed: "2025-09-11T23:35:27.198160794+02:00"
+  status: deployed
+manifest: "---\n# Source: backstage/charts/upstream/charts/postgresql/templates/secrets.yaml\napiVersion:
+  v1\nkind: Secret\nmetadata:\n  name: my-backstage-1-postgresql\n  namespace: \"my-ns-2\"\n
+  \ labels:\n    app.kubernetes.io/instance: my-backstage-1\n    app.kubernetes.io/managed-by:
+  Helm\n    app.kubernetes.io/name: postgresql\n    app.kubernetes.io/version: 15.4.0\n
+  \   helm.sh/chart: postgresql-12.10.0\ntype: Opaque\ndata:\n  postgres-password:
+  \"UEhHMjRrejNadg==\"\n  password: \"ZGtBUjdzUko2TA==\"\n  # We don't auto-generate
+  LDAP password when it's not provided as we do for other passwords\n---\n# Source:
+  backstage/charts/upstream/charts/postgresql/templates/secrets.yaml\napiVersion:
+  v1\nkind: Secret\nmetadata:\n  name: my-backstage-1-postgresql-svcbind-postgres\n
+  \ namespace: \"my-ns-2\"\n  labels:\n    app.kubernetes.io/instance: my-backstage-1\n
+  \   app.kubernetes.io/managed-by: Helm\n    app.kubernetes.io/name: postgresql\n
+  \   app.kubernetes.io/version: 15.4.0\n    helm.sh/chart: postgresql-12.10.0\ntype:
+  servicebinding.io/postgresql\ndata:\n  provider: \"Yml0bmFtaQ==\"\n  type: \"cG9zdGdyZXNxbA==\"\n
+  \ host: \"bXktYmFja3N0YWdlLTEtcG9zdGdyZXNxbA==\"\n  port: \"NTQzMg==\"\n  username:
+  \"cG9zdGdyZXM=\"\n  database: \"cG9zdGdyZXM=\"\n  password: \"UEhHMjRrejNadg==\"\n
+  \ uri: \"cG9zdGdyZXNxbDovL3Bvc3RncmVzOlBIRzI0a3ozWnZAbXktYmFja3N0YWdlLTEtcG9zdGdyZXNxbDo1NDMyL3Bvc3RncmVz\"\n---\n#
+  Source: backstage/charts/upstream/charts/postgresql/templates/secrets.yaml\napiVersion:
+  v1\nkind: Secret\nmetadata:\n  name: my-backstage-1-postgresql-svcbind-custom-user\n
+  \ namespace: \"my-ns-2\"\n  labels:\n    app.kubernetes.io/instance: my-backstage-1\n
+  \   app.kubernetes.io/managed-by: Helm\n    app.kubernetes.io/name: postgresql\n
+  \   app.kubernetes.io/version: 15.4.0\n    helm.sh/chart: postgresql-12.10.0\ntype:
+  servicebinding.io/postgresql\ndata:\n  provider: \"Yml0bmFtaQ==\"\n  type: \"cG9zdGdyZXNxbA==\"\n
+  \ host: \"bXktYmFja3N0YWdlLTEtcG9zdGdyZXNxbA==\"\n  port: \"NTQzMg==\"\n  username:
+  \"Ym5fYmFja3N0YWdl\"\n  password: \"ZGtBUjdzUko2TA==\"\n  uri: \"cG9zdGdyZXNxbDovL2JuX2JhY2tzdGFnZTpka0FSN3NSSjZMQG15LWJhY2tzdGFnZS0xLXBvc3RncmVzcWw6NTQzMi8=\"\n---\n#
+  Source: backstage/templates/secrets.yaml\napiVersion: v1\nkind: Secret\nmetadata:\n
+  \ name: my-backstage-1-auth\n  namespace: \"my-ns-2\"\n  labels:\n    app.kubernetes.io/name:
+  developer-hub\n    helm.sh/chart: backstage-4.5.8\n    app.kubernetes.io/instance:
+  my-backstage-1\n    app.kubernetes.io/managed-by: Helm\n    app.kubernetes.io/component:
+  backstage\n  annotations:\ntype: Opaque\ndata:\n  backend-secret: \"MHQ5QjRJR2dsQ2kxSzIyMDgxbWZnb3BQ\"\n---\n#
+  Source: backstage/charts/upstream/templates/app-config-configmap.yaml\napiVersion:
+  v1\nkind: ConfigMap\nmetadata:\n  name: my-backstage-1-developer-hub-app-config\n
+  \ namespace: \"my-ns-2\"\ndata:\n  app-config.yaml: |\n    app:\n      baseUrl:
+  https://my-backstage-1.127.0.0.1.sslip.io\n    auth:\n      providers: {}\n    backend:\n
+  \     auth:\n        externalAccess:\n        - options:\n            secret: ${BACKEND_SECRET}\n
+  \           subject: legacy-default-config\n          type: legacy\n      baseUrl:
+  https://my-backstage-1.127.0.0.1.sslip.io\n      cors:\n        origin: https://my-backstage-1.127.0.0.1.sslip.io\n
+  \     database:\n        connection:\n          password: ${POSTGRESQL_ADMIN_PASSWORD}\n
+  \         user: postgres\n---\n# Source: backstage/templates/dynamic-plugins-configmap.yaml\napiVersion:
+  v1\nkind: ConfigMap\nmetadata:\n  name: my-backstage-1-dynamic-plugins\ndata:\n
+  \ dynamic-plugins.yaml: |\n    includes:\n    - dynamic-plugins.default.yaml\n    plugins:
+  []\n---\n# Source: backstage/charts/upstream/charts/postgresql/templates/primary/svc-headless.yaml\napiVersion:
+  v1\nkind: Service\nmetadata:\n  name: my-backstage-1-postgresql-hl\n  namespace:
+  \"my-ns-2\"\n  labels:\n    app.kubernetes.io/instance: my-backstage-1\n    app.kubernetes.io/managed-by:
+  Helm\n    app.kubernetes.io/name: postgresql\n    app.kubernetes.io/version: 15.4.0\n
+  \   helm.sh/chart: postgresql-12.10.0\n    app.kubernetes.io/component: primary\n
+  \ annotations:\n    # Use this annotation in addition to the actual publishNotReadyAddresses\n
+  \   # field below because the annotation will stop being respected soon but the\n
+  \   # field is broken in some versions of Kubernetes:\n    # https://github.com/kubernetes/kubernetes/issues/58662\n
+  \   service.alpha.kubernetes.io/tolerate-unready-endpoints: \"true\"\nspec:\n  type:
+  ClusterIP\n  clusterIP: None\n  # We want all pods in the StatefulSet to have their
+  addresses published for\n  # the sake of the other Postgresql pods even before they're
+  ready, since they\n  # have to be able to talk to each other in order to become
+  ready.\n  publishNotReadyAddresses: true\n  ports:\n    - name: tcp-postgresql\n
+  \     port: 5432\n      targetPort: tcp-postgresql\n  selector:\n    app.kubernetes.io/instance:
+  my-backstage-1\n    app.kubernetes.io/name: postgresql\n    app.kubernetes.io/component:
+  primary\n---\n# Source: backstage/charts/upstream/charts/postgresql/templates/primary/svc.yaml\napiVersion:
+  v1\nkind: Service\nmetadata:\n  name: my-backstage-1-postgresql\n  namespace: \"my-ns-2\"\n
+  \ labels:\n    app.kubernetes.io/instance: my-backstage-1\n    app.kubernetes.io/managed-by:
+  Helm\n    app.kubernetes.io/name: postgresql\n    app.kubernetes.io/version: 15.4.0\n
+  \   helm.sh/chart: postgresql-12.10.0\n    app.kubernetes.io/component: primary\nspec:\n
+  \ type: ClusterIP\n  sessionAffinity: None\n  ports:\n    - name: tcp-postgresql\n
+  \     port: 5432\n      targetPort: tcp-postgresql\n      nodePort: null\n  selector:\n
+  \   app.kubernetes.io/instance: my-backstage-1\n    app.kubernetes.io/name: postgresql\n
+  \   app.kubernetes.io/component: primary\n---\n# Source: backstage/charts/upstream/templates/service.yaml\napiVersion:
+  v1\nkind: Service\nmetadata:\n  name: my-backstage-1-developer-hub\n  namespace:
+  \"my-ns-2\" \n  labels:\n    app.kubernetes.io/name: developer-hub\n    helm.sh/chart:
+  upstream-2.6.1\n    app.kubernetes.io/instance: my-backstage-1\n    app.kubernetes.io/managed-by:
+  Helm\n    app.kubernetes.io/component: backstage\nspec:\n  type: ClusterIP\n  sessionAffinity:
+  None\n  ports:\n    - name: http-backend\n      port: 7007\n      targetPort: backend\n
+  \     protocol: TCP\n      nodePort: null\n    - name: http-metrics\n      port:
+  9464\n      targetPort: 9464  \n  selector:\n    app.kubernetes.io/name: developer-hub\n
+  \   app.kubernetes.io/instance: my-backstage-1\n    app.kubernetes.io/component:
+  backstage\n---\n# Source: backstage/charts/upstream/templates/backstage-deployment.yaml\napiVersion:
+  apps/v1\nkind: Deployment\nmetadata:\n  name: my-backstage-1-developer-hub\n  namespace:
+  \"my-ns-2\"\n  labels: \n    app.kubernetes.io/name: developer-hub\n    helm.sh/chart:
+  upstream-2.6.1\n    app.kubernetes.io/instance: my-backstage-1\n    app.kubernetes.io/managed-by:
+  Helm\n    app.kubernetes.io/component: backstage\n  annotations:\nspec:\n  replicas:
+  1\n  revisionHistoryLimit: 10\n  selector:\n    matchLabels:\n      app.kubernetes.io/name:
+  developer-hub\n      app.kubernetes.io/instance: my-backstage-1\n      app.kubernetes.io/component:
+  backstage\n  template:\n    metadata:\n      labels:\n        app.kubernetes.io/name:
+  developer-hub\n        helm.sh/chart: upstream-2.6.1\n        app.kubernetes.io/instance:
+  my-backstage-1\n        app.kubernetes.io/managed-by: Helm\n        app.kubernetes.io/component:
+  backstage\n      annotations:\n        checksum/app-config: e3d7ceb079990dfd907dc90a3cc8dcc4413a84127e67d09d99497ae255e82b01\n
+  \       checksum/dynamic-plugins: 'f1f9a92f14a31362d7eb30e67ac1458faf1c685765610f93a8967194d8bc1a5f'\n
+  \   spec:\n      serviceAccountName: default\n      volumes:\n        - ephemeral:\n
+  \           volumeClaimTemplate:\n              spec:\n                accessModes:\n
+  \               - ReadWriteOnce\n                resources:\n                  requests:\n
+  \                   storage: 5Gi\n          name: dynamic-plugins-root\n        -
+  configMap:\n            defaultMode: 420\n            name: 'my-backstage-1-dynamic-plugins'\n
+  \           optional: true\n          name: dynamic-plugins\n        - name: dynamic-plugins-npmrc\n
+  \         secret:\n            defaultMode: 420\n            optional: true\n            secretName:
+  'my-backstage-1-dynamic-plugins-npmrc'\n        - name: dynamic-plugins-registry-auth\n
+  \         secret:\n            defaultMode: 416\n            optional: true\n            secretName:
+  'my-backstage-1-dynamic-plugins-registry-auth'\n        - emptyDir: {}\n          name:
+  npmcacache\n        - emptyDir: {}\n          name: temp\n        - name: backstage-app-config\n
+  \         configMap:\n            name: my-backstage-1-developer-hub-app-config\n
+  \     \n      initContainers:\n        - command:\n          - ./install-dynamic-plugins.sh\n
+  \         - /dynamic-plugins-root\n          env:\n          - name: NPM_CONFIG_USERCONFIG\n
+  \           value: /opt/app-root/src/.npmrc.dynamic-plugins\n          - name: MAX_ENTRY_SIZE\n
+  \           value: \"30000000\"\n          image: 'quay.io/rhdh/rhdh-hub-rhel9:latest'\n
+  \         imagePullPolicy: Always\n          name: install-dynamic-plugins\n          resources:\n
+  \           limits:\n              cpu: 1000m\n              ephemeral-storage:
+  5Gi\n              memory: 2.5Gi\n            requests:\n              cpu: 250m\n
+  \             memory: 256Mi\n          securityContext:\n            allowPrivilegeEscalation:
+  false\n            capabilities:\n              drop:\n              - ALL\n            readOnlyRootFilesystem:
+  true\n            runAsNonRoot: true\n            seccompProfile:\n              type:
+  RuntimeDefault\n          volumeMounts:\n          - mountPath: /dynamic-plugins-root\n
+  \           name: dynamic-plugins-root\n          - mountPath: /opt/app-root/src/dynamic-plugins.yaml\n
+  \           name: dynamic-plugins\n            readOnly: true\n            subPath:
+  dynamic-plugins.yaml\n          - mountPath: /opt/app-root/src/.npmrc.dynamic-plugins\n
+  \           name: dynamic-plugins-npmrc\n            readOnly: true\n            subPath:
+  .npmrc\n          - mountPath: /opt/app-root/src/.config/containers\n            name:
+  dynamic-plugins-registry-auth\n            readOnly: true\n          - mountPath:
+  /opt/app-root/src/.npm/_cacache\n            name: npmcacache\n          - mountPath:
+  /tmp\n            name: temp\n          workingDir: /opt/app-root/src\n      containers:\n
+  \       - name: backstage-backend\n          image: quay.io/rhdh/rhdh-hub-rhel9:latest\n
+  \         imagePullPolicy: \"Always\"\n          securityContext:\n            allowPrivilegeEscalation:
+  false\n            capabilities:\n              drop:\n              - ALL\n            readOnlyRootFilesystem:
+  true\n            runAsNonRoot: true\n            seccompProfile:\n              type:
+  RuntimeDefault\n          args:\n            - \"--config\"\n            - \"dynamic-plugins-root/app-config.dynamic-plugins.yaml\"\n
+  \           - \"--config\"\n            - \"/opt/app-root/src/app-config-from-configmap.yaml\"\n
+  \         resources:\n            limits:\n              cpu: 1000m\n              ephemeral-storage:
+  5Gi\n              memory: 2.5Gi\n            requests:\n              cpu: 250m\n
+  \             memory: 1Gi\n          readinessProbe:\n            failureThreshold:
+  3\n            httpGet:\n              path: /.backstage/health/v1/readiness\n              port:
+  backend\n              scheme: HTTP\n            periodSeconds: 10\n            successThreshold:
+  2\n            timeoutSeconds: 4\n          livenessProbe:\n            failureThreshold:
+  3\n            httpGet:\n              path: /.backstage/health/v1/liveness\n              port:
+  backend\n              scheme: HTTP\n            periodSeconds: 10\n            successThreshold:
+  1\n            timeoutSeconds: 4\n          startupProbe:\n            failureThreshold:
+  3\n            httpGet:\n              path: /.backstage/health/v1/liveness\n              port:
+  backend\n              scheme: HTTP\n            initialDelaySeconds: 30\n            periodSeconds:
+  20\n            successThreshold: 1\n            timeoutSeconds: 4\n          env:\n
+  \           - name: APP_CONFIG_backend_listen_port\n              value: \"7007\"\n
+  \           - name: POSTGRES_HOST\n              value: my-backstage-1-postgresql\n
+  \           - name: POSTGRES_PORT\n              value: \"5432\"\n            -
+  name: POSTGRES_USER\n              value: bn_backstage\n            - name: POSTGRES_PASSWORD\n
+  \             valueFrom:\n                secretKeyRef:\n                  name:
+  my-backstage-1-postgresql\n                  key: password\n            - name:
+  BACKEND_SECRET\n              valueFrom:\n                secretKeyRef:\n                  key:
+  backend-secret\n                  name: 'my-backstage-1-auth'\n            - name:
+  POSTGRESQL_ADMIN_PASSWORD\n              valueFrom:\n                secretKeyRef:\n
+  \                 key: postgres-password\n                  name: 'my-backstage-1-postgresql'\n
+  \         ports:\n            - name: backend\n              containerPort: 7007\n
+  \             protocol: TCP\n          volumeMounts:\n            - name: backstage-app-config\n
+  \             mountPath: \"/opt/app-root/src/app-config-from-configmap.yaml\"\n
+  \             subPath: app-config.yaml\n            - mountPath: /opt/app-root/src/dynamic-plugins-root\n
+  \             name: dynamic-plugins-root\n            - mountPath: /tmp\n              name:
+  temp\n---\n# Source: backstage/charts/upstream/charts/postgresql/templates/primary/statefulset.yaml\napiVersion:
+  apps/v1\nkind: StatefulSet\nmetadata:\n  name: my-backstage-1-postgresql\n  namespace:
+  \"my-ns-2\"\n  labels:\n    app.kubernetes.io/instance: my-backstage-1\n    app.kubernetes.io/managed-by:
+  Helm\n    app.kubernetes.io/name: postgresql\n    app.kubernetes.io/version: 15.4.0\n
+  \   helm.sh/chart: postgresql-12.10.0\n    app.kubernetes.io/component: primary\nspec:\n
+  \ replicas: 1\n  serviceName: my-backstage-1-postgresql-hl\n  updateStrategy:\n
+  \   rollingUpdate: {}\n    type: RollingUpdate\n  selector:\n    matchLabels:\n
+  \     app.kubernetes.io/instance: my-backstage-1\n      app.kubernetes.io/name:
+  postgresql\n      app.kubernetes.io/component: primary\n  template:\n    metadata:\n
+  \     name: my-backstage-1-postgresql\n      labels:\n        app.kubernetes.io/instance:
+  my-backstage-1\n        app.kubernetes.io/managed-by: Helm\n        app.kubernetes.io/name:
+  postgresql\n        app.kubernetes.io/version: 15.4.0\n        helm.sh/chart: postgresql-12.10.0\n
+  \       app.kubernetes.io/component: primary\n    spec:\n      serviceAccountName:
+  default\n      \n      affinity:\n        podAffinity:\n          \n        podAntiAffinity:\n
+  \         preferredDuringSchedulingIgnoredDuringExecution:\n            - podAffinityTerm:\n
+  \               labelSelector:\n                  matchLabels:\n                    app.kubernetes.io/instance:
+  my-backstage-1\n                    app.kubernetes.io/name: postgresql\n                    app.kubernetes.io/component:
+  primary\n                topologyKey: kubernetes.io/hostname\n              weight:
+  1\n        nodeAffinity:\n          \n      hostNetwork: false\n      hostIPC: false\n
+  \     containers:\n        - name: postgresql\n          image: quay.io/fedora/postgresql-15:latest\n
+  \         imagePullPolicy: \"IfNotPresent\"\n          env:\n            - name:
+  BITNAMI_DEBUG\n              value: \"false\"\n            - name: POSTGRESQL_PORT_NUMBER\n
+  \             value: \"5432\"\n            - name: POSTGRESQL_VOLUME_DIR\n              value:
+  \"/var/lib/pgsql/data\"\n            - name: PGDATA\n              value: \"/var/lib/pgsql/data/userdata\"\n
+  \           # Authentication\n            - name: POSTGRES_USER\n              value:
+  \"bn_backstage\"\n            - name: POSTGRES_PASSWORD\n              valueFrom:\n
+  \               secretKeyRef:\n                  name: my-backstage-1-postgresql\n
+  \                 key: password\n            - name: POSTGRES_POSTGRES_PASSWORD\n
+  \             valueFrom:\n                secretKeyRef:\n                  name:
+  my-backstage-1-postgresql\n                  key: postgres-password\n            #
+  Replication\n            # Initdb\n            # Standby\n            # LDAP\n            -
+  name: POSTGRESQL_ENABLE_LDAP\n              value: \"no\"\n            # TLS\n            -
+  name: POSTGRESQL_ENABLE_TLS\n              value: \"no\"\n            # Audit\n
+  \           - name: POSTGRESQL_LOG_HOSTNAME\n              value: \"false\"\n            -
+  name: POSTGRESQL_LOG_CONNECTIONS\n              value: \"false\"\n            -
+  name: POSTGRESQL_LOG_DISCONNECTIONS\n              value: \"false\"\n            -
+  name: POSTGRESQL_PGAUDIT_LOG_CATALOG\n              value: \"off\"\n            #
+  Others\n            - name: POSTGRESQL_CLIENT_MIN_MESSAGES\n              value:
+  \"error\"\n            - name: POSTGRESQL_SHARED_PRELOAD_LIBRARIES\n              value:
+  \"pgaudit\"\n            - name: POSTGRESQL_ADMIN_PASSWORD\n              valueFrom:\n
+  \               secretKeyRef:\n                  key: postgres-password\n                  name:
+  'my-backstage-1-postgresql'\n          ports:\n            - name: tcp-postgresql\n
+  \             containerPort: 5432\n          livenessProbe:\n            failureThreshold:
+  6\n            initialDelaySeconds: 30\n            periodSeconds: 10\n            successThreshold:
+  1\n            timeoutSeconds: 5\n            exec:\n              command:\n                -
+  /bin/sh\n                - -c\n                - exec pg_isready -U \"bn_backstage\"
+  -h 127.0.0.1 -p 5432\n          readinessProbe:\n            failureThreshold: 6\n
+  \           initialDelaySeconds: 5\n            periodSeconds: 10\n            successThreshold:
+  1\n            timeoutSeconds: 5\n            exec:\n              command:\n                -
+  /bin/sh\n                - -c\n                - -e\n                - |\n                  exec
+  pg_isready -U \"bn_backstage\" -h 127.0.0.1 -p 5432\n          resources:\n            limits:\n
+  \             cpu: 250m\n              ephemeral-storage: 20Mi\n              memory:
+  1024Mi\n            requests:\n              cpu: 250m\n              memory: 256Mi\n
+  \         volumeMounts:\n            - name: dshm\n              mountPath: /dev/shm\n
+  \           - name: data\n              mountPath: /var/lib/pgsql/data\n      volumes:\n
+  \       - name: dshm\n          emptyDir:\n            medium: Memory\n  volumeClaimTemplates:\n
+  \   - apiVersion: v1\n      kind: PersistentVolumeClaim\n      metadata:\n        name:
+  data\n      spec:\n        accessModes:\n          - \"ReadWriteOnce\"\n        resources:\n
+  \         requests:\n            storage: \"1Gi\"\n---\n# Source: backstage/charts/upstream/templates/ingress.yaml\napiVersion:
+  networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: my-backstage-1-developer-hub\n
+  \ namespace: \"my-ns-2\"\n  labels:\n    app.kubernetes.io/name: developer-hub\n
+  \   helm.sh/chart: upstream-2.6.1\n    app.kubernetes.io/instance: my-backstage-1\n
+  \   app.kubernetes.io/managed-by: Helm\n    app.kubernetes.io/component: backstage\n
+  \ annotations:\nspec:\n  rules:\n    - host: my-backstage-1.127.0.0.1.sslip.io\n
+  \     http:\n        paths:\n          - path: /\n            pathType: Prefix\n
+  \           backend:\n              service:\n                name: my-backstage-1-developer-hub\n
+  \               port:\n                  number: 7007\n---\n# Source: backstage/templates/tests/test-secret.yaml\n#
+  RHDHBUGS-1893: test-only option to inject a user-provided dynamic plugins npmrc
+  secret.\n# Doing it this way because the secret name is dynamic and depends on the
+  release name.\n"
+name: my-backstage-1
+namespace: my-ns-2
+version: 4

@@ -1,0 +1,41 @@
+apiVersion: v1
+data:
+  default.app-config.yaml: |
+    ###########################################################################################################
+    # /!\ WARNING
+    #
+    # This is the default app-config file created and managed by the Operator for your CR.
+    # Do NOT edit this manually in the Cluster, as your changes will be overridden by the Operator upon the
+    # next reconciliation.
+    # If you want to customize the application configuration, you should create your own app-config ConfigMap
+    # and reference it in your CR.
+    # See https://docs.redhat.com/en/documentation/red_hat_developer_hub/1.4/html/configuring/provisioning-and-using-your-custom-configuration#provisioning-your-custom-configuration
+    # for more details.
+    ###########################################################################################################
+    backend:
+      auth:
+        externalAccess:
+          - type: legacy
+            options:
+              subject: legacy-default-config
+              # This is a default value, which you should change by providing your own app-config
+              secret: "pl4s3Ch4ng3M3"
+    auth:
+      providers: {}
+kind: ConfigMap
+metadata:
+  creationTimestamp: "2025-09-11T21:23:38Z"
+  labels:
+    app.kubernetes.io/instance: bs1
+    app.kubernetes.io/name: backstage
+  name: backstage-appconfig-bs1
+  namespace: my-ns
+  ownerReferences:
+  - apiVersion: rhdh.redhat.com/v1alpha4
+    blockOwnerDeletion: true
+    controller: true
+    kind: Backstage
+    name: bs1
+    uid: 86c20e1f-7e52-4211-afa4-8d7e54511155
+  resourceVersion: "28678"
+  uid: e5dda3e4-3086-4586-8a9c-4bb12d94ce49

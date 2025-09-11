@@ -1,0 +1,20 @@
+apiVersion: v1
+data:
+  backend-secret: [REDACTED]
+kind: Secret
+metadata:
+  annotations:
+    meta.helm.sh/release-name: my-backstage-1-no-local-db
+    meta.helm.sh/release-namespace: my-ns-3
+  creationTimestamp: "2025-09-11T21:23:13Z"
+  labels:
+    app.kubernetes.io/component: backstage
+    app.kubernetes.io/instance: my-backstage-1-no-local-db
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: developer-hub
+    helm.sh/chart: backstage-4.5.8
+  name: my-backstage-1-no-local-db-auth
+  namespace: my-ns-3
+  resourceVersion: "28590"
+  uid: ba00f5ef-a1bc-4231-bee6-ebbafcd73710
+type: Opaque

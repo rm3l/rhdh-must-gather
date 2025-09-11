@@ -1,0 +1,322 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    annotations:
+      k8s.ovn.org/pod-networks: '{"default":{"ip_addresses":["10.128.0.40/23"],"mac_address":"0a:58:0a:80:00:28","gateway_ips":["10.128.0.1"],"routes":[{"dest":"10.128.0.0/14","nextHop":"10.128.0.1"},{"dest":"172.30.0.0/16","nextHop":"10.128.0.1"},{"dest":"169.254.0.5/32","nextHop":"10.128.0.1"},{"dest":"100.64.0.0/16","nextHop":"10.128.0.1"}],"ip_address":"10.128.0.40/23","gateway_ip":"10.128.0.1","role":"primary"}}'
+      k8s.v1.cni.cncf.io/network-status: |-
+        [{
+            "name": "ovn-kubernetes",
+            "interface": "eth0",
+            "ips": [
+                "10.128.0.40"
+            ],
+            "mac": "0a:58:0a:80:00:28",
+            "default": true,
+            "dns": {}
+        }]
+      openshift.io/scc: restricted-v2
+      rhdh.redhat.com/ext-config-hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+      seccomp.security.alpha.kubernetes.io/pod: runtime/default
+    creationTimestamp: "2025-09-11T20:50:02Z"
+    generateName: backstage-my-developer-hub-5ffcfdfd99-
+    labels:
+      pod-template-hash: 5ffcfdfd99
+      rhdh.redhat.com/app: backstage-my-developer-hub
+    name: backstage-my-developer-hub-5ffcfdfd99-nzwml
+    namespace: my-ns
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: backstage-my-developer-hub-5ffcfdfd99
+      uid: ef3ced5d-76ac-492c-98b6-d54f3e55b954
+    resourceVersion: "79462"
+    uid: 5ec87103-9a05-4a7e-940c-a5b90f0c4445
+  spec:
+    automountServiceAccountToken: false
+    containers:
+    - args:
+      - --config
+      - dynamic-plugins-root/app-config.dynamic-plugins.yaml
+      - --config
+      - /opt/app-root/src/default.app-config.yaml
+      env:
+      - name: APP_CONFIG_backend_listen_port
+        value: "7007"
+      envFrom:
+      - secretRef:
+          name: backstage-psql-secret-my-developer-hub
+      image: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:0c76994fde2cd71471802d458b682ab652be5a0e291c3a2773cb524259ac79b2
+      imagePullPolicy: IfNotPresent
+      livenessProbe:
+        failureThreshold: 3
+        httpGet:
+          path: /.backstage/health/v1/liveness
+          port: backend
+          scheme: HTTP
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 4
+      name: backstage-backend
+      ports:
+      - containerPort: 7007
+        name: backend
+        protocol: TCP
+      readinessProbe:
+        failureThreshold: 3
+        httpGet:
+          path: /.backstage/health/v1/readiness
+          port: backend
+          scheme: HTTP
+        periodSeconds: 10
+        successThreshold: 2
+        timeoutSeconds: 4
+      resources:
+        limits:
+          cpu: "1"
+          ephemeral-storage: 5Gi
+          memory: 2560Mi
+        requests:
+          cpu: 250m
+          ephemeral-storage: 5Gi
+          memory: 256Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        readOnlyRootFilesystem: true
+        runAsNonRoot: true
+        runAsUser: 1000800000
+        seccompProfile:
+          type: RuntimeDefault
+      startupProbe:
+        failureThreshold: 3
+        httpGet:
+          path: /.backstage/health/v1/liveness
+          port: backend
+          scheme: HTTP
+        initialDelaySeconds: 30
+        periodSeconds: 20
+        successThreshold: 1
+        timeoutSeconds: 4
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /opt/app-root/src/dynamic-plugins-root
+        name: dynamic-plugins-root
+      - mountPath: /tmp
+        name: temp
+      - mountPath: /opt/app-root/src/default.app-config.yaml
+        name: backstage-appconfig-my-developer-hub
+        readOnly: true
+        subPath: default.app-config.yaml
+      workingDir: /opt/app-root/src
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    imagePullSecrets:
+    - name: default-dockercfg-hbnf5
+    initContainers:
+    - command:
+      - ./install-dynamic-plugins.sh
+      - /dynamic-plugins-root
+      env:
+      - name: NPM_CONFIG_USERCONFIG
+        value: /opt/app-root/src/.npmrc.dynamic-plugins/.npmrc
+      - name: MAX_ENTRY_SIZE
+        value: "30000000"
+      image: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:0c76994fde2cd71471802d458b682ab652be5a0e291c3a2773cb524259ac79b2
+      imagePullPolicy: IfNotPresent
+      name: install-dynamic-plugins
+      resources:
+        limits:
+          cpu: "1"
+          ephemeral-storage: 5Gi
+          memory: 2560Mi
+        requests:
+          cpu: 250m
+          ephemeral-storage: 5Gi
+          memory: 256Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        readOnlyRootFilesystem: true
+        runAsNonRoot: true
+        runAsUser: 1000800000
+        seccompProfile:
+          type: RuntimeDefault
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /dynamic-plugins-root
+        name: dynamic-plugins-root
+      - mountPath: /opt/app-root/src/.config/containers
+        name: dynamic-plugins-registry-auth
+        readOnly: true
+      - mountPath: /opt/app-root/src/.npm/_cacache
+        name: npmcacache
+      - mountPath: /tmp
+        name: temp
+      - mountPath: /opt/app-root/src/dynamic-plugins.yaml
+        name: backstage-dynamic-plugins-my-developer-hub
+        readOnly: true
+        subPath: dynamic-plugins.yaml
+      - mountPath: /opt/app-root/src/.npmrc.dynamic-plugins
+        name: backstage-files-my-developer-hub
+      workingDir: /opt/app-root/src
+    nodeName: ip-10-0-1-180.ec2.internal
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext:
+      fsGroup: 1000800000
+      seLinuxOptions:
+        level: s0:c28,c22
+      seccompProfile:
+        type: RuntimeDefault
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoSchedule
+      key: node.kubernetes.io/memory-pressure
+      operator: Exists
+    volumes:
+    - ephemeral:
+        volumeClaimTemplate:
+          metadata:
+            creationTimestamp: null
+          spec:
+            accessModes:
+            - ReadWriteOnce
+            resources:
+              requests:
+                storage: 2Gi
+            volumeMode: Filesystem
+      name: dynamic-plugins-root
+    - name: dynamic-plugins-registry-auth
+      secret:
+        defaultMode: 416
+        optional: true
+        secretName: dynamic-plugins-registry-auth
+    - emptyDir: {}
+      name: npmcacache
+    - emptyDir: {}
+      name: temp
+    - configMap:
+        defaultMode: 420
+        name: backstage-appconfig-my-developer-hub
+        optional: false
+      name: backstage-appconfig-my-developer-hub
+    - configMap:
+        defaultMode: 420
+        name: backstage-dynamic-plugins-my-developer-hub
+        optional: false
+      name: backstage-dynamic-plugins-my-developer-hub
+    - name: backstage-files-my-developer-hub
+      secret:
+        defaultMode: 420
+        optional: false
+        secretName: backstage-files-my-developer-hub
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2025-09-11T20:51:53Z"
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2025-09-11T20:53:19Z"
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2025-09-11T20:54:06Z"
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2025-09-11T20:54:06Z"
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2025-09-11T20:50:07Z"
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: cri-o://15851b0a488a8c591c68cf47c0d871fc7e7df7564482ea8ceed21d4a4f9e00b9
+      image: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:0c76994fde2cd71471802d458b682ab652be5a0e291c3a2773cb524259ac79b2
+      imageID: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:0c76994fde2cd71471802d458b682ab652be5a0e291c3a2773cb524259ac79b2
+      lastState: {}
+      name: backstage-backend
+      ready: true
+      restartCount: 0
+      started: true
+      state:
+        running:
+          startedAt: "2025-09-11T20:53:19Z"
+      volumeMounts:
+      - mountPath: /opt/app-root/src/dynamic-plugins-root
+        name: dynamic-plugins-root
+      - mountPath: /tmp
+        name: temp
+      - mountPath: /opt/app-root/src/default.app-config.yaml
+        name: backstage-appconfig-my-developer-hub
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 10.0.1.180
+    hostIPs:
+    - ip: 10.0.1.180
+    initContainerStatuses:
+    - containerID: cri-o://a316d7d0b9f1a531c0f4117661e494bd0f88eba1530bc3a77e54109a407e05b6
+      image: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:0c76994fde2cd71471802d458b682ab652be5a0e291c3a2773cb524259ac79b2
+      imageID: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:0c76994fde2cd71471802d458b682ab652be5a0e291c3a2773cb524259ac79b2
+      lastState: {}
+      name: install-dynamic-plugins
+      ready: true
+      restartCount: 0
+      started: false
+      state:
+        terminated:
+          containerID: cri-o://a316d7d0b9f1a531c0f4117661e494bd0f88eba1530bc3a77e54109a407e05b6
+          exitCode: 0
+          finishedAt: "2025-09-11T20:53:19Z"
+          reason: Completed
+          startedAt: "2025-09-11T20:51:53Z"
+      volumeMounts:
+      - mountPath: /dynamic-plugins-root
+        name: dynamic-plugins-root
+      - mountPath: /opt/app-root/src/.config/containers
+        name: dynamic-plugins-registry-auth
+        readOnly: true
+        recursiveReadOnly: Disabled
+      - mountPath: /opt/app-root/src/.npm/_cacache
+        name: npmcacache
+      - mountPath: /tmp
+        name: temp
+      - mountPath: /opt/app-root/src/dynamic-plugins.yaml
+        name: backstage-dynamic-plugins-my-developer-hub
+        readOnly: true
+        recursiveReadOnly: Disabled
+      - mountPath: /opt/app-root/src/.npmrc.dynamic-plugins
+        name: backstage-files-my-developer-hub
+    phase: Running
+    podIP: 10.128.0.40
+    podIPs:
+    - ip: 10.128.0.40
+    qosClass: Burstable
+    startTime: "2025-09-11T20:50:07Z"
+kind: List
+metadata:
+  resourceVersion: ""

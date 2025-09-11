@@ -1,0 +1,30 @@
+Name:         my-developer-hub
+Namespace:    my-ns
+Labels:       app.kubernetes.io/name=backstage
+Annotations:  <none>
+API Version:  rhdh.redhat.com/v1alpha3
+Kind:         Backstage
+Metadata:
+  Creation Timestamp:  2025-09-11T20:50:01Z
+  Generation:          1
+  Resource Version:    79469
+  UID:                 10a5f5fd-515e-4c90-840d-27d71ae8fa1b
+Spec:
+  Application:
+    App Config:
+      Mount Path:  /opt/app-root/src
+    Extra Files:
+      Mount Path:  /opt/app-root/src
+    Replicas:      1
+    Route:
+      Enabled:  true
+  Database:
+    Enable Local Db:  true
+Status:
+  Conditions:
+    Last Transition Time:  2025-09-11T20:54:07Z
+    Message:               
+    Reason:                Deployed
+    Status:                True
+    Type:                  Deployed
+Events:                    <none>

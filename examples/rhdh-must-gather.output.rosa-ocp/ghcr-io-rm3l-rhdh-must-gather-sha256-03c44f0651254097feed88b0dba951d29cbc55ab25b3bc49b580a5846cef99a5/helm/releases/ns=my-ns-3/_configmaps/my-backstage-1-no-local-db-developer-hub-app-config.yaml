@@ -1,0 +1,33 @@
+apiVersion: v1
+data:
+  app-config.yaml: |
+    app:
+      baseUrl: https://my-backstage-1-no-local-db-developer-hub-my-ns-3.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com
+    auth:
+      providers: {}
+    backend:
+      auth:
+        externalAccess:
+        - options:
+            secret: ${BACKEND_SECRET}
+            subject: legacy-default-config
+          type: legacy
+      baseUrl: https://my-backstage-1-no-local-db-developer-hub-my-ns-3.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com
+      cors:
+        origin: https://my-backstage-1-no-local-db-developer-hub-my-ns-3.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com
+      database:
+        connection:
+          password: ${POSTGRESQL_ADMIN_PASSWORD}
+          user: postgres
+kind: ConfigMap
+metadata:
+  annotations:
+    meta.helm.sh/release-name: my-backstage-1-no-local-db
+    meta.helm.sh/release-namespace: my-ns-3
+  creationTimestamp: "2025-09-11T20:43:14Z"
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  name: my-backstage-1-no-local-db-developer-hub-app-config
+  namespace: my-ns-3
+  resourceVersion: "75111"
+  uid: 54e21eed-c349-4f78-b309-4deb2506d2d1

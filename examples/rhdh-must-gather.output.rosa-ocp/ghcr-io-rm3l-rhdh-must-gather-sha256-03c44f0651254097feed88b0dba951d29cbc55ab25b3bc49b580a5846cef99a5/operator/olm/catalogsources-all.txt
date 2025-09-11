@@ -1,0 +1,6 @@
+NAMESPACE                                  NAME                                     DISPLAY                          TYPE   PUBLISHER   AGE
+openshift-deployment-validation-operator   deployment-validation-operator-catalog   Deployment Validation Operator   grpc   Red Hat     4h18m
+openshift-marketplace                      certified-operators                      Certified Operators              grpc   Red Hat     4h19m
+openshift-marketplace                      community-operators                      Community Operators              grpc   Red Hat     4h19m
+openshift-marketplace                      redhat-marketplace                       Red Hat Marketplace              grpc   Red Hat     4h19m
+openshift-marketplace                      redhat-operators                         Red Hat Operators                grpc   Red Hat     4h19m

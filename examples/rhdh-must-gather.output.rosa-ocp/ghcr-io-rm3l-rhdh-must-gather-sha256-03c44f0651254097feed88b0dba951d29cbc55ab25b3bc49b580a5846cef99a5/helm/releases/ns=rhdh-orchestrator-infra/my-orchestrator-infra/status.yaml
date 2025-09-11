@@ -1,0 +1,306 @@
+hooks:
+- delete_policies:
+  - before-hook-creation
+  events:
+  - pre-install
+  kind: Namespace
+  last_run:
+    completed_at: "2025-09-11T22:42:37.269457393+02:00"
+    phase: Succeeded
+    started_at: "2025-09-11T22:42:37.004854786+02:00"
+  manifest: |-
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: knative-serving
+      annotations:
+        "helm.sh/hook": pre-install
+        "helm.sh/hook-weight": "-5"
+        "helm.sh/resource-policy": keep
+  name: knative-serving
+  path: redhat-developer-hub-orchestrator-infra/templates/serverless/knatives.yaml
+  weight: -5
+- delete_policies:
+  - before-hook-creation
+  events:
+  - pre-install
+  kind: Namespace
+  last_run:
+    completed_at: "2025-09-11T22:42:36.639423903+02:00"
+    phase: Succeeded
+    started_at: "2025-09-11T22:42:36.374011651+02:00"
+  manifest: |-
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: knative-eventing
+      annotations:
+        "helm.sh/hook": pre-install
+        "helm.sh/hook-weight": "-5"
+        "helm.sh/resource-policy": keep
+  name: knative-eventing
+  path: redhat-developer-hub-orchestrator-infra/templates/serverless/knatives.yaml
+  weight: -5
+- delete_policies:
+  - before-hook-creation
+  - hook-succeeded
+  - hook-failed
+  events:
+  - test
+  kind: ServiceAccount
+  last_run:
+    completed_at: ""
+    phase: ""
+    started_at: ""
+  manifest: |-
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: test-service-account
+      namespace: rhdh-orchestrator-infra
+      annotations:
+        helm.sh/hook: test
+        helm.sh/hook-delete-policy: before-hook-creation, hook-succeeded, hook-failed
+  name: test-service-account
+  path: redhat-developer-hub-orchestrator-infra/templates/tests/infra-test.yaml
+- delete_policies:
+  - before-hook-creation
+  - hook-succeeded
+  - hook-failed
+  events:
+  - test
+  kind: Role
+  last_run:
+    completed_at: ""
+    phase: ""
+    started_at: ""
+  manifest: |-
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: Role
+    metadata:
+      name: test-role-os
+      namespace: openshift-serverless
+      annotations:
+        helm.sh/hook: test
+        helm.sh/hook-delete-policy: before-hook-creation, hook-succeeded, hook-failed
+    rules:
+      - apiGroups: ["operators.coreos.com"]
+        resources: ["subscriptions"]
+        verbs: ["list", "get"]
+  name: test-role-os
+  path: redhat-developer-hub-orchestrator-infra/templates/tests/infra-test.yaml
+- delete_policies:
+  - before-hook-creation
+  - hook-succeeded
+  - hook-failed
+  events:
+  - test
+  kind: Role
+  last_run:
+    completed_at: ""
+    phase: ""
+    started_at: ""
+  manifest: |-
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: Role
+    metadata:
+      name: test-role-osl
+      namespace: openshift-serverless-logic
+      annotations:
+        helm.sh/hook: test
+        helm.sh/hook-delete-policy: before-hook-creation, hook-succeeded, hook-failed
+    rules:
+      - apiGroups: ["operators.coreos.com"]
+        resources: ["subscriptions"]
+        verbs: ["list", "get"]
+  name: test-role-osl
+  path: redhat-developer-hub-orchestrator-infra/templates/tests/infra-test.yaml
+- delete_policies:
+  - before-hook-creation
+  - hook-succeeded
+  - hook-failed
+  events:
+  - test
+  kind: RoleBinding
+  last_run:
+    completed_at: ""
+    phase: ""
+    started_at: ""
+  manifest: |-
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: test-role-binding-os
+      namespace: openshift-serverless
+      annotations:
+        helm.sh/hook: test
+        helm.sh/hook-delete-policy: before-hook-creation, hook-succeeded, hook-failed
+    subjects:
+      - kind: ServiceAccount
+        name: test-service-account
+        namespace: rhdh-orchestrator-infra
+    roleRef:
+      kind: Role
+      name: test-role-os
+      apiGroup: rbac.authorization.k8s.io
+  name: test-role-binding-os
+  path: redhat-developer-hub-orchestrator-infra/templates/tests/infra-test.yaml
+- delete_policies:
+  - before-hook-creation
+  - hook-succeeded
+  - hook-failed
+  events:
+  - test
+  kind: RoleBinding
+  last_run:
+    completed_at: ""
+    phase: ""
+    started_at: ""
+  manifest: |-
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: test-role-binding-osl
+      namespace: openshift-serverless-logic
+      annotations:
+        helm.sh/hook: test
+        helm.sh/hook-delete-policy: before-hook-creation, hook-succeeded, hook-failed
+    subjects:
+      - kind: ServiceAccount
+        name: test-service-account
+        namespace: rhdh-orchestrator-infra
+    roleRef:
+      kind: Role
+      name: test-role-osl
+      apiGroup: rbac.authorization.k8s.io
+  name: test-role-binding-osl
+  path: redhat-developer-hub-orchestrator-infra/templates/tests/infra-test.yaml
+- events:
+  - test
+  kind: Pod
+  last_run:
+    completed_at: ""
+    phase: ""
+    started_at: ""
+  manifest: "apiVersion: v1\nkind: Pod\nmetadata:\n  name: testing-pod\n  namespace:
+    rhdh-orchestrator-infra\n  labels:\n    app.kubernetes.io/component: test\n  annotations:\n
+    \   helm.sh/hook: test\nspec:\n  serviceAccountName: test-service-account\n  containers:\n
+    \   - name: oc-client\n      securityContext:\n        allowPrivilegeEscalation:
+    false\n        readOnlyRootFilesystem: true\n        capabilities:\n          drop:
+    [\"ALL\"]\n        runAsNonRoot: false\n      resources:\n        requests:\n
+    \         cpu: 10m\n          memory: 20Mi\n        limits:\n          cpu: 10m\n
+    \         memory: 20Mi\n      image: bitnami/kubectl:latest\n      command: [\"/bin/sh\",
+    \"-c\"]\n      args:\n        - |\n          set -e\n      \n          echo \"Starting
+    Test\"\n            kubectl get subscription serverless-operator -n openshift-serverless
+    || exit 1\n          kubectl get subscription  -n openshift-serverless-logic ||
+    exit 1\n      \n          echo \"Test passed!\"\n  restartPolicy: Never"
+  name: testing-pod
+  path: redhat-developer-hub-orchestrator-infra/templates/tests/infra-test.yaml
+info:
+  deleted: ""
+  description: Install complete
+  first_deployed: "2025-09-11T22:42:32.120140747+02:00"
+  last_deployed: "2025-09-11T22:42:32.120140747+02:00"
+  notes: |2
+
+
+    Helm Release my-orchestrator-infra installed in namespace rhdh-orchestrator-infra.
+
+
+    Components                         Installed   Namespace
+    ====================================================================
+    Red Hat Serverless Operator         YES      openshift-serverless
+    Red Hat Serverless Logic Operator   YES     openshift-serverless-logic
+    ====================================================================
+
+
+    To manually approve the openshift-serverless InstallPlan:
+
+    OS_PLAN=$(oc get installplan -n openshift-serverless --sort-by=.metadata.creationTimestamp -o jsonpath='{.items[0].metadata.name}')
+    oc patch installplan $OS_PLAN -n openshift-serverless --type merge --patch '{"spec":{"approved":true}}'
+
+    To manually approve the openshift-serverless-logic InstallPlan:
+
+    OSL_PLAN=$(oc get installplan -n openshift-serverless-logic --sort-by=.metadata.creationTimestamp -o jsonpath='{.items[0].metadata.name}')
+    oc patch installplan $OSL_PLAN -n openshift-serverless-logic --type merge --patch '{"spec":{"approved":true}}'
+  status: deployed
+manifest: |
+  ---
+  # Source: redhat-developer-hub-orchestrator-infra/templates/serverless-logic/namespace.yaml
+  apiVersion: v1
+  kind: Namespace
+  metadata:
+    name: openshift-serverless-logic
+  ---
+  # Source: redhat-developer-hub-orchestrator-infra/templates/serverless/namespace.yaml
+  apiVersion: v1
+  kind: Namespace
+  metadata:
+    name: openshift-serverless
+  ---
+  # Source: redhat-developer-hub-orchestrator-infra/templates/serverless/knatives.yaml
+  apiVersion: operator.knative.dev/v1beta1
+  kind: KnativeEventing
+  metadata:
+    name: knative-eventing
+    namespace: knative-eventing
+  spec:
+    Registry:
+  ---
+  # Source: redhat-developer-hub-orchestrator-infra/templates/serverless/knatives.yaml
+  apiVersion: operator.knative.dev/v1beta1
+  kind: KnativeServing
+  metadata:
+    name: knative-serving
+    namespace: knative-serving
+  spec:
+    controller-custom-certs:
+      name: ""
+      type: ""
+    registry: {}
+  ---
+  # Source: redhat-developer-hub-orchestrator-infra/templates/serverless-logic/operator-group.yaml
+  apiVersion: operators.coreos.com/v1
+  kind: OperatorGroup
+  metadata:
+    name: openshift-serverless-logic
+    namespace: openshift-serverless-logic
+  spec: {}
+  ---
+  # Source: redhat-developer-hub-orchestrator-infra/templates/serverless/operator-group.yaml
+  apiVersion: operators.coreos.com/v1
+  kind: OperatorGroup
+  metadata:
+    name: serverless-operator-group
+    namespace: openshift-serverless
+  spec: {}
+  ---
+  # Source: redhat-developer-hub-orchestrator-infra/templates/serverless-logic/subscription.yaml
+  apiVersion: operators.coreos.com/v1alpha1
+  kind: Subscription
+  metadata:
+    name: logic-operator-rhel8
+    namespace: openshift-serverless-logic
+  spec:
+    channel: alpha
+    installPlanApproval: Manual
+    name: logic-operator-rhel8
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace
+    startingCSV: logic-operator-rhel8.v1.36.0
+  ---
+  # Source: redhat-developer-hub-orchestrator-infra/templates/serverless/subscription.yaml
+  apiVersion: operators.coreos.com/v1alpha1
+  kind: Subscription
+  metadata:
+    name: serverless-operator
+    namespace: openshift-serverless
+  spec:
+    channel: stable
+    installPlanApproval: Manual
+    name: serverless-operator
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace
+name: my-orchestrator-infra
+namespace: rhdh-orchestrator-infra
+version: 1

@@ -1,0 +1,3 @@
+NAMESPACE   NAME               AGE
+olm         olm-operators      8h
+operators   global-operators   8h

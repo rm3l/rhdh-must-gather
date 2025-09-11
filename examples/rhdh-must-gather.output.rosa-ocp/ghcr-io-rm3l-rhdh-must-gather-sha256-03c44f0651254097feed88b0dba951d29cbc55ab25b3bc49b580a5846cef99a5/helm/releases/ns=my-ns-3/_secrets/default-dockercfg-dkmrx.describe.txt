@@ -1,0 +1,11 @@
+Name:         default-dockercfg-dkmrx
+Namespace:    my-ns-3
+Labels:       <none>
+Annotations:  openshift.io/internal-registry-auth-token.binding: bound
+              openshift.io/internal-registry-auth-token.service-account: default
+
+Type:  kubernetes.io/dockercfg
+
+Data
+====
+.dockercfg:  6102 bytes

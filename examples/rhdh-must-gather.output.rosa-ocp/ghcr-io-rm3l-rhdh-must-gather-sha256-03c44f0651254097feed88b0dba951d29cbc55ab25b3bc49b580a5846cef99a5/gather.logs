@@ -1,0 +1,245 @@
+2025-09-11T21:01:18.272890121Z volume percentage checker started.....
+2025-09-11T21:01:18.280044651Z volume usage percentage 0
+2025-09-11T21:01:18.285705898Z [2025-09-11 21:01:18] [INFO] Starting RHDH must-gather collection...
+2025-09-11T21:01:18.287372832Z [2025-09-11 21:01:18] [INFO] Output directory: /must-gather
+2025-09-11T21:01:18.288881950Z [2025-09-11 21:01:18] [INFO] Log level: info
+2025-09-11T21:01:18.290359502Z [2025-09-11 21:01:18] [INFO] Initializing must-gather environment
+2025-09-11T21:01:18.492302362Z [2025-09-11 21:01:18] [SUCCESS] [0;32mMust-gather environment initialized[0m
+2025-09-11T21:01:18.494106340Z [2025-09-11 21:01:18] [INFO] running gather_platform
+2025-09-11T21:01:18.502471367Z [2025-09-11 21:01:18] [INFO] Starting Platform data collection...
+2025-09-11T21:01:19.215385545Z [2025-09-11 21:01:19] [INFO] Detected OCP on AWS (OCP 4.19.10), K8s v1.32.8
+2025-09-11T21:01:19.217170138Z [2025-09-11 21:01:19] [SUCCESS] [0;32mPlatform data collection completed.[0m
+2025-09-11T21:01:19.219168119Z [2025-09-11 21:01:19] [INFO] running gather_helm
+2025-09-11T21:01:19.228045828Z [2025-09-11 21:01:19] [INFO] Starting Helm data collection...
+2025-09-11T21:01:19.230956129Z [2025-09-11 21:01:19] [INFO] Searching for RHDH-related Helm releases in all namespaces...
+2025-09-11T21:01:19.464405181Z [2025-09-11 21:01:19] [INFO] --> Processing namespace my-ns containing at least one Helm release
+2025-09-11T21:01:19.585046461Z [2025-09-11 21:01:19] [INFO] 	Collecting: CM backstage-appconfig-my-developer-hub
+2025-09-11T21:01:19.700732645Z [2025-09-11 21:01:19] [INFO] 	Collecting: Details of CM backstage-appconfig-my-developer-hub
+2025-09-11T21:01:19.834221128Z [2025-09-11 21:01:19] [INFO] 	Collecting: CM backstage-dynamic-plugins-my-developer-hub
+2025-09-11T21:01:19.950947671Z [2025-09-11 21:01:19] [INFO] 	Collecting: Details of CM backstage-dynamic-plugins-my-developer-hub
+2025-09-11T21:01:20.088298613Z [2025-09-11 21:01:20] [INFO] 	Collecting: CM kube-root-ca.crt
+2025-09-11T21:01:20.211180868Z [2025-09-11 21:01:20] [INFO] 	Collecting: Details of CM kube-root-ca.crt
+2025-09-11T21:01:20.346742073Z [2025-09-11 21:01:20] [INFO] 	Collecting: CM openshift-service-ca.crt
+2025-09-11T21:01:20.471942660Z [2025-09-11 21:01:20] [INFO] 	Collecting: Details of CM openshift-service-ca.crt
+2025-09-11T21:01:20.596929740Z [2025-09-11 21:01:20] [INFO] 	Collecting: CM redhat-developer-hub-helm-app-config
+2025-09-11T21:01:20.718624929Z [2025-09-11 21:01:20] [INFO] 	Collecting: Details of CM redhat-developer-hub-helm-app-config
+2025-09-11T21:01:20.850860671Z [2025-09-11 21:01:20] [INFO] 	Collecting: CM redhat-developer-hub-helm-dynamic-plugins
+2025-09-11T21:01:20.970263438Z [2025-09-11 21:01:20] [INFO] 	Collecting: Details of CM redhat-developer-hub-helm-dynamic-plugins
+2025-09-11T21:01:21.240391976Z [2025-09-11 21:01:21] [INFO] 	Collecting: Secret backstage-files-my-developer-hub
+2025-09-11T21:01:21.363907590Z [2025-09-11 21:01:21] [INFO] 	Collecting: Details of Secret backstage-files-my-developer-hub
+2025-09-11T21:01:21.479752226Z [2025-09-11 21:01:21] [INFO] 	Collecting: Secret backstage-psql-secret-my-developer-hub
+2025-09-11T21:01:21.596782727Z [2025-09-11 21:01:21] [INFO] 	Collecting: Details of Secret backstage-psql-secret-my-developer-hub
+2025-09-11T21:01:21.719064342Z [2025-09-11 21:01:21] [INFO] 	Collecting: Secret builder-dockercfg-m54sb
+2025-09-11T21:01:21.839260328Z [2025-09-11 21:01:21] [INFO] 	Collecting: Details of Secret builder-dockercfg-m54sb
+2025-09-11T21:01:21.964313927Z [2025-09-11 21:01:21] [INFO] 	Collecting: Secret default-dockercfg-hbnf5
+2025-09-11T21:01:22.074556354Z [2025-09-11 21:01:22] [INFO] 	Collecting: Details of Secret default-dockercfg-hbnf5
+2025-09-11T21:01:22.203351968Z [2025-09-11 21:01:22] [INFO] 	Collecting: Secret deployer-dockercfg-9bkqw
+2025-09-11T21:01:22.325046049Z [2025-09-11 21:01:22] [INFO] 	Collecting: Details of Secret deployer-dockercfg-9bkqw
+2025-09-11T21:01:22.444152945Z [2025-09-11 21:01:22] [INFO] 	Collecting: Secret redhat-developer-hub-helm-auth
+2025-09-11T21:01:22.564821869Z [2025-09-11 21:01:22] [INFO] 	Collecting: Details of Secret redhat-developer-hub-helm-auth
+2025-09-11T21:01:22.697326836Z [2025-09-11 21:01:22] [INFO] 	Collecting: Secret redhat-developer-hub-helm-postgresql
+2025-09-11T21:01:22.818847590Z [2025-09-11 21:01:22] [INFO] 	Collecting: Details of Secret redhat-developer-hub-helm-postgresql
+2025-09-11T21:01:22.956228634Z [2025-09-11 21:01:22] [INFO] 	Collecting: Secret redhat-developer-hub-helm-postgresql-svcbind-custom-user
+2025-09-11T21:01:23.076679876Z [2025-09-11 21:01:23] [INFO] 	Collecting: Details of Secret redhat-developer-hub-helm-postgresql-svcbind-custom-user
+2025-09-11T21:01:23.200606800Z [2025-09-11 21:01:23] [INFO] 	Collecting: Secret redhat-developer-hub-helm-postgresql-svcbind-postgres
+2025-09-11T21:01:23.292578506Z volume usage percentage 0
+2025-09-11T21:01:23.399378723Z [2025-09-11 21:01:23] [INFO] 	Collecting: Details of Secret redhat-developer-hub-helm-postgresql-svcbind-postgres
+2025-09-11T21:01:23.526947868Z [2025-09-11 21:01:23] [INFO] 	Collecting: Secret sh.helm.release.v1.redhat-developer-hub-helm.v1
+2025-09-11T21:01:23.664708290Z [2025-09-11 21:01:23] [INFO] 	Collecting: Details of Secret sh.helm.release.v1.redhat-developer-hub-helm.v1
+2025-09-11T21:01:23.803239257Z [2025-09-11 21:01:23] [INFO] --> Processing namespace my-ns-3 containing at least one Helm release
+2025-09-11T21:01:23.964028955Z [2025-09-11 21:01:23] [INFO] 	Collecting: CM kube-root-ca.crt
+2025-09-11T21:01:24.124052605Z [2025-09-11 21:01:24] [INFO] 	Collecting: Details of CM kube-root-ca.crt
+2025-09-11T21:01:24.257347536Z [2025-09-11 21:01:24] [INFO] 	Collecting: CM my-backstage-1-no-local-db-developer-hub-app-config
+2025-09-11T21:01:24.379064514Z [2025-09-11 21:01:24] [INFO] 	Collecting: Details of CM my-backstage-1-no-local-db-developer-hub-app-config
+2025-09-11T21:01:24.506596665Z [2025-09-11 21:01:24] [INFO] 	Collecting: CM my-backstage-1-no-local-db-dynamic-plugins
+2025-09-11T21:01:24.625119159Z [2025-09-11 21:01:24] [INFO] 	Collecting: Details of CM my-backstage-1-no-local-db-dynamic-plugins
+2025-09-11T21:01:24.750026676Z [2025-09-11 21:01:24] [INFO] 	Collecting: CM openshift-service-ca.crt
+2025-09-11T21:01:24.865444441Z [2025-09-11 21:01:24] [INFO] 	Collecting: Details of CM openshift-service-ca.crt
+2025-09-11T21:01:25.145688541Z [2025-09-11 21:01:25] [INFO] 	Collecting: Secret builder-dockercfg-dlks8
+2025-09-11T21:01:25.271602943Z [2025-09-11 21:01:25] [INFO] 	Collecting: Details of Secret builder-dockercfg-dlks8
+2025-09-11T21:01:25.393875666Z [2025-09-11 21:01:25] [INFO] 	Collecting: Secret default-dockercfg-dkmrx
+2025-09-11T21:01:25.511834927Z [2025-09-11 21:01:25] [INFO] 	Collecting: Details of Secret default-dockercfg-dkmrx
+2025-09-11T21:01:25.634989055Z [2025-09-11 21:01:25] [INFO] 	Collecting: Secret deployer-dockercfg-l7mtq
+2025-09-11T21:01:25.773448240Z [2025-09-11 21:01:25] [INFO] 	Collecting: Details of Secret deployer-dockercfg-l7mtq
+2025-09-11T21:01:25.914329917Z [2025-09-11 21:01:25] [INFO] 	Collecting: Secret my-backstage-1-no-local-db-auth
+2025-09-11T21:01:26.041123475Z [2025-09-11 21:01:26] [INFO] 	Collecting: Details of Secret my-backstage-1-no-local-db-auth
+2025-09-11T21:01:26.174501648Z [2025-09-11 21:01:26] [INFO] 	Collecting: Secret sh.helm.release.v1.my-backstage-1-no-local-db.v1
+2025-09-11T21:01:26.325516968Z [2025-09-11 21:01:26] [INFO] 	Collecting: Details of Secret sh.helm.release.v1.my-backstage-1-no-local-db.v1
+2025-09-11T21:01:26.463397509Z [2025-09-11 21:01:26] [INFO] --> Processing namespace rhdh-orchestrator-infra containing at least one Helm release
+2025-09-11T21:01:26.588495322Z [2025-09-11 21:01:26] [INFO] 	Collecting: CM kube-root-ca.crt
+2025-09-11T21:01:26.703586615Z [2025-09-11 21:01:26] [INFO] 	Collecting: Details of CM kube-root-ca.crt
+2025-09-11T21:01:26.830667879Z [2025-09-11 21:01:26] [INFO] 	Collecting: CM openshift-service-ca.crt
+2025-09-11T21:01:26.943684262Z [2025-09-11 21:01:26] [INFO] 	Collecting: Details of CM openshift-service-ca.crt
+2025-09-11T21:01:27.205122155Z [2025-09-11 21:01:27] [INFO] 	Collecting: Secret builder-dockercfg-4fsmz
+2025-09-11T21:01:27.323685670Z [2025-09-11 21:01:27] [INFO] 	Collecting: Details of Secret builder-dockercfg-4fsmz
+2025-09-11T21:01:27.442182619Z [2025-09-11 21:01:27] [INFO] 	Collecting: Secret default-dockercfg-9z4zr
+2025-09-11T21:01:27.563716605Z [2025-09-11 21:01:27] [INFO] 	Collecting: Details of Secret default-dockercfg-9z4zr
+2025-09-11T21:01:27.699097886Z [2025-09-11 21:01:27] [INFO] 	Collecting: Secret deployer-dockercfg-bhb2c
+2025-09-11T21:01:27.821869530Z [2025-09-11 21:01:27] [INFO] 	Collecting: Details of Secret deployer-dockercfg-bhb2c
+2025-09-11T21:01:27.943646444Z [2025-09-11 21:01:27] [INFO] 	Collecting: Secret sh.helm.release.v1.my-orchestrator-infra.v1
+2025-09-11T21:01:28.072540896Z [2025-09-11 21:01:28] [INFO] 	Collecting: Details of Secret sh.helm.release.v1.my-orchestrator-infra.v1
+2025-09-11T21:01:28.303068638Z volume usage percentage 0
+2025-09-11T21:01:28.303946696Z [2025-09-11 21:01:28] [INFO] --> Processing Helm release my-backstage-1-no-local-db in namespace my-ns-3
+2025-09-11T21:01:28.307195097Z [2025-09-11 21:01:28] [INFO] 	Collecting: Helm values for my-backstage-1-no-local-db
+2025-09-11T21:01:28.388277188Z [2025-09-11 21:01:28] [INFO] 	Collecting: All Helm values for my-backstage-1-no-local-db
+2025-09-11T21:01:28.492439622Z [2025-09-11 21:01:28] [INFO] 	Collecting: Helm manifest for my-backstage-1-no-local-db
+2025-09-11T21:01:28.576043659Z [2025-09-11 21:01:28] [INFO] 	Collecting: Helm hooks for my-backstage-1-no-local-db
+2025-09-11T21:01:28.660344826Z [2025-09-11 21:01:28] [INFO] 	Collecting: Helm notes for my-backstage-1-no-local-db
+2025-09-11T21:01:28.752094720Z [2025-09-11 21:01:28] [INFO] 	Collecting: Helm history for my-backstage-1-no-local-db
+2025-09-11T21:01:28.835238822Z [2025-09-11 21:01:28] [INFO] 	Collecting: Helm history (YAML) for my-backstage-1-no-local-db
+2025-09-11T21:01:28.999128545Z [2025-09-11 21:01:28] [INFO] 	Collecting: Helm status for my-backstage-1-no-local-db
+2025-09-11T21:01:29.083482717Z [2025-09-11 21:01:29] [INFO] 	Collecting: Helm status (YAML) for my-backstage-1-no-local-db
+2025-09-11T21:01:29.188014837Z [2025-09-11 21:01:29] [INFO] 	Collecting: app deployment for my-ns-3/my-backstage-1-no-local-db-developer-hub
+2025-09-11T21:01:29.321114310Z [2025-09-11 21:01:29] [INFO] 	Collecting: app deployment for my-ns-3/my-backstage-1-no-local-db-developer-hub
+2025-09-11T21:01:29.456278351Z [2025-09-11 21:01:29] [INFO] 	Collecting: app init-container logs for my-ns-3/my-backstage-1-no-local-db-developer-hub
+2025-09-11T21:01:29.613793591Z [2025-09-11 21:01:29] [INFO] 	Collecting: app backstage-backend logs for my-ns-3/my-backstage-1-no-local-db-developer-hub
+2025-09-11T21:01:29.749195772Z [2025-09-11 21:01:29] [INFO] 	Collecting: app deployment logs for my-ns-3/my-backstage-1-no-local-db-developer-hub
+2025-09-11T21:01:30.128912653Z [2025-09-11 21:01:30] [WARN] [1;33mNo running pod found in my-ns-3 namespace with labels: app.kubernetes.io/component=backstage,app.kubernetes.io/instance=my-backstage-1-no-local-db,app.kubernetes.io/name=developer-hub => no data will be fetched from the running app[0m
+2025-09-11T21:01:30.132913899Z [2025-09-11 21:01:30] [INFO] 	Collecting: app deployment pods for my-ns-3/my-backstage-1-no-local-db-developer-hub
+2025-09-11T21:01:30.266215866Z [2025-09-11 21:01:30] [INFO] 	Collecting: app deployment pods for my-ns-3/my-backstage-1-no-local-db-developer-hub
+2025-09-11T21:01:30.393281875Z [2025-09-11 21:01:30] [INFO] 	Collecting: app deployment pods for my-ns-3/my-backstage-1-no-local-db-developer-hub
+2025-09-11T21:01:30.534172440Z [2025-09-11 21:01:30] [INFO] --> Processing Helm release my-orchestrator-infra in namespace rhdh-orchestrator-infra
+2025-09-11T21:01:30.537595508Z [2025-09-11 21:01:30] [INFO] 	Collecting: Helm values for my-orchestrator-infra
+2025-09-11T21:01:30.618136197Z [2025-09-11 21:01:30] [INFO] 	Collecting: All Helm values for my-orchestrator-infra
+2025-09-11T21:01:30.696988501Z [2025-09-11 21:01:30] [INFO] 	Collecting: Helm manifest for my-orchestrator-infra
+2025-09-11T21:01:30.766194407Z [2025-09-11 21:01:30] [INFO] 	Collecting: Helm hooks for my-orchestrator-infra
+2025-09-11T21:01:30.838605989Z [2025-09-11 21:01:30] [INFO] 	Collecting: Helm notes for my-orchestrator-infra
+2025-09-11T21:01:30.939569731Z [2025-09-11 21:01:30] [INFO] 	Collecting: Helm history for my-orchestrator-infra
+2025-09-11T21:01:31.015676614Z [2025-09-11 21:01:31] [INFO] 	Collecting: Helm history (YAML) for my-orchestrator-infra
+2025-09-11T21:01:31.094672803Z [2025-09-11 21:01:31] [INFO] 	Collecting: Helm status for my-orchestrator-infra
+2025-09-11T21:01:31.173668539Z [2025-09-11 21:01:31] [INFO] 	Collecting: Helm status (YAML) for my-orchestrator-infra
+2025-09-11T21:01:31.269089497Z [2025-09-11 21:01:31] [INFO] --> Processing Helm release redhat-developer-hub-helm in namespace my-ns
+2025-09-11T21:01:31.272476874Z [2025-09-11 21:01:31] [INFO] 	Collecting: Helm values for redhat-developer-hub-helm
+2025-09-11T21:01:31.361407344Z [2025-09-11 21:01:31] [INFO] 	Collecting: All Helm values for redhat-developer-hub-helm
+2025-09-11T21:01:31.458527140Z [2025-09-11 21:01:31] [INFO] 	Collecting: Helm manifest for redhat-developer-hub-helm
+2025-09-11T21:01:31.544972134Z [2025-09-11 21:01:31] [INFO] 	Collecting: Helm hooks for redhat-developer-hub-helm
+2025-09-11T21:01:31.632421564Z [2025-09-11 21:01:31] [INFO] 	Collecting: Helm notes for redhat-developer-hub-helm
+2025-09-11T21:01:31.715910479Z [2025-09-11 21:01:31] [INFO] 	Collecting: Helm history for redhat-developer-hub-helm
+2025-09-11T21:01:31.800787133Z [2025-09-11 21:01:31] [INFO] 	Collecting: Helm history (YAML) for redhat-developer-hub-helm
+2025-09-11T21:01:31.891912382Z [2025-09-11 21:01:31] [INFO] 	Collecting: Helm status for redhat-developer-hub-helm
+2025-09-11T21:01:31.978386421Z [2025-09-11 21:01:31] [INFO] 	Collecting: Helm status (YAML) for redhat-developer-hub-helm
+2025-09-11T21:01:32.081565596Z [2025-09-11 21:01:32] [INFO] 	Collecting: app deployment for my-ns/redhat-developer-hub-helm
+2025-09-11T21:01:32.200315383Z [2025-09-11 21:01:32] [INFO] 	Collecting: app deployment for my-ns/redhat-developer-hub-helm
+2025-09-11T21:01:32.336059954Z [2025-09-11 21:01:32] [INFO] 	Collecting: app init-container logs for my-ns/redhat-developer-hub-helm
+2025-09-11T21:01:32.465771356Z [2025-09-11 21:01:32] [INFO] 	Collecting: app backstage-backend logs for my-ns/redhat-developer-hub-helm
+2025-09-11T21:01:32.593436803Z [2025-09-11 21:01:32] [INFO] 	Collecting: app deployment logs for my-ns/redhat-developer-hub-helm
+2025-09-11T21:01:32.980975413Z [2025-09-11 21:01:32] [INFO] 	Collecting: id inside the main container
+2025-09-11T21:01:33.249150964Z [2025-09-11 21:01:33] [INFO] 	Collecting: backstage.json
+2025-09-11T21:01:33.312186324Z volume usage percentage 0
+2025-09-11T21:01:33.761785251Z [2025-09-11 21:01:33] [INFO] 	Collecting: build metadata
+2025-09-11T21:01:34.012893800Z [2025-09-11 21:01:34] [INFO] 	Collecting: Node version
+2025-09-11T21:01:34.293265096Z [2025-09-11 21:01:34] [INFO] 	Collecting: dynamic-plugins-root dir on the filesystem
+2025-09-11T21:01:34.554735620Z [2025-09-11 21:01:34] [INFO] 	Collecting: app-config.dynamic-plugins.yaml file
+2025-09-11T21:01:34.805888428Z [2025-09-11 21:01:34] [INFO] 	Collecting: app deployment pods for my-ns/redhat-developer-hub-helm
+2025-09-11T21:01:34.922186044Z [2025-09-11 21:01:34] [INFO] 	Collecting: app deployment pods for my-ns/redhat-developer-hub-helm
+2025-09-11T21:01:35.049305753Z [2025-09-11 21:01:35] [INFO] 	Collecting: app deployment pods for my-ns/redhat-developer-hub-helm
+2025-09-11T21:01:35.179182596Z [2025-09-11 21:01:35] [INFO] 	Collecting: DB statefulset for my-ns/redhat-developer-hub-helm-postgresql
+2025-09-11T21:01:35.306013140Z [2025-09-11 21:01:35] [INFO] 	Collecting: DB statefulset for my-ns/redhat-developer-hub-helm-postgresql
+2025-09-11T21:01:35.434929695Z [2025-09-11 21:01:35] [INFO] 	Collecting: DB StatefulSet logs for my-ns/redhat-developer-hub-helm-postgresql
+2025-09-11T21:01:35.679781916Z [2025-09-11 21:01:35] [INFO] 	Collecting: DB statefulset pods for my-ns/redhat-developer-hub-helm-postgresql
+2025-09-11T21:01:35.800828842Z [2025-09-11 21:01:35] [INFO] 	Collecting: DB statefulset pods for my-ns/redhat-developer-hub-helm-postgresql
+2025-09-11T21:01:35.922633186Z [2025-09-11 21:01:35] [INFO] 	Collecting: DB statefulset pods for my-ns/redhat-developer-hub-helm-postgresql
+2025-09-11T21:01:36.052953415Z [2025-09-11 21:01:36] [SUCCESS] [0;32mHelm data collection completed.[0m
+2025-09-11T21:01:36.055333909Z [2025-09-11 21:01:36] [INFO] running gather_operator
+2025-09-11T21:01:36.064446584Z [2025-09-11 21:01:36] [INFO] Starting Operator data collection...
+2025-09-11T21:01:36.067964186Z [2025-09-11 21:01:36] [INFO] Collecting OLM (Operator Lifecycle Manager) information...
+2025-09-11T21:01:36.071096273Z [2025-09-11 21:01:36] [INFO] 	Collecting: RHDH CSVs in all namespaces
+2025-09-11T21:01:36.236543284Z [2025-09-11 21:01:36] [INFO] 	Collecting: RHDH subscriptions in all namespaces
+2025-09-11T21:01:36.355674948Z [2025-09-11 21:01:36] [INFO] 	Collecting: InstallPlans in all namespaces
+2025-09-11T21:01:36.472050997Z [2025-09-11 21:01:36] [INFO] 	Collecting: OperatorGroups in all namespaces
+2025-09-11T21:01:36.596040827Z [2025-09-11 21:01:36] [INFO] 	Collecting: CatalogSources in all namespaces
+2025-09-11T21:01:36.712291814Z [2025-09-11 21:01:36] [INFO] 	Collecting RHDH-related Custom Resource Definitions...
+2025-09-11T21:01:36.716004216Z [2025-09-11 21:01:36] [INFO] 	Collecting: All CRDs in cluster
+2025-09-11T21:01:36.978819591Z [2025-09-11 21:01:36] [INFO] 	Collecting: CRD definition for backstages.rhdh.redhat.com
+2025-09-11T21:01:37.113046933Z [2025-09-11 21:01:37] [INFO] 	Collecting: CRD description for backstages.rhdh.redhat.com
+2025-09-11T21:01:37.264132459Z [2025-09-11 21:01:37] [INFO] 	Collecting: All RHDH Operator Deployments
+2025-09-11T21:01:37.494083036Z [2025-09-11 21:01:37] [INFO] Found Operator namespaces: rhdh-operator
+2025-09-11T21:01:37.497797839Z [2025-09-11 21:01:37] [INFO] 	Collecting: All resources in rhdh-operator
+2025-09-11T21:01:37.880977264Z [2025-09-11 21:01:37] [INFO] 	Collecting all Operator config ConfigMaps in rhdh-operator...
+2025-09-11T21:01:37.884550459Z [2025-09-11 21:01:37] [INFO] 	Collecting: All ConfigMaps in rhdh-operator
+2025-09-11T21:01:38.108627243Z [2025-09-11 21:01:38] [INFO] 	Collecting: CM definition for rhdh-default-config
+2025-09-11T21:01:38.223592642Z [2025-09-11 21:01:38] [INFO] 	Collecting: CM description for rhdh-default-config
+2025-09-11T21:01:38.323168809Z volume usage percentage 0
+2025-09-11T21:01:38.461746798Z [2025-09-11 21:01:38] [INFO] 	Collecting: CM definition for rhdh-plugin-deps
+2025-09-11T21:01:38.581672234Z [2025-09-11 21:01:38] [INFO] 	Collecting: CM description for rhdh-plugin-deps
+2025-09-11T21:01:38.706022404Z [2025-09-11 21:01:38] [INFO] 	Collecting Operator Deployments in rhdh-operator...
+2025-09-11T21:01:38.710157412Z [2025-09-11 21:01:38] [INFO] 	Collecting: All Deployments in rhdh-operator
+2025-09-11T21:01:38.836313042Z [2025-09-11 21:01:38] [INFO] 	Collecting: Deployments with label app=rhdh-operator rhdh-operator
+2025-09-11T21:01:38.957578091Z [2025-09-11 21:01:38] [INFO] 	Collecting: Deployment description with label app=rhdh-operator in rhdh-operator
+2025-09-11T21:01:39.094114787Z [2025-09-11 21:01:39] [INFO] 	Collecting Operator Logs in rhdh-operator...
+2025-09-11T21:01:39.096088823Z [2025-09-11 21:01:39] [INFO] 	Collecting: Logs of pods with label app=rhdh-operator in rhdh-operator
+2025-09-11T21:01:39.318723560Z [2025-09-11 21:01:39] [INFO] Searching for Backstage Custom Resources (CRs) in all namespaces...
+2025-09-11T21:01:39.608371754Z [2025-09-11 21:01:39] [INFO] --> Processing namespace my-ns containing at least one Backstage CR
+2025-09-11T21:01:39.718049902Z [2025-09-11 21:01:39] [INFO] 	Collecting: CM backstage-appconfig-my-developer-hub
+2025-09-11T21:01:39.841370601Z [2025-09-11 21:01:39] [INFO] 	Collecting: Details of CM backstage-appconfig-my-developer-hub
+2025-09-11T21:01:39.976612524Z [2025-09-11 21:01:39] [INFO] 	Collecting: CM backstage-dynamic-plugins-my-developer-hub
+2025-09-11T21:01:40.093357109Z [2025-09-11 21:01:40] [INFO] 	Collecting: Details of CM backstage-dynamic-plugins-my-developer-hub
+2025-09-11T21:01:40.216975444Z [2025-09-11 21:01:40] [INFO] 	Collecting: CM kube-root-ca.crt
+2025-09-11T21:01:40.354225096Z [2025-09-11 21:01:40] [INFO] 	Collecting: Details of CM kube-root-ca.crt
+2025-09-11T21:01:40.497433540Z [2025-09-11 21:01:40] [INFO] 	Collecting: CM openshift-service-ca.crt
+2025-09-11T21:01:40.612546111Z [2025-09-11 21:01:40] [INFO] 	Collecting: Details of CM openshift-service-ca.crt
+2025-09-11T21:01:40.753130777Z [2025-09-11 21:01:40] [INFO] 	Collecting: CM redhat-developer-hub-helm-app-config
+2025-09-11T21:01:40.923326532Z [2025-09-11 21:01:40] [INFO] 	Collecting: Details of CM redhat-developer-hub-helm-app-config
+2025-09-11T21:01:41.082853961Z [2025-09-11 21:01:41] [INFO] 	Collecting: CM redhat-developer-hub-helm-dynamic-plugins
+2025-09-11T21:01:41.207791452Z [2025-09-11 21:01:41] [INFO] 	Collecting: Details of CM redhat-developer-hub-helm-dynamic-plugins
+2025-09-11T21:01:41.486055228Z [2025-09-11 21:01:41] [INFO] 	Collecting: Secret backstage-files-my-developer-hub
+2025-09-11T21:01:41.601334039Z [2025-09-11 21:01:41] [INFO] 	Collecting: Details of Secret backstage-files-my-developer-hub
+2025-09-11T21:01:41.725325582Z [2025-09-11 21:01:41] [INFO] 	Collecting: Secret backstage-psql-secret-my-developer-hub
+2025-09-11T21:01:41.843015960Z [2025-09-11 21:01:41] [INFO] 	Collecting: Details of Secret backstage-psql-secret-my-developer-hub
+2025-09-11T21:01:41.967109963Z [2025-09-11 21:01:41] [INFO] 	Collecting: Secret builder-dockercfg-m54sb
+2025-09-11T21:01:42.084416343Z [2025-09-11 21:01:42] [INFO] 	Collecting: Details of Secret builder-dockercfg-m54sb
+2025-09-11T21:01:42.213445137Z [2025-09-11 21:01:42] [INFO] 	Collecting: Secret default-dockercfg-hbnf5
+2025-09-11T21:01:42.333666198Z [2025-09-11 21:01:42] [INFO] 	Collecting: Details of Secret default-dockercfg-hbnf5
+2025-09-11T21:01:42.464815300Z [2025-09-11 21:01:42] [INFO] 	Collecting: Secret deployer-dockercfg-9bkqw
+2025-09-11T21:01:42.584489697Z [2025-09-11 21:01:42] [INFO] 	Collecting: Details of Secret deployer-dockercfg-9bkqw
+2025-09-11T21:01:42.711853106Z [2025-09-11 21:01:42] [INFO] 	Collecting: Secret redhat-developer-hub-helm-auth
+2025-09-11T21:01:42.830577503Z [2025-09-11 21:01:42] [INFO] 	Collecting: Details of Secret redhat-developer-hub-helm-auth
+2025-09-11T21:01:42.958100453Z [2025-09-11 21:01:42] [INFO] 	Collecting: Secret redhat-developer-hub-helm-postgresql
+2025-09-11T21:01:43.070587985Z [2025-09-11 21:01:43] [INFO] 	Collecting: Details of Secret redhat-developer-hub-helm-postgresql
+2025-09-11T21:01:43.192786751Z [2025-09-11 21:01:43] [INFO] 	Collecting: Secret redhat-developer-hub-helm-postgresql-svcbind-custom-user
+2025-09-11T21:01:43.305606954Z [2025-09-11 21:01:43] [INFO] 	Collecting: Details of Secret redhat-developer-hub-helm-postgresql-svcbind-custom-user
+2025-09-11T21:01:43.332234035Z volume usage percentage 0
+2025-09-11T21:01:43.432784815Z [2025-09-11 21:01:43] [INFO] 	Collecting: Secret redhat-developer-hub-helm-postgresql-svcbind-postgres
+2025-09-11T21:01:43.550495441Z [2025-09-11 21:01:43] [INFO] 	Collecting: Details of Secret redhat-developer-hub-helm-postgresql-svcbind-postgres
+2025-09-11T21:01:43.676639726Z [2025-09-11 21:01:43] [INFO] 	Collecting: Secret sh.helm.release.v1.redhat-developer-hub-helm.v1
+2025-09-11T21:01:43.830484326Z [2025-09-11 21:01:43] [INFO] 	Collecting: Details of Secret sh.helm.release.v1.redhat-developer-hub-helm.v1
+2025-09-11T21:01:43.982895622Z [2025-09-11 21:01:43] [INFO] --> Processing Backstage CR my-developer-hub in namespace my-ns
+2025-09-11T21:01:43.986530433Z [2025-09-11 21:01:43] [INFO] 	Collecting: Details of CR my-developer-hub
+2025-09-11T21:01:44.140767509Z [2025-09-11 21:01:44] [INFO] 	Collecting: Details of CR my-developer-hub
+2025-09-11T21:01:44.291498306Z [2025-09-11 21:01:44] [INFO] 	Collecting: app deployment for my-ns/backstage-my-developer-hub
+2025-09-11T21:01:44.415407314Z [2025-09-11 21:01:44] [INFO] 	Collecting: app deployment for my-ns/backstage-my-developer-hub
+2025-09-11T21:01:44.546845818Z [2025-09-11 21:01:44] [INFO] 	Collecting: app init-container logs for my-ns/backstage-my-developer-hub
+2025-09-11T21:01:44.680702990Z [2025-09-11 21:01:44] [INFO] 	Collecting: app backstage-backend logs for my-ns/backstage-my-developer-hub
+2025-09-11T21:01:44.899523099Z [2025-09-11 21:01:44] [INFO] 	Collecting: app deployment logs for my-ns/backstage-my-developer-hub
+2025-09-11T21:01:45.293325086Z [2025-09-11 21:01:45] [INFO] 	Collecting: id inside the main container
+2025-09-11T21:01:45.550940004Z [2025-09-11 21:01:45] [INFO] 	Collecting: backstage.json
+2025-09-11T21:01:45.795537580Z [2025-09-11 21:01:45] [INFO] 	Collecting: build metadata
+2025-09-11T21:01:46.027113211Z [2025-09-11 21:01:46] [INFO] 	Collecting: Node version
+2025-09-11T21:01:46.281661364Z [2025-09-11 21:01:46] [INFO] 	Collecting: dynamic-plugins-root dir on the filesystem
+2025-09-11T21:01:46.543190222Z [2025-09-11 21:01:46] [INFO] 	Collecting: app-config.dynamic-plugins.yaml file
+2025-09-11T21:01:46.794117492Z [2025-09-11 21:01:46] [INFO] 	Collecting: app deployment pods for my-ns/backstage-my-developer-hub
+2025-09-11T21:01:46.908536316Z [2025-09-11 21:01:46] [INFO] 	Collecting: app deployment pods for my-ns/backstage-my-developer-hub
+2025-09-11T21:01:47.031585755Z [2025-09-11 21:01:47] [INFO] 	Collecting: app deployment pods for my-ns/backstage-my-developer-hub
+2025-09-11T21:01:47.177143859Z [2025-09-11 21:01:47] [INFO] 	Collecting: DB statefulset for my-ns/backstage-psql-my-developer-hub
+2025-09-11T21:01:47.309103051Z [2025-09-11 21:01:47] [INFO] 	Collecting: DB statefulset for my-ns/backstage-psql-my-developer-hub
+2025-09-11T21:01:47.436426980Z [2025-09-11 21:01:47] [INFO] 	Collecting: DB StatefulSet logs for my-ns/backstage-psql-my-developer-hub
+2025-09-11T21:01:47.680729959Z [2025-09-11 21:01:47] [INFO] 	Collecting: DB statefulset pods for my-ns/backstage-psql-my-developer-hub
+2025-09-11T21:01:47.801058991Z [2025-09-11 21:01:47] [INFO] 	Collecting: DB statefulset pods for my-ns/backstage-psql-my-developer-hub
+2025-09-11T21:01:47.927549338Z [2025-09-11 21:01:47] [INFO] 	Collecting: DB statefulset pods for my-ns/backstage-psql-my-developer-hub
+2025-09-11T21:01:48.056769791Z [2025-09-11 21:01:48] [SUCCESS] [0;32m... Operator data collection done.[0m
+2025-09-11T21:01:48.058998641Z [2025-09-11 21:01:48] [INFO] running gather_route
+2025-09-11T21:01:48.067834512Z [2025-09-11 21:01:48] [INFO] Starting OCP Route data collection...
+2025-09-11T21:01:48.069477795Z [2025-09-11 21:01:48] [INFO] 	Collecting: All OCP routes
+2025-09-11T21:01:48.230395694Z [2025-09-11 21:01:48] [INFO] running gather_ingress
+2025-09-11T21:01:48.239523409Z [2025-09-11 21:01:48] [INFO] Starting Ingress data collection...
+2025-09-11T21:01:48.241227202Z [2025-09-11 21:01:48] [INFO] 	Collecting: All Ingresses
+2025-09-11T21:01:48.342293120Z volume usage percentage 0
+2025-09-11T21:01:48.392216203Z [2025-09-11 21:01:48] [INFO] running logs
+2025-09-11T21:01:48.402730961Z [2025-09-11 21:01:48] [INFO] 	Collecting: must-gather pod logs
+2025-09-11T21:01:48.570847201Z done with data collection. Now sanitizing data...
+2025-09-11T21:01:48.579739167Z [2025-09-11 21:01:48] [INFO] Starting data sanitization on directory: /must-gather
+2025-09-11T21:01:48.584825857Z [2025-09-11 21:01:48] [INFO] Sanitizing directory: /must-gather
+2025-09-11T21:01:49.568774087Z [2025-09-11 21:01:49] [SUCCESS] [0;32mSanitization complete![0m
+2025-09-11T21:01:49.570599029Z [2025-09-11 21:01:49] [INFO] Files processed: 198
+2025-09-11T21:01:49.572392462Z [2025-09-11 21:01:49] [INFO] Items sanitized: 35
+2025-09-11T21:01:49.574167521Z [2025-09-11 21:01:49] [INFO] Report saved to: /must-gather/sanitization-report.txt

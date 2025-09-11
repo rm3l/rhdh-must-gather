@@ -1,0 +1,6 @@
+USER-SUPPLIED VALUES:
+global:
+  clusterRouterBase: apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com
+upstream:
+  postgresql:
+    enabled: false

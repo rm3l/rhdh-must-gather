@@ -1,0 +1,27 @@
+Name:         kube-root-ca.crt
+Namespace:    my-ns
+Labels:       <none>
+Annotations:  kubernetes.io/description:
+                Contains a CA bundle that can be used to verify the kube-apiserver when using internal endpoints such as the internal service IP or kubern...
+
+Data
+====
+ca.crt:
+----
+-----BEGIN CERTIFICATE-----
+MIIBdzCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy
+dmVyLWNhQDE3NTc1OTYwMzcwHhcNMjUwOTExMTMwNzE3WhcNMzUwOTA5MTMwNzE3
+WjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3NTc1OTYwMzcwWTATBgcqhkjO
+PQIBBggqhkjOPQMBBwNCAAT5zktM0LWp57r1lYm4qp0j5oI+W9q0Cso9P+VixWaR
+UCYUuS4bZCUzPXiOUtREVlu4s++aSNCwghduKcrBPnrVo0IwQDAOBgNVHQ8BAf8E
+BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUA1BsGx1v/sr82bubfyuF
+x1CtH08wCgYIKoZIzj0EAwIDSAAwRQIhAK/d3rYiJtjtu+XRoi8WTNAfSPogS3kC
+494pEuG6n7jyAiA5gBqIGMahoHaON+OovX+0AK9XVV+NS+9QxHcCw4deEg==
+-----END CERTIFICATE-----
+
+
+
+BinaryData
+====
+
+Events:  <none>

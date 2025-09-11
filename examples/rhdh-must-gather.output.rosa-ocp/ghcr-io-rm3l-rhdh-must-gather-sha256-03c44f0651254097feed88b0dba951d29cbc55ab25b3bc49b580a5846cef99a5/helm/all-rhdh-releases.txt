@@ -1,0 +1,4 @@
+NAME                      	NAMESPACE              	REVISION	UPDATED                                  	STATUS  	CHART                                        	APP VERSION
+my-backstage-1-no-local-db	my-ns-3                	1       	2025-09-11 22:43:11.066885915 +0200 +0200	deployed	backstage-4.5.8                              	           
+my-orchestrator-infra     	rhdh-orchestrator-infra	1       	2025-09-11 22:42:32.120140747 +0200 +0200	deployed	redhat-developer-hub-orchestrator-infra-0.2.2	           
+redhat-developer-hub-helm 	my-ns                  	1       	2025-09-11 20:53:04.559589899 +0000 UTC  	deployed	redhat-developer-hub-1.7.0                   	1.7.0      

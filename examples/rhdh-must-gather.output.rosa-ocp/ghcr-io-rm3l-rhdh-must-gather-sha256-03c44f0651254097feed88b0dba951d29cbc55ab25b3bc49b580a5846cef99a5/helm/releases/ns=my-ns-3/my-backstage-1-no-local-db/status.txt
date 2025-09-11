@@ -1,0 +1,5 @@
+NAME: my-backstage-1-no-local-db
+LAST DEPLOYED: Thu Sep 11 22:43:11 2025
+NAMESPACE: my-ns-3
+STATUS: deployed
+REVISION: 1

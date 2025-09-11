@@ -1,0 +1,173 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2025-09-11T21:23:38Z"
+    generateName: backstage-psql-bs1-
+    labels:
+      apps.kubernetes.io/pod-index: "0"
+      controller-revision-hash: backstage-psql-bs1-67fd89fccc
+      rhdh.redhat.com/app: backstage-psql-bs1
+      statefulset.kubernetes.io/pod-name: backstage-psql-bs1-0
+    name: backstage-psql-bs1-0
+    namespace: my-ns
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: StatefulSet
+      name: backstage-psql-bs1
+      uid: 69e46a5b-5fb0-4741-b3e7-293f86e9d319
+    resourceVersion: "28836"
+    uid: da45c0d5-e07a-47cb-ab1b-74a891e93e69
+  spec:
+    automountServiceAccountToken: false
+    containers:
+    - env:
+      - name: POSTGRESQL_PORT_NUMBER
+        value: "5432"
+      - name: POSTGRESQL_VOLUME_DIR
+        value: /var/lib/pgsql/data
+      - name: PGDATA
+        value: /var/lib/pgsql/data/userdata
+      envFrom:
+      - secretRef:
+          name: backstage-psql-secret-bs1
+      image: quay.io/fedora/postgresql-15:latest
+      imagePullPolicy: IfNotPresent
+      livenessProbe:
+        exec:
+          command:
+          - /bin/sh
+          - -c
+          - exec pg_isready -U ${POSTGRES_USER} -h 127.0.0.1 -p 5432
+        failureThreshold: 6
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 5
+      name: postgresql
+      ports:
+      - containerPort: 5432
+        name: tcp-postgresql
+        protocol: TCP
+      readinessProbe:
+        exec:
+          command:
+          - /bin/sh
+          - -c
+          - -e
+          - |
+            exec pg_isready -U ${POSTGRES_USER} -h 127.0.0.1 -p 5432
+        failureThreshold: 6
+        initialDelaySeconds: 5
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 5
+      resources:
+        limits:
+          cpu: 250m
+          ephemeral-storage: 20Mi
+          memory: 1Gi
+        requests:
+          cpu: 250m
+          ephemeral-storage: 20Mi
+          memory: 256Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        runAsGroup: 0
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /dev/shm
+        name: dshm
+      - mountPath: /var/lib/pgsql/data
+        name: data
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    hostname: backstage-psql-bs1-0
+    nodeName: k3d-local-1-server-0
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext:
+      fsGroup: 1001
+    serviceAccount: default
+    serviceAccountName: default
+    subdomain: backstage-psql-bs1
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: data-backstage-psql-bs1-0
+    - emptyDir:
+        medium: Memory
+      name: dshm
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2025-09-11T21:24:05Z"
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2025-09-11T21:23:46Z"
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2025-09-11T21:24:17Z"
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2025-09-11T21:24:17Z"
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2025-09-11T21:23:46Z"
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://d6b6190a99a8fe670cf65d0b96c89268b0a32c5299cf1a606ff59efa79119171
+      image: quay.io/fedora/postgresql-15:latest
+      imageID: quay.io/fedora/postgresql-15@sha256:ced2dfb39b1e2ce1e38320ce254ef4dd17e58135b5e4f1a74412b24294843b5b
+      lastState: {}
+      name: postgresql
+      ready: true
+      restartCount: 0
+      started: true
+      state:
+        running:
+          startedAt: "2025-09-11T21:24:05Z"
+      volumeMounts:
+      - mountPath: /dev/shm
+        name: dshm
+      - mountPath: /var/lib/pgsql/data
+        name: data
+    hostIP: 172.18.0.2
+    hostIPs:
+    - ip: 172.18.0.2
+    phase: Running
+    podIP: 10.42.3.8
+    podIPs:
+    - ip: 10.42.3.8
+    qosClass: Burstable
+    startTime: "2025-09-11T21:23:46Z"
+kind: List
+metadata:
+  resourceVersion: ""

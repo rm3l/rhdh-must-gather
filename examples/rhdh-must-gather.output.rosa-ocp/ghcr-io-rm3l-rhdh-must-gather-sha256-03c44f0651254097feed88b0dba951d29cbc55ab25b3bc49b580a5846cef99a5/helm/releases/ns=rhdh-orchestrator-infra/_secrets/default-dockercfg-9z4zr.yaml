@@ -1,0 +1,19 @@
+apiVersion: v1
+data:
+  .dockercfg: [REDACTED]
+kind: Secret
+metadata:
+  annotations:
+    openshift.io/internal-registry-auth-token.binding: bound
+    openshift.io/internal-registry-auth-token.service-account: default
+  creationTimestamp: "2025-09-11T20:42:17Z"
+  name: default-dockercfg-9z4zr
+  namespace: rhdh-orchestrator-infra
+  ownerReferences:
+  - apiVersion: v1
+    kind: ServiceAccount
+    name: default
+    uid: 93e5756c-20bb-4648-9041-88a6dd6f79b6
+  resourceVersion: "74524"
+  uid: 48dee83d-f3f5-4da3-89a3-09b1fdd39415
+type: kubernetes.io/dockercfg

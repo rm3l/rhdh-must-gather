@@ -1,0 +1,161 @@
+Name:             my-backstage-1-developer-hub-5f945d48fb-fprph
+Namespace:        my-ns-2
+Priority:         0
+Service Account:  default
+Node:             k3d-local-1-agent-0/172.18.0.4
+Start Time:       Thu, 11 Sep 2025 23:31:42 +0200
+Labels:           app.kubernetes.io/component=backstage
+                  app.kubernetes.io/instance=my-backstage-1
+                  app.kubernetes.io/managed-by=Helm
+                  app.kubernetes.io/name=developer-hub
+                  helm.sh/chart=upstream-2.6.1
+                  pod-template-hash=5f945d48fb
+Annotations:      checksum/app-config: e3d7ceb079990dfd907dc90a3cc8dcc4413a84127e67d09d99497ae255e82b01
+                  checksum/dynamic-plugins: f1f9a92f14a31362d7eb30e67ac1458faf1c685765610f93a8967194d8bc1a5f
+Status:           Running
+IP:               10.42.0.12
+IPs:
+  IP:           10.42.0.12
+Controlled By:  ReplicaSet/my-backstage-1-developer-hub-5f945d48fb
+Init Containers:
+  install-dynamic-plugins:
+    Container ID:    containerd://fcde7a62b28e4a10e320cc9bc9f51773fee6d22ad144663b41db65f787a7df97
+    Image:           quay.io/rhdh/rhdh-hub-rhel9:latest
+    Image ID:        quay.io/rhdh/rhdh-hub-rhel9@sha256:1833cd22478ed53a99e08596b97c892559120b602a7cadcfe4be2a3ecf74a91a
+    Port:            <none>
+    Host Port:       <none>
+    SeccompProfile:  RuntimeDefault
+    Command:
+      ./install-dynamic-plugins.sh
+      /dynamic-plugins-root
+    State:          Terminated
+      Reason:       Completed
+      Exit Code:    0
+      Started:      Thu, 11 Sep 2025 23:31:43 +0200
+      Finished:     Thu, 11 Sep 2025 23:32:56 +0200
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:                1
+      ephemeral-storage:  5Gi
+      memory:             2560Mi
+    Requests:
+      cpu:                250m
+      ephemeral-storage:  5Gi
+      memory:             256Mi
+    Environment:
+      NPM_CONFIG_USERCONFIG:  /opt/app-root/src/.npmrc.dynamic-plugins
+      MAX_ENTRY_SIZE:         30000000
+    Mounts:
+      /dynamic-plugins-root from dynamic-plugins-root (rw)
+      /opt/app-root/src/.config/containers from dynamic-plugins-registry-auth (ro)
+      /opt/app-root/src/.npm/_cacache from npmcacache (rw)
+      /opt/app-root/src/.npmrc.dynamic-plugins from dynamic-plugins-npmrc (ro,path=".npmrc")
+      /opt/app-root/src/dynamic-plugins.yaml from dynamic-plugins (ro,path="dynamic-plugins.yaml")
+      /tmp from temp (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-4mzgl (ro)
+Containers:
+  backstage-backend:
+    Container ID:    containerd://6fe58904b12313007559189c966ba18784577502e26620b0f3c622bdfce851f3
+    Image:           quay.io/rhdh/rhdh-hub-rhel9:latest
+    Image ID:        quay.io/rhdh/rhdh-hub-rhel9@sha256:1833cd22478ed53a99e08596b97c892559120b602a7cadcfe4be2a3ecf74a91a
+    Port:            7007/TCP
+    Host Port:       0/TCP
+    SeccompProfile:  RuntimeDefault
+    Args:
+      --config
+      dynamic-plugins-root/app-config.dynamic-plugins.yaml
+      --config
+      /opt/app-root/src/app-config-from-configmap.yaml
+    State:          Running
+      Started:      Thu, 11 Sep 2025 23:32:57 +0200
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:                1
+      ephemeral-storage:  5Gi
+      memory:             2560Mi
+    Requests:
+      cpu:                250m
+      ephemeral-storage:  5Gi
+      memory:             1Gi
+    Liveness:             http-get http://:backend/.backstage/health/v1/liveness delay=0s timeout=4s period=10s #success=1 #failure=3
+    Readiness:            http-get http://:backend/.backstage/health/v1/readiness delay=0s timeout=4s period=10s #success=2 #failure=3
+    Startup:              http-get http://:backend/.backstage/health/v1/liveness delay=30s timeout=4s period=20s #success=1 #failure=3
+    Environment:
+      APP_CONFIG_backend_listen_port:  7007
+      POSTGRES_HOST:                   my-backstage-1-postgresql
+      POSTGRES_PORT:                   5432
+      POSTGRES_USER:                   bn_backstage
+      POSTGRES_PASSWORD:               <set to the key 'password' in secret 'my-backstage-1-postgresql'>           Optional: false
+      BACKEND_SECRET:                  <set to the key 'backend-secret' in secret 'my-backstage-1-auth'>           Optional: false
+      POSTGRESQL_ADMIN_PASSWORD:       <set to the key 'postgres-password' in secret 'my-backstage-1-postgresql'>  Optional: false
+    Mounts:
+      /opt/app-root/src/app-config-from-configmap.yaml from backstage-app-config (rw,path="app-config.yaml")
+      /opt/app-root/src/dynamic-plugins-root from dynamic-plugins-root (rw)
+      /tmp from temp (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-4mzgl (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  dynamic-plugins-root:
+    Type:          EphemeralVolume (an inline specification for a volume that gets created and deleted with the pod)
+    StorageClass:  
+    Volume:        
+    Labels:            <none>
+    Annotations:       <none>
+    Capacity:      
+    Access Modes:  
+    VolumeMode:    Filesystem
+  dynamic-plugins:
+    Type:      ConfigMap (a volume populated by a ConfigMap)
+    Name:      my-backstage-1-dynamic-plugins
+    Optional:  true
+  dynamic-plugins-npmrc:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  my-backstage-1-dynamic-plugins-npmrc
+    Optional:    true
+  dynamic-plugins-registry-auth:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  my-backstage-1-dynamic-plugins-registry-auth
+    Optional:    true
+  npmcacache:
+    Type:       EmptyDir (a temporary directory that shares a pod's lifetime)
+    Medium:     
+    SizeLimit:  <unset>
+  temp:
+    Type:       EmptyDir (a temporary directory that shares a pod's lifetime)
+    Medium:     
+    SizeLimit:  <unset>
+  backstage-app-config:
+    Type:      ConfigMap (a volume populated by a ConfigMap)
+    Name:      my-backstage-1-developer-hub-app-config
+    Optional:  false
+  kube-api-access-4mzgl:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason            Age    From               Message
+  ----     ------            ----   ----               -------
+  Warning  FailedScheduling  4m2s   default-scheduler  0/4 nodes are available: waiting for ephemeral volume controller to create the persistentvolumeclaim "my-backstage-1-developer-hub-5f945d48fb-fprph-dynamic-plugins-root". preemption: 0/4 nodes are available: 4 Preemption is not helpful for scheduling.
+  Normal   Scheduled         3m57s  default-scheduler  Successfully assigned my-ns-2/my-backstage-1-developer-hub-5f945d48fb-fprph to k3d-local-1-agent-0
+  Normal   Pulling           3m57s  kubelet            Pulling image "quay.io/rhdh/rhdh-hub-rhel9:latest"
+  Normal   Pulled            3m56s  kubelet            Successfully pulled image "quay.io/rhdh/rhdh-hub-rhel9:latest" in 493ms (493ms including waiting). Image size: 1268569345 bytes.
+  Normal   Created           3m56s  kubelet            Created container install-dynamic-plugins
+  Normal   Started           3m56s  kubelet            Started container install-dynamic-plugins
+  Normal   Pulling           2m43s  kubelet            Pulling image "quay.io/rhdh/rhdh-hub-rhel9:latest"
+  Normal   Pulled            2m42s  kubelet            Successfully pulled image "quay.io/rhdh/rhdh-hub-rhel9:latest" in 416ms (416ms including waiting). Image size: 1268569345 bytes.
+  Normal   Created           2m42s  kubelet            Created container backstage-backend
+  Normal   Started           2m42s  kubelet            Started container backstage-backend

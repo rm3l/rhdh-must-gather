@@ -1,0 +1,18 @@
+apiVersion: v1
+data:
+  dynamic-plugins.yaml: |
+    includes:
+    - dynamic-plugins.default.yaml
+    plugins: []
+kind: ConfigMap
+metadata:
+  annotations:
+    meta.helm.sh/release-name: my-backstage-1-no-local-db
+    meta.helm.sh/release-namespace: my-ns-3
+  creationTimestamp: "2025-09-11T21:23:13Z"
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  name: my-backstage-1-no-local-db-dynamic-plugins
+  namespace: my-ns-3
+  resourceVersion: "28592"
+  uid: 50e8e5a4-c382-497e-badd-6f53921edc98

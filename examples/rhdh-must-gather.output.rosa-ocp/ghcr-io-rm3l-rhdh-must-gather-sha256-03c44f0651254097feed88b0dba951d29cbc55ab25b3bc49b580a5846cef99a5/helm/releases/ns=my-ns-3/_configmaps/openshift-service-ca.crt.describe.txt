@@ -1,0 +1,36 @@
+Name:         openshift-service-ca.crt
+Namespace:    my-ns-3
+Labels:       <none>
+Annotations:  service.beta.openshift.io/inject-cabundle: true
+
+Data
+====
+service-ca.crt:
+----
+-----BEGIN CERTIFICATE-----
+MIIDUTCCAjmgAwIBAgIIPaatgJTZ0BkwDQYJKoZIhvcNAQELBQAwNjE0MDIGA1UE
+Awwrb3BlbnNoaWZ0LXNlcnZpY2Utc2VydmluZy1zaWduZXJAMTc1NzYwOTM5MTAe
+Fw0yNTA5MTExNjQ5NTBaFw0yNzExMTAxNjQ5NTFaMDYxNDAyBgNVBAMMK29wZW5z
+aGlmdC1zZXJ2aWNlLXNlcnZpbmctc2lnbmVyQDE3NTc2MDkzOTEwggEiMA0GCSqG
+SIb3DQEBAQUAA4IBDwAwggEKAoIBAQC1CCw2GMKd397PzapImJl7bI4OzEC+jpfz
+UV+EY9sR06HblOHFhhbgxXUQV2WyElwV7zQN83N8WNnX4SYjQcjBtMgXNFcm+2DF
+J0RNsg6yBKAn+I8FtVjyCWvJvrzgIVxbEuP3kbJ4cTMgyN/HSaL1CbrfSNzYgswX
+DCVjeqCcILZ8Gft7QreByNM3512UmO5eUnjxNA0SXqBTHr7xcdplm9BYbfhgyXTw
+BoLAh8lcWZiblHXLrXuiVpqVaKeCRd1kP9m5gB9M1yC7gGwmK7ZuiF9REz57R5z0
+vufeGBM2b7/9LcXq0RmxjBkPlNkchsBiBiQ/JmE/tN+U8I1cRe45AgMBAAGjYzBh
+MA4GA1UdDwEB/wQEAwICpDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBQOxa0B
+xe1TcCnFWBoYVftwjUGNNzAfBgNVHSMEGDAWgBQOxa0Bxe1TcCnFWBoYVftwjUGN
+NzANBgkqhkiG9w0BAQsFAAOCAQEAcXjrNbK3A53INDdAhG0efwAyDN/aLisPOD6x
+iStaAiqs2c6qrmHJXVKRl587yEIDNpSMcInZhp9gIGGnxOOKua1Fy9AfCh9YuTfF
+VYecK5x9300+vKWXZ0uN/jGLTOCT1kraC6axl0z/ep8KCjVICs+xcm4klarTbbfQ
+s6aPiIL1iTvklpswwyJ9FX5O1gK7nauXIIte98pam7t9c8DRwu7vdX8DZKPdS/ee
+ou7qCpj4ri3Js/cnMp81RBypG16FbLm4F2Q+otEbanPyJDZ6zuj1t/Pbd1gq70LK
+Ja+iBfuIRvkPOfr/UjLHx24H7Alkr8FfmgCQRe9+zhN7u3SYcw==
+-----END CERTIFICATE-----
+
+
+
+BinaryData
+====
+
+Events:  <none>

@@ -1,0 +1,94 @@
+Name:             backstage-psql-my-developer-hub-0
+Namespace:        my-ns
+Priority:         0
+Service Account:  default
+Node:             ip-10-0-1-180.ec2.internal/10.0.1.180
+Start Time:       Thu, 11 Sep 2025 20:50:05 +0000
+Labels:           apps.kubernetes.io/pod-index=0
+                  controller-revision-hash=backstage-psql-my-developer-hub-79577dcdbf
+                  rhdh.redhat.com/app=backstage-psql-my-developer-hub
+                  statefulset.kubernetes.io/pod-name=backstage-psql-my-developer-hub-0
+Annotations:      k8s.ovn.org/pod-networks:
+                    {"default":{"ip_addresses":["10.128.0.39/23"],"mac_address":"0a:58:0a:80:00:27","gateway_ips":["10.128.0.1"],"routes":[{"dest":"10.128.0.0...
+                  k8s.v1.cni.cncf.io/network-status:
+                    [{
+                        "name": "ovn-kubernetes",
+                        "interface": "eth0",
+                        "ips": [
+                            "10.128.0.39"
+                        ],
+                        "mac": "0a:58:0a:80:00:27",
+                        "default": true,
+                        "dns": {}
+                    }]
+                  openshift.io/scc: restricted-v2
+                  seccomp.security.alpha.kubernetes.io/pod: runtime/default
+Status:           Running
+SeccompProfile:   RuntimeDefault
+IP:               10.128.0.39
+IPs:
+  IP:           10.128.0.39
+Controlled By:  StatefulSet/backstage-psql-my-developer-hub
+Containers:
+  postgresql:
+    Container ID:    cri-o://a309f21ca0a3ebc27bc805550405b2cf808972a772dcc80742c01ac6cba1d103
+    Image:           registry.redhat.io/rhel9/postgresql-15@sha256:b8266c990ed58a483f7dc57406525d0910b694d65e6a7d00924231fe3d8f039e
+    Image ID:        registry.redhat.io/rhel9/postgresql-15@sha256:0d5db57d495484a4516aab577c1144b139b8b98847500c55e67e35652ca744d0
+    Port:            5432/TCP
+    Host Port:       0/TCP
+    SeccompProfile:  RuntimeDefault
+    State:           Running
+      Started:       Thu, 11 Sep 2025 20:50:15 +0000
+    Ready:           True
+    Restart Count:   0
+    Limits:
+      cpu:                250m
+      ephemeral-storage:  20Mi
+      memory:             1Gi
+    Requests:
+      cpu:                250m
+      ephemeral-storage:  20Mi
+      memory:             256Mi
+    Liveness:             exec [/bin/sh -c exec pg_isready -U ${POSTGRES_USER} -h 127.0.0.1 -p 5432] delay=30s timeout=5s period=10s #success=1 #failure=6
+    Readiness:            exec [/bin/sh -c -e exec pg_isready -U ${POSTGRES_USER} -h 127.0.0.1 -p 5432
+] delay=5s timeout=5s period=10s #success=1 #failure=6
+    Environment Variables from:
+      backstage-psql-secret-my-developer-hub  Secret  Optional: false
+    Environment:
+      POSTGRESQL_PORT_NUMBER:  5432
+      POSTGRESQL_VOLUME_DIR:   /var/lib/pgsql/data
+      PGDATA:                  /var/lib/pgsql/data/userdata
+    Mounts:
+      /dev/shm from dshm (rw)
+      /var/lib/pgsql/data from data (rw)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  data:
+    Type:       PersistentVolumeClaim (a reference to a PersistentVolumeClaim in the same namespace)
+    ClaimName:  data-backstage-psql-my-developer-hub-0
+    ReadOnly:   false
+  dshm:
+    Type:        EmptyDir (a temporary directory that shares a pod's lifetime)
+    Medium:      Memory
+    SizeLimit:   <unset>
+QoS Class:       Burstable
+Node-Selectors:  <none>
+Tolerations:     node.kubernetes.io/memory-pressure:NoSchedule op=Exists
+                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                 node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason                  Age   From                     Message
+  ----    ------                  ----  ----                     -------
+  Normal  Scheduled               11m   default-scheduler        Successfully assigned my-ns/backstage-psql-my-developer-hub-0 to ip-10-0-1-180.ec2.internal
+  Normal  SuccessfulAttachVolume  11m   attachdetach-controller  AttachVolume.Attach succeeded for volume "pvc-0a3a0844-ff32-4312-a24a-000b22293cc1"
+  Normal  AddedInterface          11m   multus                   Add eth0 [10.128.0.39/23] from ovn-kubernetes
+  Normal  Pulling                 11m   kubelet                  Pulling image "registry.redhat.io/rhel9/postgresql-15@sha256:b8266c990ed58a483f7dc57406525d0910b694d65e6a7d00924231fe3d8f039e"
+  Normal  Pulled                  11m   kubelet                  Successfully pulled image "registry.redhat.io/rhel9/postgresql-15@sha256:b8266c990ed58a483f7dc57406525d0910b694d65e6a7d00924231fe3d8f039e" in 6.829s (6.829s including waiting). Image size: 402968868 bytes.
+  Normal  Created                 11m   kubelet                  Created container: postgresql
+  Normal  Started                 11m   kubelet                  Started container postgresql

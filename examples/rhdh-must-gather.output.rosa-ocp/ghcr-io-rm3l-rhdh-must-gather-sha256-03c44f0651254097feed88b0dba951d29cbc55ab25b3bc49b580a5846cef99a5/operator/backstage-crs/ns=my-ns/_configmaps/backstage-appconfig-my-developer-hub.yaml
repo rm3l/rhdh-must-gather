@@ -1,0 +1,34 @@
+apiVersion: v1
+data:
+  default.app-config.yaml: |
+    app:
+      baseUrl: https://backstage-my-developer-hub-my-ns.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com
+    auth:
+      providers: {}
+    backend:
+      auth:
+        externalAccess:
+        - options:
+            secret: pl4s3Ch4ng3M3
+            subject: legacy-default-config
+          type: legacy
+      baseUrl: https://backstage-my-developer-hub-my-ns.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com
+      cors:
+        origin: https://backstage-my-developer-hub-my-ns.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com
+kind: ConfigMap
+metadata:
+  creationTimestamp: "2025-09-11T20:50:01Z"
+  labels:
+    app.kubernetes.io/instance: my-developer-hub
+    app.kubernetes.io/name: backstage
+  name: backstage-appconfig-my-developer-hub
+  namespace: my-ns
+  ownerReferences:
+  - apiVersion: rhdh.redhat.com/v1alpha3
+    blockOwnerDeletion: true
+    controller: true
+    kind: Backstage
+    name: my-developer-hub
+    uid: 10a5f5fd-515e-4c90-840d-27d71ae8fa1b
+  resourceVersion: "77769"
+  uid: 4d9a17a1-7f36-4c25-810d-b9f3c3160d24

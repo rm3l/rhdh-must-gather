@@ -1,0 +1,33 @@
+apiVersion: v1
+data:
+  app-config.yaml: |
+    app:
+      baseUrl: https://my-backstage-1.127.0.0.1.sslip.io
+    auth:
+      providers: {}
+    backend:
+      auth:
+        externalAccess:
+        - options:
+            secret: ${BACKEND_SECRET}
+            subject: legacy-default-config
+          type: legacy
+      baseUrl: https://my-backstage-1.127.0.0.1.sslip.io
+      cors:
+        origin: https://my-backstage-1.127.0.0.1.sslip.io
+      database:
+        connection:
+          password: ${POSTGRESQL_ADMIN_PASSWORD}
+          user: postgres
+kind: ConfigMap
+metadata:
+  annotations:
+    meta.helm.sh/release-name: my-backstage-1
+    meta.helm.sh/release-namespace: my-ns-2
+  creationTimestamp: "2025-09-11T21:31:37Z"
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  name: my-backstage-1-developer-hub-app-config
+  namespace: my-ns-2
+  resourceVersion: "29598"
+  uid: d8a926ae-0609-46ac-b441-0779c22ff65a

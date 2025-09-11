@@ -1,0 +1,21 @@
+apiVersion: v1
+data:
+  backend-secret: [REDACTED]
+kind: Secret
+metadata:
+  annotations:
+    meta.helm.sh/release-name: redhat-developer-hub-helm
+    meta.helm.sh/release-namespace: my-ns
+  creationTimestamp: "2025-09-11T20:53:05Z"
+  labels:
+    app.kubernetes.io/component: backstage
+    app.kubernetes.io/instance: redhat-developer-hub-helm
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: developer-hub
+    app.kubernetes.io/version: 1.7.0
+    helm.sh/chart: redhat-developer-hub-1.7.0
+  name: redhat-developer-hub-helm-auth
+  namespace: my-ns
+  resourceVersion: "78767"
+  uid: 5d439f05-d79d-4cf0-8d8e-ba791f0f1b3c
+type: Opaque

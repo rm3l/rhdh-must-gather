@@ -88,7 +88,7 @@ k8s-test: ## Test on a non-OCP K8s cluster
 	@if ! kubectl get namespace rhdh-must-gather &> /dev/null; then \
 		kubectl create namespace rhdh-must-gather; \
 	fi
-	JOB_ID=$(shell date +%s) FULL_IMAGE_NAME=$(FULL_IMAGE_NAME) NS=rhdh-must-gather envsubst < examples/kubernetes-job.yaml \
+	JOB_ID=$(shell date +%s) FULL_IMAGE_NAME=$(FULL_IMAGE_NAME) NS=rhdh-must-gather envsubst < deploy/kubernetes-job.yaml \
 		| kubectl apply -f -
 
 .PHONY: help

@@ -122,17 +122,30 @@ After collection, focus on these RHDH-specific OpenShift files:
 
 ```
 must-gather/
-├── rhdh-deployment-details.txt     # RHDH deployment summary
-├── rhdh/
-│   ├── resources/
-│   │   ├── [namespace]/
-│   │   │   ├── routes.yaml         # RHDH routes
-│   │   │   ├── imagestreams.yaml   # RHDH image streams
-│   │   │   └── securitycontextconstraints.yaml
-│   │   └── operator/               # If operator-based
-│   └── helm/                       # If Helm-based
-└── logs/
-    └── [namespace]/                # RHDH pod logs
+├── version                         # Tool version information
+├── sanitization-report.txt         # Data sanitization summary and details
+├── all-routes.txt                  # All OpenShift routes cluster-wide
+├── all-ingresses.txt               # All Kubernetes ingresses cluster-wide
+├── platform/                       # Platform and infrastructure information
+│   ├── platform.json               # Structured platform data
+│   └── platform.txt                # Human-readable platform summary
+├── helm/                           # Helm deployment data (if RHDH Helm releases found)
+│   ├── all-rhdh-releases.txt       # List of detected RHDH Helm releases
+│   └── releases/                   # Per-release data
+│       └── ns=[namespace]/         # Per-namespace organization
+│           ├── _configmaps/        # Namespace-wide ConfigMaps
+│           ├── _secrets/           # Namespace-wide Secrets (sanitized)
+│           └── [release-name]/     # Per-release directory
+│               ├── values.yaml, manifest.yaml, status.yaml
+│               ├── deployment/     # Application deployment info
+│               └── db-statefulset/ # Database info (if enabled)
+└── operator/                       # Operator deployment data (if RHDH operators found)
+    ├── all-deployments.txt         # List of all RHDH operator deployments
+    ├── olm/                        # OLM information (CSV, Subscriptions, etc.)
+    ├── crds/                       # Custom Resource Definitions
+    ├── ns=[operator-namespace]/     # Per-operator-namespace data
+    └── backstage-crs/              # Backstage Custom Resources
+        └── ns=[cr-namespace]/      # Per-CR-namespace data
 ```
 
 > **Note**: For cluster version, cluster operators, and cluster-wide routes, use the generic must-gather output

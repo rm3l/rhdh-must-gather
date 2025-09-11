@@ -5,6 +5,7 @@
 # Documentation
 README.md
 docs/
+examples/
 
 # Build artifacts
 *.log

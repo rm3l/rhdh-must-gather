@@ -260,6 +260,14 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --cl
 # Combine exclusion flags with other options
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-operator --cluster-info
 
+# Collect from specific namespaces only
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --namespaces rhdh-prod,rhdh-staging
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --namespaces=my-rhdh-namespace
+
+# Combine namespace filtering with component exclusions
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --namespaces rhdh-ns --without-operator
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --namespaces prod-ns,staging-ns --without-helm
+
 # With time constraints (last 2 hours)
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather --since=2h
 
@@ -279,6 +287,18 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --he
 | `--without-platform` | Skip platform detection and information | For minimal collections when platform info is not needed |
 | `--without-route` | Skip OpenShift route collection | For non-OpenShift clusters or when routes are not relevant |
 | `--without-ingress` | Skip Kubernetes ingress collection | When ingresses are not used for RHDH access |
+
+#### Namespace Filtering
+
+| Flag | Description | Use Case |
+|------|-------------|----------|
+| `--namespaces ns1,ns2` | Limit collection to specified comma-separated namespaces | When RHDH is deployed in specific known namespaces |
+| `--namespaces=ns1,ns2` | Alternative syntax for namespace filtering | Same as above with equals syntax |
+
+**Examples:**
+- `--namespaces rhdh-prod,rhdh-staging` - Collect only from production and staging namespaces
+- `--namespaces=my-rhdh-ns` - Collect only from a single namespace
+- Combine with exclusions: `--namespaces prod-ns --without-helm` - Only operator data from prod-ns
 
 ## Output Structure
 

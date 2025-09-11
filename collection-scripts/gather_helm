@@ -15,10 +15,16 @@ log_info "Starting Helm data collection..."
 helm_dir="$BASE_COLLECTION_PATH/helm"
 ensure_directory "$helm_dir"
 
-# Try to find releases with backstage/rhdh patterns in all namespaces
-log_info "Searching for RHDH-related Helm releases in all namespaces..."
-helm list --all-namespaces | grep -E 'REVISION|backstage|rhdh|developer-hub' > "$helm_dir/all-rhdh-releases.txt"
-helm list --all-namespaces -o json | jq -r '.[] | select(.chart | test("backstage|rhdh|developer-hub"; "i"))' > "$helm_dir/all-rhdh-releases.json"
+# Try to find releases with backstage/rhdh patterns in specified namespaces
+namespace_args=$(get_namespace_args)
+if [[ -n "${RHDH_TARGET_NAMESPACES:-}" ]]; then
+    log_info "Searching for RHDH-related Helm releases in namespaces: $RHDH_TARGET_NAMESPACES..."
+else
+    log_info "Searching for RHDH-related Helm releases in all namespaces..."
+fi
+
+helm list $namespace_args | grep -E 'REVISION|backstage|rhdh|developer-hub' > "$helm_dir/all-rhdh-releases.txt"
+helm list $namespace_args -o json | jq -r '.[] | select(.chart | test("backstage|rhdh|developer-hub"; "i"))' > "$helm_dir/all-rhdh-releases.json"
 
 releases=$(jq -r '"\(.namespace)/\(.name)"' < "$helm_dir/all-rhdh-releases.json" || echo "")
 release_namespaces=$(jq -r '"\(.namespace)"' < "$helm_dir/all-rhdh-releases.json" || echo "")
@@ -35,6 +41,12 @@ log_debug "releases: $releases"
 
 # Process each release namespace
 for release_ns in $release_namespaces; do
+  # Skip this namespace if namespace filtering is enabled and it's not in the target list
+  if ! should_include_namespace "$release_ns"; then
+    log_debug "Skipping helm namespace $release_ns (not in target list)"
+    continue
+  fi
+
   log_info "--> Processing namespace $release_ns containing at least one Helm release"
 
   release_ns_dir="$helm_dir/releases/ns=$release_ns/"
@@ -56,6 +68,12 @@ for release_info in $releases; do
     if [[ "$release_info" == *"/"* ]]; then
         release_ns=$(echo "$release_info" | cut -d'/' -f1)
         release_name=$(echo "$release_info" | cut -d'/' -f2)
+    fi
+
+    # Skip this release if namespace filtering is enabled and it's not in the target list
+    if ! should_include_namespace "$release_ns"; then
+      log_debug "Skipping helm release $release_name in namespace $release_ns (not in target list)"
+      continue
     fi
 
     log_info "--> Processing Helm release $release_name in namespace $release_ns"

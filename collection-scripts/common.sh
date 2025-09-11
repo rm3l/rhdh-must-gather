@@ -50,6 +50,45 @@ log_debug() {
     fi
 }
 
+# Check if a namespace should be included in collection
+# Returns 0 (true) if namespace should be included, 1 (false) if it should be skipped
+should_include_namespace() {
+    local namespace="$1"
+    
+    # If no namespace filtering is specified, include all namespaces
+    if [[ -z "${RHDH_TARGET_NAMESPACES:-}" ]]; then
+        return 0
+    fi
+    
+    # Convert comma-separated list to array and check if namespace is included
+    IFS=',' read -ra target_ns_array <<< "$RHDH_TARGET_NAMESPACES"
+    for target_ns in "${target_ns_array[@]}"; do
+        # Trim whitespace
+        target_ns=$(echo "$target_ns" | xargs)
+        if [[ "$namespace" == "$target_ns" ]]; then
+            return 0
+        fi
+    done
+    
+    return 1
+}
+
+# Get namespace arguments for kubectl/helm commands
+# Returns either "-A" for all namespaces or "-n namespace1 -n namespace2..." for specific namespaces
+get_namespace_args() {
+    if [[ -z "${RHDH_TARGET_NAMESPACES:-}" ]]; then
+        echo "--all-namespaces"
+    else
+        local args=""
+        IFS=',' read -ra target_ns_array <<< "$RHDH_TARGET_NAMESPACES"
+        for target_ns in "${target_ns_array[@]}"; do
+            target_ns=$(echo "$target_ns" | xargs)
+            args="$args -n $target_ns"
+        done
+        echo "$args"
+    fi
+}
+
 # Check if command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1

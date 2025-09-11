@@ -12,6 +12,7 @@ export_log_collection_args
 
 log_info "Starting OCP Route data collection..."
 
-safe_exec "oc get routes.route.openshift.io -A" "$BASE_COLLECTION_PATH/all-routes.txt" "All OCP routes"
+namespace_args=$(get_namespace_args)
+safe_exec "oc get routes.route.openshift.io $namespace_args" "$BASE_COLLECTION_PATH/all-routes.txt" "All OCP routes"
 
 # TODO Collect more details if needed

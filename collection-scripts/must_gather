@@ -45,6 +45,7 @@ function main() {
   )
   declare requested_scripts=("${mandatory_scripts[@]}")
   declare excluded_scripts=()
+  declare target_namespaces=""
 
   parse_flags "$@"
   run_scripts
@@ -79,6 +80,18 @@ function parse_flags {
       --without-ingress)
         excluded_scripts+=("ingress")
         ;;
+      --namespaces)
+        if [[ -n "${2:-}" ]]; then
+          target_namespaces="$2"
+          shift
+        else
+          log_error "--namespaces requires a comma-separated list of namespaces"
+          exit 1
+        fi
+        ;;
+      --namespaces=*)
+        target_namespaces="${1#*=}"
+        ;;
       --)
         shift
         break
@@ -102,6 +115,12 @@ function parse_flags {
   done
   # Rebuild array to remove gaps
   requested_scripts=("${requested_scripts[@]}")
+
+  # Export namespace filtering for use by collection scripts
+  if [[ -n "$target_namespaces" ]]; then
+    export RHDH_TARGET_NAMESPACES="$target_namespaces"
+    log_info "Limiting collection to namespaces: $target_namespaces"
+  fi
 }
 
 function help {
@@ -131,6 +150,9 @@ Usage: oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gath
   > You can also choose to enable optional collectors:
   --cluster-info          Collect cluster-wide diagnostic information
 
+  > You can limit collection to specific namespaces:
+  --namespaces ns1,ns2    Collect data only from specified comma-separated namespaces
+
   Examples:
   # Collect only Helm data (skip operator data)
   oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-operator
@@ -140,6 +162,12 @@ Usage: oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gath
 
   # Minimal collection (only platform info)
   oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-operator --without-helm --without-route --without-ingress
+
+  # Collect from specific namespaces only
+  oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --namespaces rhdh-prod,rhdh-staging
+
+  # Combine namespace filtering with exclusions
+  oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --namespaces my-rhdh-ns --without-operator
 "
 }
 

@@ -12,6 +12,7 @@ export_log_collection_args
 
 log_info "Starting Ingress data collection..."
 
-safe_exec "oc get ingresses.networking.k8s.io -A" "$BASE_COLLECTION_PATH/all-ingresses.txt" "All Ingresses"
+namespace_args=$(get_namespace_args)
+safe_exec "oc get ingresses.networking.k8s.io $namespace_args" "$BASE_COLLECTION_PATH/all-ingresses.txt" "All Ingresses"
 
 # TODO Collect more details if needed

@@ -258,115 +258,118 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --he
 ```
 /must-gather/
 ├── version                         # Tool version information (e.g., "rhdh/must-gather 0.0.0-unknown")
-├── must-gather.log                 # Must-gather container logs (if running in pod)
 ├── sanitization-report.txt         # Data sanitization summary and details
+├── all-routes.txt                  # All OpenShift routes cluster-wide
+├── all-ingresses.txt               # All Kubernetes ingresses cluster-wide
+├── must-gather.log                 # Must-gather container logs (if running in pod)
 ├── cluster-info/                   # Cluster-wide information (if --cluster-info used)
 │   └── [cluster-info dump output]
-└── rhdh/                           # RHDH-specific data (automatically sanitized)
-    ├── platform/                   # Platform and infrastructure information
-    │   ├── platform.json           # Structured platform data (platform, underlying, versions)
-    │   └── platform.txt            # Human-readable platform summary
-    ├── helm/                       # Helm deployment data (if RHDH Helm releases found)
-    │   ├── all-rhdh-releases.txt   # List of detected RHDH Helm releases with namespaces, revisions, status
-    │   └── releases/               # Per-release data
-    │       └── ns=[namespace]/     # Per-namespace organization
-    │           ├── _configmaps/    # Namespace-wide ConfigMaps with both formats
-    │           │   ├── [configmap-name].yaml               # Full ConfigMap YAML
-    │           │   └── [configmap-name].describe.txt       # kubectl describe output
-    │           ├── _secrets/       # Namespace-wide Secrets (sanitized) with describe only
-    │           │   └── [secret-name].describe.txt          # kubectl describe output (data redacted)
-    │           └── [release-name]/ # Per-release directory
-    │               ├── values.yaml         # User-provided values
-    │               ├── all-values.yaml     # All computed values (25KB+ files)
-    │               ├── manifest.yaml       # Deployed manifest (18KB+ files)
-    │               ├── hooks.yaml          # Helm hooks
-    │               ├── history.txt         # Release history
-    │               ├── history.yaml        # Release history (YAML)
-    │               ├── status.txt          # Release status (text)
-    │               ├── status.yaml         # Release status (YAML, 21KB+ files)
-    │               ├── notes.txt           # Release notes
-    │               ├── deployment/         # Application deployment info
-    │               │   ├── deployment.yaml
-    │               │   ├── deployment.describe.txt
-    │               │   ├── app-container-userid.txt      # "uid=1001 gid=0(root) groups=0(root)"
-    │               │   ├── backstage.json              # {"version": "1.39.1"}
-    │               │   ├── build-metadata.json         # RHDH version, Backstage version, source repos, build time
-    │               │   ├── node-version.txt            # "v22.16.0"
-    │               │   ├── dynamic-plugins-root.fs.txt # Directory listing with plugin packages
-    │               │   ├── app-config.dynamic-plugins.yaml # Generated app config (9KB files)
-    │               │   ├── logs-app.txt                # All container logs (2MB+ files)
-    │               │   ├── logs-app--backstage-backend.txt # Backend logs (2MB+ files)
-    │               │   ├── logs-app--install-dynamic-plugins.txt # Init container logs (17KB files)
-    │               │   └── pods/           # Pod details and logs
-    │               │       ├── pods.txt
-    │               │       ├── pods.yaml
-    │               │       └── pods.describe.txt
-    │               └── db-statefulset/     # Database StatefulSet info (if database enabled)
-    │                   ├── db-statefulset.yaml
-    │                   ├── db-statefulset.describe.txt
-    │                   ├── logs-db.txt     # Database logs
-    │                   └── pods/           # Database pod details
-    │                       ├── pods.txt
-    │                       ├── pods.yaml
-    │                       └── pods.describe.txt
-    └── operator/                   # Operator deployment data (if RHDH operators found)
-        ├── all-deployments.txt     # List of all RHDH operator deployments
-        ├── olm/                    # OLM information
-        │   ├── rhdh-csv-all.txt    # ClusterServiceVersions
-        │   ├── rhdh-subscriptions-all.txt # Subscriptions
-        │   ├── installplans-all.txt # InstallPlans
-        │   ├── operatorgroups-all.txt # OperatorGroups
-        │   └── catalogsources-all.txt # CatalogSources
-        ├── crds/                   # Custom Resource Definitions
-        │   ├── all-crds.txt        # All CRDs in cluster
-        │   ├── backstages.rhdh.redhat.com.yaml # RHDH CRD definition
-        │   └── backstages.rhdh.redhat.com.describe.txt # CRD description
-        ├── ns=[operator-namespace]/ # Per-operator-namespace data (e.g., ns=rhdh-operator)
-        │   ├── all-resources.txt   # All resources in namespace
-        │   ├── configs/            # ConfigMaps with both formats
-        │   │   ├── all-configmaps.txt
-        │   │   ├── [configmap-name].yaml       # Full ConfigMap YAML
-        │   │   └── [configmap-name].describe.txt # kubectl describe output
-        │   ├── deployments/        # Operator deployments
-        │   │   ├── all-deployments.txt
-        │   │   ├── [deployment-selector].yaml
-        │   │   └── [deployment-selector].describe.txt
-        │   └── logs.txt           # Operator logs
-        └── backstage-crs/          # Backstage Custom Resources
-            ├── all-backstage-crs.txt # List of all Backstage CRs
-            └── ns=[cr-namespace]/  # Per-CR-namespace data (where Backstage CRs are deployed)
-                ├── _configmaps/    # Namespace-wide ConfigMaps with both formats
-                │   ├── [configmap-name].yaml               # Full ConfigMap YAML
-                │   └── [configmap-name].describe.txt       # kubectl describe output
-                ├── _secrets/       # Namespace-wide Secrets (sanitized) with describe only
-                │   └── [secret-name].describe.txt          # kubectl describe output (data redacted)
-                └── [cr-name]/      # Per-CR directory
-                    ├── [cr-name].yaml      # CR definition
-                    ├── describe.txt        # CR description
-                    ├── deployment/         # Application deployment (same structure as Helm)
-                    │   ├── deployment.yaml
-                    │   ├── deployment.describe.txt
-                    │   ├── app-container-userid.txt      # "uid=1001 gid=0(root) groups=0(root)"
-                    │   ├── backstage.json              # {"version": "1.39.1"}
-                    │   ├── build-metadata.json         # RHDH version, Backstage version, source repos, build time
-                    │   ├── node-version.txt            # "v22.16.0"
-                    │   ├── dynamic-plugins-root.fs.txt # Directory listing with plugin packages
-                    │   ├── app-config.dynamic-plugins.yaml # Generated app config (9KB files)
-                    │   ├── logs-app.txt                # All container logs (2MB+ files)
-                    │   ├── logs-app--backstage-backend.txt # Backend logs (2MB+ files)
-                    │   ├── logs-app--install-dynamic-plugins.txt # Init container logs (17KB files)
-                    │   └── pods/           # Application pods
-                    │       ├── pods.txt
-                    │       ├── pods.yaml
-                    │       └── pods.describe.txt
-                    └── db-statefulset/     # Database StatefulSet (if database enabled)
-                        ├── db-statefulset.yaml
-                        ├── db-statefulset.describe.txt
-                        ├── logs-db.txt     # Database logs
-                        └── pods/           # Database pods
-                            ├── pods.txt
-                            ├── pods.yaml
-                            └── pods.describe.txt
+├── platform/                       # Platform and infrastructure information
+│   ├── platform.json               # Structured platform data (platform, underlying, versions)
+│   └── platform.txt                # Human-readable platform summary
+├── helm/                           # Helm deployment data (if RHDH Helm releases found)
+│   ├── all-rhdh-releases.txt       # List of detected RHDH Helm releases with namespaces, revisions, status
+│   └── releases/                   # Per-release data
+│       └── ns=[namespace]/         # Per-namespace organization
+│           ├── _configmaps/        # Namespace-wide ConfigMaps with both formats
+│           │   ├── [configmap-name].yaml               # Full ConfigMap YAML
+│           │   └── [configmap-name].describe.txt       # kubectl describe output
+│           ├── _secrets/           # Namespace-wide Secrets (sanitized)
+│           │   ├── [secret-name].yaml                  # Full Secret YAML (sanitized)
+│           │   └── [secret-name].describe.txt          # kubectl describe output (data redacted)
+│           └── [release-name]/     # Per-release directory
+│               ├── values.yaml         # User-provided values
+│               ├── all-values.yaml     # All computed values (25KB+ files)
+│               ├── manifest.yaml       # Deployed manifest (18KB+ files)
+│               ├── hooks.yaml          # Helm hooks
+│               ├── history.txt         # Release history
+│               ├── history.yaml        # Release history (YAML)
+│               ├── status.txt          # Release status (text)
+│               ├── status.yaml         # Release status (YAML, 21KB+ files)
+│               ├── notes.txt           # Release notes
+│               ├── deployment/         # Application deployment info
+│               │   ├── deployment.yaml
+│               │   ├── deployment.describe.txt
+│               │   ├── app-container-userid.txt      # "uid=1001 gid=0(root) groups=0(root)"
+│               │   ├── backstage.json              # {"version": "1.39.1"}
+│               │   ├── build-metadata.json         # RHDH version, Backstage version, source repos, build time
+│               │   ├── node-version.txt            # "v22.16.0"
+│               │   ├── dynamic-plugins-root.fs.txt # Directory listing with plugin packages
+│               │   ├── app-config.dynamic-plugins.yaml # Generated app config (9KB files)
+│               │   ├── logs-app.txt                # All container logs (2MB+ files)
+│               │   ├── logs-app--backstage-backend.txt # Backend logs (2MB+ files)
+│               │   ├── logs-app--install-dynamic-plugins.txt # Init container logs (17KB files)
+│               │   └── pods/           # Pod details and logs
+│               │       ├── pods.txt
+│               │       ├── pods.yaml
+│               │       └── pods.describe.txt
+│               └── db-statefulset/     # Database StatefulSet info (if database enabled)
+│                   ├── db-statefulset.yaml
+│                   ├── db-statefulset.describe.txt
+│                   ├── logs-db.txt     # Database logs
+│                   └── pods/           # Database pod details
+│                       ├── pods.txt
+│                       ├── pods.yaml
+│                       └── pods.describe.txt
+└── operator/                       # Operator deployment data (if RHDH operators found)
+    ├── all-deployments.txt         # List of all RHDH operator deployments
+    ├── olm/                        # OLM information
+    │   ├── rhdh-csv-all.txt        # ClusterServiceVersions
+    │   ├── rhdh-subscriptions-all.txt # Subscriptions
+    │   ├── installplans-all.txt     # InstallPlans
+    │   ├── operatorgroups-all.txt   # OperatorGroups
+    │   └── catalogsources-all.txt   # CatalogSources
+    ├── crds/                       # Custom Resource Definitions
+    │   ├── all-crds.txt            # All CRDs in cluster
+    │   ├── backstages.rhdh.redhat.com.yaml # RHDH CRD definition
+    │   └── backstages.rhdh.redhat.com.describe.txt # CRD description
+    ├── ns=[operator-namespace]/     # Per-operator-namespace data (e.g., ns=rhdh-operator)
+    │   ├── all-resources.txt       # All resources in namespace
+    │   ├── configs/                # ConfigMaps with both formats
+    │   │   ├── all-configmaps.txt
+    │   │   ├── [configmap-name].yaml       # Full ConfigMap YAML
+    │   │   └── [configmap-name].describe.txt # kubectl describe output
+    │   ├── deployments/            # Operator deployments
+    │   │   ├── all-deployments.txt
+    │   │   ├── [deployment-selector].yaml
+    │   │   └── [deployment-selector].describe.txt
+    │   └── logs.txt               # Operator logs
+    └── backstage-crs/              # Backstage Custom Resources
+        ├── all-backstage-crs.txt   # List of all Backstage CRs
+        └── ns=[cr-namespace]/      # Per-CR-namespace data (where Backstage CRs are deployed)
+            ├── _configmaps/        # Namespace-wide ConfigMaps with both formats
+            │   ├── [configmap-name].yaml               # Full ConfigMap YAML
+            │   └── [configmap-name].describe.txt       # kubectl describe output
+            ├── _secrets/           # Namespace-wide Secrets (sanitized)
+            │   ├── [secret-name].yaml                  # Full Secret YAML (sanitized)
+            │   └── [secret-name].describe.txt          # kubectl describe output (data redacted)
+            └── [cr-name]/          # Per-CR directory
+                ├── [cr-name].yaml      # CR definition
+                ├── describe.txt        # CR description
+                ├── deployment/         # Application deployment (same structure as Helm)
+                │   ├── deployment.yaml
+                │   ├── deployment.describe.txt
+                │   ├── app-container-userid.txt      # "uid=1001 gid=0(root) groups=0(root)"
+                │   ├── backstage.json              # {"version": "1.39.1"}
+                │   ├── build-metadata.json         # RHDH version, Backstage version, source repos, build time
+                │   ├── node-version.txt            # "v22.16.0"
+                │   ├── dynamic-plugins-root.fs.txt # Directory listing with plugin packages
+                │   ├── app-config.dynamic-plugins.yaml # Generated app config (9KB files)
+                │   ├── logs-app.txt                # All container logs (2MB+ files)
+                │   ├── logs-app--backstage-backend.txt # Backend logs (2MB+ files)
+                │   ├── logs-app--install-dynamic-plugins.txt # Init container logs (17KB files)
+                │   └── pods/           # Application pods
+                │       ├── pods.txt
+                │       ├── pods.yaml
+                │       └── pods.describe.txt
+                └── db-statefulset/     # Database StatefulSet (if database enabled)
+                    ├── db-statefulset.yaml
+                    ├── db-statefulset.describe.txt
+                    ├── logs-db.txt     # Database logs
+                    └── pods/           # Database pods
+                        ├── pods.txt
+                        ├── pods.yaml
+                        └── pods.describe.txt
 ```
 
 > **Note**: The tool automatically detects and collects data for both Helm and Operator-based RHDH deployments. For cluster-wide information, use the `--cluster-info` flag or combine with standard `oc adm must-gather`.

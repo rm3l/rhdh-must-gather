@@ -40,6 +40,8 @@ function main() {
     "platform"
     "helm"
     "operator"
+    "route"
+    "ingress"
   )
   declare requested_scripts=("${mandatory_scripts[@]}")
 

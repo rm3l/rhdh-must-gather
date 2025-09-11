@@ -237,11 +237,28 @@ The tool includes automatic sanitization of sensitive information to make the co
 The gather script accepts the following options:
 
 ```bash
-# Default collection (Helm and Operator data)
+# Default collection (all RHDH data: platform, helm, operator, routes, ingresses)
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather
+
+# Exclude specific data collection types
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-operator
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-helm
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-platform
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-route
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-ingress
+
+# Collect only specific deployment types
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-operator  # Helm only
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-helm      # Operator only
+
+# Minimal collection (platform info only)
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-operator --without-helm --without-route --without-ingress
 
 # With cluster-wide information
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --cluster-info
+
+# Combine exclusion flags with other options
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-operator --cluster-info
 
 # With time constraints (last 2 hours)
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather --since=2h
@@ -252,6 +269,16 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- LOG_LEVEL=debug /usr
 # Help information
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --help
 ```
+
+#### Available Exclusion Flags
+
+| Flag | Description | Use Case |
+|------|-------------|----------|
+| `--without-operator` | Skip operator-based RHDH deployment data | When you know RHDH is deployed via Helm only |
+| `--without-helm` | Skip Helm-based RHDH deployment data | When you know RHDH is deployed via Operator only |
+| `--without-platform` | Skip platform detection and information | For minimal collections when platform info is not needed |
+| `--without-route` | Skip OpenShift route collection | For non-OpenShift clusters or when routes are not relevant |
+| `--without-ingress` | Skip Kubernetes ingress collection | When ingresses are not used for RHDH access |
 
 ## Output Structure
 

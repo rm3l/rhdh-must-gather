@@ -1,4 +1,4 @@
-# RHDH Must-Gather Tool
+# RHDH Must-Gather Tool (POC)
 
 A specialized diagnostic data collection tool for Red Hat Developer Hub (RHDH) deployments on Kubernetes and OpenShift clusters.
 

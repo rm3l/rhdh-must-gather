@@ -1,0 +1,162 @@
+#!/usr/bin/env bash
+
+# Namespace Inspection Script
+# Collects comprehensive namespace-level data using 'oc adm inspect'
+# This provides deep resource inspection with pod logs and events
+#
+# Output is compatible with OMC (OpenShift Must-Gather Client):
+# https://github.com/gmeghnag/omc
+#
+# Usage with OMC:
+#   omc use namespace-inspect/<namespace>
+#   omc get pods
+#   omc get deployments -o yaml
+
+set -euo pipefail
+
+# Get script directory for calling other scripts
+DIR_NAME=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+source "${DIR_NAME}/common.sh"
+export_log_collection_args
+
+check_command
+
+log_info "Starting namespace inspection collection..."
+
+inspect_dir="$BASE_COLLECTION_PATH/namespace-inspect"
+ensure_directory "$inspect_dir"
+
+# Check if oc command is available (required for oc adm inspect)
+if ! command_exists "oc"; then
+    log_warn "'oc' command not found. Namespace inspection requires OpenShift CLI (oc)."
+    log_warn "Skipping namespace inspection. Install 'oc' to enable this feature."
+    echo "oc command not available - namespace inspection skipped" > "$inspect_dir/skipped.txt"
+    exit 0
+fi
+
+# Collect list of namespaces to inspect
+declare -a namespaces_to_inspect=()
+
+# If specific namespaces are targeted, use those
+if [[ -n "${RHDH_TARGET_NAMESPACES:-}" ]]; then
+    log_info "Inspecting targeted namespaces: $RHDH_TARGET_NAMESPACES"
+    IFS=',' read -ra namespaces_to_inspect <<< "$RHDH_TARGET_NAMESPACES"
+else
+    # Otherwise, find namespaces with RHDH deployments
+    log_info "Auto-detecting namespaces with RHDH deployments..."
+    
+    # Find namespaces with Helm releases
+    helm_namespaces=$(helm list --all-namespaces -o json 2>/dev/null \
+        | jq -r '.[] | select(.chart | test("backstage|rhdh|developer-hub"; "i")) | .namespace' \
+        | sort | uniq || echo "")
+    
+    # Find namespaces with Backstage CRs
+    cr_namespaces=$(kubectl get backstages.rhdh.redhat.com --all-namespaces -o jsonpath='{.items[*].metadata.namespace}' 2>/dev/null \
+        | tr ' ' '\n' | sort | uniq || echo "")
+    
+    # Find operator namespace(s)
+    operator_namespaces=$(kubectl get deployments --all-namespaces -l app=rhdh-operator -o jsonpath='{.items[*].metadata.namespace}' 2>/dev/null \
+        | tr ' ' '\n' | sort | uniq || echo "")
+    
+    # Combine and deduplicate
+    all_namespaces=$(echo -e "${helm_namespaces}\n${cr_namespaces}\n${operator_namespaces}" | grep -v '^$' | sort | uniq)
+    
+    if [[ -z "$all_namespaces" ]]; then
+        log_warn "No RHDH deployments found in cluster"
+        echo "No RHDH namespaces detected" > "$inspect_dir/no-namespaces.txt"
+        exit 0
+    fi
+    
+    # Convert to array
+    while IFS= read -r ns; do
+        [[ -n "$ns" ]] && namespaces_to_inspect+=("$ns")
+    done <<< "$all_namespaces"
+    
+    # Log what was found
+    if [[ -n "$operator_namespaces" ]]; then
+        log_info "Auto-detected RHDH operator namespace(s): $operator_namespaces"
+    fi
+fi
+
+# Trim whitespace from namespace names
+for i in "${!namespaces_to_inspect[@]}"; do
+    namespaces_to_inspect[$i]=$(echo "${namespaces_to_inspect[$i]}" | xargs)
+done
+
+log_info "Found ${#namespaces_to_inspect[@]} namespace(s) to inspect: ${namespaces_to_inspect[*]}"
+
+# Build namespace arguments for single oc adm inspect command
+namespace_args=""
+for ns in "${namespaces_to_inspect[@]}"; do
+    if [[ -n "$ns" ]]; then
+        namespace_args="$namespace_args namespace/$ns"
+    fi
+done
+
+if [[ -z "$namespace_args" ]]; then
+    log_warn "No valid namespaces to inspect"
+    echo "No valid namespaces found" > "$inspect_dir/no-namespaces.txt"
+    exit 0
+fi
+
+log_info "Inspecting all namespaces in a single command: ${namespaces_to_inspect[*]}"
+
+# Build inspect command with all namespaces and time constraints
+inspect_cmd="oc adm inspect $namespace_args --dest-dir='$inspect_dir'"
+
+# Add time constraints if specified (MUST_GATHER_SINCE or MUST_GATHER_SINCE_TIME)
+if [[ -n "${MUST_GATHER_SINCE:-}" ]]; then
+    inspect_cmd="$inspect_cmd --since=${MUST_GATHER_SINCE}"
+    log_debug "Adding --since=${MUST_GATHER_SINCE} to inspect command"
+fi
+if [[ -n "${MUST_GATHER_SINCE_TIME:-}" ]]; then
+    inspect_cmd="$inspect_cmd --since-time=${MUST_GATHER_SINCE_TIME}"
+    log_debug "Adding --since-time=${MUST_GATHER_SINCE_TIME} to inspect command"
+fi
+
+# Execute the inspect command with timeout
+# Increase timeout for multiple namespaces (base timeout * number of namespaces)
+multi_ns_timeout=$((CMD_TIMEOUT * ${#namespaces_to_inspect[@]}))
+log_debug "Using timeout: ${multi_ns_timeout}s for ${#namespaces_to_inspect[@]} namespace(s)"
+log_debug "Executing: $inspect_cmd"
+
+if ! timeout "${multi_ns_timeout}" bash -c "$inspect_cmd" >> "$inspect_dir/inspect.log" 2>&1; then
+    log_warn "Namespace inspection timed out or failed (timeout: ${multi_ns_timeout}s)"
+    log_warn "Consider increasing CMD_TIMEOUT (current: ${CMD_TIMEOUT}s per namespace)"
+    echo "Inspection failed or timed out (${multi_ns_timeout}s for ${#namespaces_to_inspect[@]} namespaces)" >> "$inspect_dir/inspect.log"
+    echo "Timestamp: $(date)" >> "$inspect_dir/inspect.log"
+    exit 1
+fi
+
+log_success "Completed inspection of all ${#namespaces_to_inspect[@]} namespace(s)"
+
+# Create summary file
+summary_file="$inspect_dir/inspection-summary.txt"
+{
+    echo "Namespace Inspection Summary"
+    echo "============================"
+    echo ""
+    echo "Inspection timestamp: $(date)"
+    echo "Number of namespaces inspected: ${#namespaces_to_inspect[@]}"
+    echo ""
+    echo "Inspected namespaces:"
+    for ns in "${namespaces_to_inspect[@]}"; do
+        echo "  - $ns"
+    done
+    echo ""
+    echo "Time constraints:"
+    echo "  MUST_GATHER_SINCE: ${MUST_GATHER_SINCE:-none}"
+    echo "  MUST_GATHER_SINCE_TIME: ${MUST_GATHER_SINCE_TIME:-none}"
+    echo ""
+    echo "Data collected per namespace:"
+    echo "  - All Kubernetes resources (YAML definitions)"
+    echo "  - Pod logs (current and previous)"
+    echo "  - Events"
+    echo "  - Resource descriptions"
+    echo "  - Network configurations"
+    echo ""
+    echo "Output directory: $inspect_dir"
+} > "$summary_file"
+
+log_success "Namespace inspection collection completed. Summary: $summary_file"
+

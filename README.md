@@ -194,8 +194,133 @@ This tool focuses exclusively on RHDH-related resources. For cluster-wide inform
 - **Secrets**: Sanitized secret resources (data fields redacted for security)
 - **Services, Routes, Ingresses**: Network configurations for RHDH access
 
+### Namespace Inspection (collected by default)
+- **Deep namespace resource inspection** using `oc adm inspect namespace` (included by default for OMC compatibility)
+- **Auto-detects RHDH namespaces**:
+  - Namespaces with Helm-based RHDH deployments
+  - Namespaces with Backstage Custom Resources (operator-based)
+  - **RHDH operator namespace(s)** automatically included
+- **OMC-compatible output** - works with [OpenShift Must-Gather Client (OMC)](https://github.com/gmeghnag/omc) for interactive analysis
+- **Comprehensive resource collection** including:
+  - All Kubernetes resources in YAML format
+  - Pod logs (current and previous containers)
+  - Events timeline for troubleshooting
+  - Resource descriptions and status
+  - Network configurations
+  - Standard must-gather directory structure
+- **Can be disabled** with `--without-namespace-inspect` flag (not recommended - removes OMC compatibility)
+
 ### Cluster Information (optional)
 - **Cluster-wide diagnostic dump** using `oc cluster-info dump` (enabled with `--cluster-info` flag)
+
+## Using with OMC (OpenShift Must-Gather Client)
+
+The namespace inspection output is fully compatible with [OMC (OpenShift Must-Gather Client)](https://github.com/gmeghnag/omc), a powerful tool for interactive must-gather analysis used by Red Hat Support teams.
+
+**Note**: Namespace inspection is now **collected by default**, so all must-gather outputs are OMC-compatible.
+
+### Setup
+
+1. **Collect data** (namespace inspection included by default):
+   ```bash
+   oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main
+   ```
+
+2. **Install OMC** (if not already installed):
+   ```bash
+   curl -sL https://github.com/gmeghnag/omc/releases/latest/download/omc_$(uname)_$(uname -m).tar.gz | tar xzf - omc
+   chmod +x ./omc
+   sudo mv ./omc /usr/local/bin/
+   ```
+
+### Using OMC with Namespace Inspection Data
+
+Point OMC to the namespace inspection directory:
+
+```bash
+# Navigate to your must-gather output
+cd must-gather.local.*/
+
+# Use OMC with the namespace inspection directory
+omc use namespace-inspect
+
+# Now query resources interactively (OMC will see all inspected namespaces)
+omc get pods --all-namespaces
+omc get pods -n rhdh-prod
+omc get deployments -n rhdh-staging -o wide
+omc get events --sort-by='.lastTimestamp'
+```
+
+### OMC Examples for RHDH Troubleshooting
+
+```bash
+# List all pods with their node assignments
+omc get pods -o wide
+
+# Get pods by label
+omc get pods -l app.kubernetes.io/name=backstage
+
+# Retrieve deployment details
+omc get deployment backstage-bs1 -o yaml
+
+# Check events for a specific pod
+omc get events --field-selector involvedObject.name=<pod-name>
+
+# Get all resources of a specific type
+omc get configmaps -o name
+
+# Use JSONPath queries
+omc get pods -o jsonpath="{.items[*].metadata.name}"
+
+# Check certificate details (if OMC certs command is available)
+omc certs inspect
+```
+
+### Multi-Namespace Analysis
+
+With a single OMC context, you can query across all collected namespaces:
+
+```bash
+# Point OMC to the inspection directory once
+omc use namespace-inspect
+
+# Query different namespaces
+omc get pods -n rhdh-prod
+omc get pods -n rhdh-staging
+
+# Or view all namespaces at once
+omc get pods --all-namespaces
+omc get namespaces
+```
+
+### OMC Benefits
+
+- 🔍 **Interactive queries**: Use familiar `kubectl`/`oc` commands on offline data
+- 🚀 **Fast analysis**: Query resources without cluster access
+- 📊 **Advanced filtering**: Labels, field selectors, JSONPath
+- 🔐 **Secure**: Analyze sensitive data offline
+- 📈 **Resource comparison**: Compare resources across namespaces or time periods
+
+### Directory Structure for OMC
+
+The namespace inspection creates OMC-compatible directory structures:
+
+```
+namespace-inspect/            # ← Point OMC here: omc use namespace-inspect
+├── namespaces/               # All inspected namespaces in one place
+│   ├── rhdh-prod/           # First namespace
+│   │   ├── apps/            # Deployments, StatefulSets, etc.
+│   │   ├── core/            # Pods, Services, ConfigMaps, Secrets
+│   │   ├── batch/           # Jobs, CronJobs
+│   │   └── networking.k8s.io/
+│   ├── rhdh-staging/        # Second namespace
+│   │   └── [same structure]
+│   └── ...                  # Additional namespaces
+├── event-filter.html
+└── aggregated-discovery-apis.yaml
+```
+
+**Tip**: Single OMC context for all namespaces - no need to switch contexts when analyzing multiple environments.
 
 ## Privacy and Security (WIP)
 
@@ -237,7 +362,7 @@ The tool includes automatic sanitization of sensitive information to make the co
 The gather script accepts the following options:
 
 ```bash
-# Default collection (all RHDH data: platform, helm, operator, routes, ingresses)
+# Default collection (all RHDH data: platform, helm, operator, routes, ingresses, namespace-inspect)
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather
 
 # Exclude specific data collection types
@@ -246,19 +371,23 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --wi
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-platform
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-route
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-ingress
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-namespace-inspect  # Not recommended
 
 # Collect only specific deployment types
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-operator  # Helm only
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-helm      # Operator only
 
-# Minimal collection (platform info only)
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-operator --without-helm --without-route --without-ingress
+# Minimal collection (platform info only, no namespace inspection)
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-operator --without-helm --without-route --without-ingress --without-namespace-inspect
 
-# With cluster-wide information
+# With cluster-wide information (namespace inspection included by default)
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --cluster-info
 
 # Combine exclusion flags with other options
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-operator --cluster-info
+
+# Combine namespace filtering (namespace inspection included by default)
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --namespaces rhdh-prod
 
 # Collect from specific namespaces only
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --namespaces rhdh-prod,rhdh-staging
@@ -287,6 +416,7 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --he
 | `--without-platform` | Skip platform detection and information | For minimal collections when platform info is not needed |
 | `--without-route` | Skip OpenShift route collection | For non-OpenShift clusters or when routes are not relevant |
 | `--without-ingress` | Skip Kubernetes ingress collection | When ingresses are not used for RHDH access |
+| `--without-namespace-inspect` | Skip deep namespace inspection | **Not recommended** - removes OMC compatibility. Use only for minimal/quick collections |
 
 #### Namespace Filtering
 
@@ -311,6 +441,31 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --he
 ├── must-gather.log                 # Must-gather container logs (if running in pod)
 ├── cluster-info/                   # Cluster-wide information (if --cluster-info used)
 │   └── [cluster-info dump output]
+├── namespace-inspect/              # Deep namespace inspection (collected by default)
+│   ├── inspect.log                 # Inspection command logs
+│   ├── inspection-summary.txt      # Summary of inspected namespaces and data collected
+│   ├── namespaces/                 # All inspected namespaces (OMC-compatible structure)
+│   │   ├── [namespace-1]/          # First namespace (e.g., "rhdh-prod")
+│   │   │   ├── [namespace].yaml    # Namespace definition
+│   │   │   ├── apps/               # Application resources (Deployments, StatefulSets, etc.)
+│   │   │   ├── core/               # Core resources (ConfigMaps, Secrets, Services, etc.)
+│   │   │   ├── networking.k8s.io/  # Network policies and configurations
+│   │   │   ├── batch/              # Jobs and CronJobs
+│   │   │   ├── autoscaling/        # HPA and scaling configurations
+│   │   │   └── pods/               # Detailed pod information with logs
+│   │   │       └── [pod-name]/
+│   │   │           ├── [pod-name].yaml
+│   │   │           └── [container-name]/
+│   │   │               └── logs/
+│   │   │                   ├── current.log
+│   │   │                   ├── previous.log
+│   │   │                   └── previous.insecure.log
+│   │   ├── [namespace-2]/          # Second namespace (e.g., "rhdh-staging")
+│   │   │   └── [same structure as above]
+│   │   └── [namespace-N]/          # Additional namespaces...
+│   ├── aggregated-discovery-api.yaml
+│   ├── aggregated-discovery-apis.yaml
+│   └── event-filter.html           # Events visualization
 ├── platform/                       # Platform and infrastructure information
 │   ├── platform.json               # Structured platform data (platform, underlying, versions)
 │   └── platform.txt                # Human-readable platform summary

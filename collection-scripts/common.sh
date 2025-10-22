@@ -7,7 +7,7 @@ export BASE_COLLECTION_PATH="${BASE_COLLECTION_PATH:-/must-gather}"
 export PROS=${PROS:-5}
 
 # Command timeout (seconds) for kubectl/helm calls
-CMD_TIMEOUT="${CMD_TIMEOUT:-30}"
+CMD_TIMEOUT="${CMD_TIMEOUT:-90}"
 
 # Color codes for output
 export RED='\033[0;31m'
@@ -274,7 +274,7 @@ collect_rhdh_data() {
 
     labels=$(
       kubectl -n "$ns" get deployment "$deploy" -o json \
-        | jq -r '.spec.selector.matchLabels | to_entries | map("\(.key)=\(.value)") | join(",")'
+        | jq -r '.spec.selector.matchLabels | to_entries | map("\(.key)=\(.value)") | join(",")' || true
     )
     if [[ -n "$labels" ]]; then
       # Retrieve some information from the running pods
@@ -300,7 +300,7 @@ collect_rhdh_data() {
 
     labels=$(
       kubectl -n "$ns" get statefulset "$statefulset" -o json \
-        | jq -r '.spec.selector.matchLabels | to_entries | map("\(.key)=\(.value)") | join(",")'
+        | jq -r '.spec.selector.matchLabels | to_entries | map("\(.key)=\(.value)") | join(",")' || true
     )
     if [[ -n "$labels" ]]; then
       pods_dir="$statefulset_dir/pods"

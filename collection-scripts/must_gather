@@ -42,6 +42,10 @@ function main() {
     "operator"
     "route"
     "ingress"
+    "namespace-inspect"
+  )
+  declare optional_scripts=(
+    "cluster-info"
   )
   declare requested_scripts=("${mandatory_scripts[@]}")
   declare excluded_scripts=()
@@ -79,6 +83,9 @@ function parse_flags {
         ;;
       --without-ingress)
         excluded_scripts+=("ingress")
+        ;;
+      --without-namespace-inspect)
+        excluded_scripts+=("namespace-inspect")
         ;;
       --namespaces)
         if [[ -n "${2:-}" ]]; then
@@ -141,27 +148,34 @@ Usage: oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gath
     echo "\
 
   > You can exclude specific data collection types:
-  --without-operator      Skip operator-based RHDH deployment data collection
-  --without-helm          Skip Helm-based RHDH deployment data collection  
-  --without-platform      Skip platform detection and information
-  --without-route         Skip OpenShift route collection
-  --without-ingress       Skip Kubernetes ingress collection
+  --without-operator            Skip operator-based RHDH deployment data collection
+  --without-helm                Skip Helm-based RHDH deployment data collection  
+  --without-platform            Skip platform detection and information
+  --without-route               Skip OpenShift route collection
+  --without-ingress             Skip Kubernetes ingress collection
+  --without-namespace-inspect   Skip deep namespace inspection (OMC-compatible)
 
   > You can also choose to enable optional collectors:
-  --cluster-info          Collect cluster-wide diagnostic information
+  --cluster-info                Collect cluster-wide diagnostic information
 
   > You can limit collection to specific namespaces:
   --namespaces ns1,ns2    Collect data only from specified comma-separated namespaces
 
   Examples:
+  # Default collection (includes namespace inspection for OMC compatibility)
+  oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather
+
   # Collect only Helm data (skip operator data)
   oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-operator
 
   # Collect only operator data (skip Helm data)  
   oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-helm
 
-  # Minimal collection (only platform info)
-  oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-operator --without-helm --without-route --without-ingress
+  # Skip namespace inspection (not recommended - removes OMC compatibility)
+  oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-namespace-inspect
+
+  # Minimal collection (only platform info, no namespace inspection)
+  oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-operator --without-helm --without-route --without-ingress --without-namespace-inspect
 
   # Collect from specific namespaces only
   oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --namespaces rhdh-prod,rhdh-staging

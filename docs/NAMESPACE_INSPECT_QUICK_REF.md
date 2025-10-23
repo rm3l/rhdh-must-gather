@@ -4,7 +4,7 @@
 
 Deep namespace inspection for RHDH must-gather using `oc adm inspect namespace`.
 
-**Status**: ✅ **Collected by default** - all must-gather outputs are now OMC-compatible for Red Hat Support analysis.
+**Status**: ✅ **Collected by default** - all must-gather outputs are now OMC-compatible for Support analysis.
 
 ## Quick Start
 
@@ -107,7 +107,7 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main -- \
 
 ## OMC Integration
 
-The namespace inspection output is **fully compatible** with [OMC (OpenShift Must-Gather Client)](https://github.com/gmeghnag/omc), used by Red Hat Support teams.
+The namespace inspection output is **fully compatible** with [OMC (OpenShift Must-Gather Client)](https://github.com/gmeghnag/omc), used by Support teams.
 
 ### Using OMC with Inspection Data
 
@@ -129,7 +129,7 @@ omc get events --all-namespaces --sort-by='.lastTimestamp'
 - 🔍 Interactive queries with `kubectl`/`oc` syntax
 - 🚀 Fast offline analysis
 - 📊 Labels, field selectors, JSONPath support
-- ✅ Red Hat Support standard tool
+- ✅ Support standard tool
 
 ## When to Use
 

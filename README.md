@@ -215,7 +215,7 @@ This tool focuses exclusively on RHDH-related resources. For cluster-wide inform
 
 ## Using with OMC (OpenShift Must-Gather Client)
 
-The namespace inspection output is fully compatible with [OMC (OpenShift Must-Gather Client)](https://github.com/gmeghnag/omc), a powerful tool for interactive must-gather analysis used by Red Hat Support teams.
+The namespace inspection output is fully compatible with [OMC (OpenShift Must-Gather Client)](https://github.com/gmeghnag/omc), a powerful tool for interactive must-gather analysis used by Support teams.
 
 **Note**: Namespace inspection is now **collected by default**, so all must-gather outputs are OMC-compatible.
 

@@ -1,6 +1,6 @@
 Name:         sh.helm.release.v1.redhat-developer-hub-helm.v1
 Namespace:    my-ns
-Labels:       modifiedAt=1757623985
+Labels:       modifiedAt=1761217878
               name=redhat-developer-hub-helm
               owner=helm
               status=deployed
@@ -11,4 +11,4 @@ Type:  helm.sh/release.v1
 
 Data
 ====
-release:  197256 bytes
+release:  197972 bytes

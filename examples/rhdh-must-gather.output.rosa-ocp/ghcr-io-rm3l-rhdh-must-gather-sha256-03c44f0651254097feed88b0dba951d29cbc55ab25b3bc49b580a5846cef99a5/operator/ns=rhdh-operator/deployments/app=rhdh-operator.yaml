@@ -5,12 +5,12 @@ items:
   metadata:
     annotations:
       deployment.kubernetes.io/revision: "1"
-    creationTimestamp: "2025-09-11T20:45:14Z"
+    creationTimestamp: "2025-10-23T11:09:13Z"
     generation: 1
     labels:
       app: rhdh-operator
       control-plane: controller-manager
-      olm.deployment-spec-hash: 2jIB2luOR3dUF8Vcagm7pSYeUMYKbLEvteOSpE
+      olm.deployment-spec-hash: afn8SmeSwoFpx8jU8uCE009VMMxp1HDhMUjPEt
       olm.managed: "true"
       olm.owner: rhdh-operator.v1.7.0
       olm.owner.kind: ClusterServiceVersion
@@ -24,9 +24,9 @@ items:
       controller: false
       kind: ClusterServiceVersion
       name: rhdh-operator.v1.7.0
-      uid: b2c5b08f-b794-447f-9379-11664e67167a
-    resourceVersion: "76257"
-    uid: a13d010b-7997-410d-bc56-e27c3900ba43
+      uid: 09dc6fb2-852d-459e-8003-3456ca9c4bc6
+    resourceVersion: "39617"
+    uid: e5cd90bf-5fb2-406f-a337-3306f1a0a0b9
   spec:
     progressDeadlineSeconds: 600
     replicas: 1
@@ -96,7 +96,7 @@ items:
           features.operators.openshift.io/token-auth-azure: "false"
           features.operators.openshift.io/token-auth-gcp: "false"
           kubectl.kubernetes.io/default-container: manager
-          olm.operatorGroup: rhdh-operator-hhkf2
+          olm.operatorGroup: rhdh-operator-wtgrm
           olm.operatorNamespace: rhdh-operator
           olm.targetNamespaces: ""
           operatorframework.io/properties: '{"properties":[{"type":"olm.gvk","value":{"group":"rhdh.redhat.com","kind":"Backstage","version":"v1alpha1"}},{"type":"olm.gvk","value":{"group":"rhdh.redhat.com","kind":"Backstage","version":"v1alpha2"}},{"type":"olm.gvk","value":{"group":"rhdh.redhat.com","kind":"Backstage","version":"v1alpha3"}},{"type":"olm.package","value":{"packageName":"rhdh","version":"1.7.0"}}]}'
@@ -221,15 +221,15 @@ items:
   status:
     availableReplicas: 1
     conditions:
-    - lastTransitionTime: "2025-09-11T20:45:30Z"
-      lastUpdateTime: "2025-09-11T20:45:30Z"
+    - lastTransitionTime: "2025-10-23T11:09:30Z"
+      lastUpdateTime: "2025-10-23T11:09:30Z"
       message: Deployment has minimum availability.
       reason: MinimumReplicasAvailable
       status: "True"
       type: Available
-    - lastTransitionTime: "2025-09-11T20:45:14Z"
-      lastUpdateTime: "2025-09-11T20:45:30Z"
-      message: ReplicaSet "rhdh-operator-7d56656b4" has successfully progressed.
+    - lastTransitionTime: "2025-10-23T11:09:13Z"
+      lastUpdateTime: "2025-10-23T11:09:30Z"
+      message: ReplicaSet "rhdh-operator-6c8ffc4648" has successfully progressed.
       reason: NewReplicaSetAvailable
       status: "True"
       type: Progressing

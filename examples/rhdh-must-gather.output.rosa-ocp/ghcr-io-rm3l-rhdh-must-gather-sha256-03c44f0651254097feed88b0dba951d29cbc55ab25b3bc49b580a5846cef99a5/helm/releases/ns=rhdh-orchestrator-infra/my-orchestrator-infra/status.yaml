@@ -5,9 +5,9 @@ hooks:
   - pre-install
   kind: Namespace
   last_run:
-    completed_at: "2025-09-11T22:42:37.269457393+02:00"
+    completed_at: "2025-10-23T13:07:34.786145831+02:00"
     phase: Succeeded
-    started_at: "2025-09-11T22:42:37.004854786+02:00"
+    started_at: "2025-10-23T13:07:34.318835742+02:00"
   manifest: |-
     apiVersion: v1
     kind: Namespace
@@ -26,9 +26,9 @@ hooks:
   - pre-install
   kind: Namespace
   last_run:
-    completed_at: "2025-09-11T22:42:36.639423903+02:00"
+    completed_at: "2025-10-23T13:07:33.508964758+02:00"
     phase: Succeeded
-    started_at: "2025-09-11T22:42:36.374011651+02:00"
+    started_at: "2025-10-23T13:07:33.247542071+02:00"
   manifest: |-
     apiVersion: v1
     kind: Namespace
@@ -199,8 +199,8 @@ hooks:
 info:
   deleted: ""
   description: Install complete
-  first_deployed: "2025-09-11T22:42:32.120140747+02:00"
-  last_deployed: "2025-09-11T22:42:32.120140747+02:00"
+  first_deployed: "2025-10-23T13:07:28.707051871+02:00"
+  last_deployed: "2025-10-23T13:07:28.707051871+02:00"
   notes: |2
 
 

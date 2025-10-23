@@ -6,15 +6,15 @@ metadata:
   annotations:
     meta.helm.sh/release-name: my-backstage-1-no-local-db
     meta.helm.sh/release-namespace: my-ns-3
-  creationTimestamp: "2025-09-11T20:43:14Z"
+  creationTimestamp: "2025-10-23T11:08:14Z"
   labels:
     app.kubernetes.io/component: backstage
     app.kubernetes.io/instance: my-backstage-1-no-local-db
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: developer-hub
-    helm.sh/chart: backstage-4.5.8
+    helm.sh/chart: backstage-4.6.0
   name: my-backstage-1-no-local-db-auth
   namespace: my-ns-3
-  resourceVersion: "75102"
-  uid: b964df03-e731-438b-88cd-188a3de3164e
+  resourceVersion: "39019"
+  uid: e0ac6f72-11da-4866-9a85-8d91dd14428d
 type: Opaque

@@ -6,6 +6,37 @@ Annotations:  <none>
 
 Data
 ====
+app-config.yaml:
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-backstage-config-cm1 # placeholder for <bs>-default-appconfig
+data:
+  default.app-config.yaml: |
+    ###########################################################################################################
+    # /!\ WARNING
+    #
+    # This is the default app-config file created and managed by the Operator for your CR.
+    # Do NOT edit this manually in the Cluster, as your changes will be overridden by the Operator upon the
+    # next reconciliation.
+    # If you want to customize the application configuration, you should create your own app-config ConfigMap
+    # and reference it in your CR.
+    # See https://docs.redhat.com/en/documentation/red_hat_developer_hub/1.4/html/configuring/provisioning-and-using-your-custom-configuration#provisioning-your-custom-configuration
+    # for more details.
+    ###########################################################################################################
+    backend:
+      auth:
+        externalAccess:
+          - type: legacy
+            options:
+              subject: legacy-default-config
+              # This is a default value, which you should change by providing your own app-config
+              secret: "pl4s3Ch4ng3M3"
+    auth:
+      providers: {}
+
+
 db-statefulset.yaml:
 ----
 apiVersion: apps/v1
@@ -131,90 +162,6 @@ spec:
       securityContext:
         # any group id
         fsGroup: 1001
-
-service.yaml:
-----
-apiVersion: v1
-kind: Service
-metadata:
-  name: backstage # placeholder for 'backstage-<cr-name>'
-spec:
-  type: ClusterIP
-  selector:
-    rhdh.redhat.com/app:  # placeholder for 'backstage-<cr-name>'
-  ports:
-    - name: http-backend
-      port: 80
-      targetPort: backend
-    - name: http-metrics
-      protocol: TCP
-      port: 9464
-      targetPort: 9464
-
-service.yaml.k8s:
-----
-spec:
-  type: NodePort
-
-
-app-config.yaml:
-----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: my-backstage-config-cm1 # placeholder for <bs>-default-appconfig
-data:
-  default.app-config.yaml: |
-    ###########################################################################################################
-    # /!\ WARNING
-    #
-    # This is the default app-config file created and managed by the Operator for your CR.
-    # Do NOT edit this manually in the Cluster, as your changes will be overridden by the Operator upon the
-    # next reconciliation.
-    # If you want to customize the application configuration, you should create your own app-config ConfigMap
-    # and reference it in your CR.
-    # See https://docs.redhat.com/en/documentation/red_hat_developer_hub/1.4/html/configuring/provisioning-and-using-your-custom-configuration#provisioning-your-custom-configuration
-    # for more details.
-    ###########################################################################################################
-    backend:
-      auth:
-        externalAccess:
-          - type: legacy
-            options:
-              subject: legacy-default-config
-              # This is a default value, which you should change by providing your own app-config
-              secret: "pl4s3Ch4ng3M3"
-    auth:
-      providers: {}
-
-
-db-secret.yaml:
-----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: postgres-secrets # will be replaced
-type: Opaque
-#stringData:
-#  POSTGRES_PASSWORD:
-#  POSTGRES_PORT: "5432"
-#  POSTGRES_USER: postgres
-#  POSTGRESQL_ADMIN_PASSWORD: admin123
-#  POSTGRES_HOST: bs1-db-service    #placeholder <crname>-db-service
-
-db-service.yaml:
-----
-apiVersion: v1
-kind: Service
-metadata:
-  name: backstage-psql # placeholder for 'backstage-psql-<cr-name>' .NOTE: For the time it is static and linked to Secret-> postgres-secrets -> OSTGRES_HOST
-spec:
-  selector:
-    rhdh.redhat.com/app:  backstage-psql-cr1 # placeholder for 'backstage-psql-<cr-name>'
-  clusterIP: None
-  ports:
-    - port: 5432
-
 
 deployment.yaml:
 ----
@@ -379,6 +326,57 @@ spec:
           workingDir: /opt/app-root/src
 
 
+route.yaml:
+----
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: route # placeholder for 'backstage-<cr-name>'
+spec:
+  port:
+    targetPort: http-backend
+  path: /
+  tls:
+    insecureEdgeTerminationPolicy: Redirect
+    termination: edge
+  to:
+    kind: Service
+    name:  # placeholder for 'backstage-<cr-name>'
+
+service.yaml.k8s:
+----
+spec:
+  type: NodePort
+
+
+db-secret.yaml:
+----
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secrets # will be replaced
+type: Opaque
+#stringData:
+#  POSTGRES_PASSWORD:
+#  POSTGRES_PORT: "5432"
+#  POSTGRES_USER: postgres
+#  POSTGRESQL_ADMIN_PASSWORD: admin123
+#  POSTGRES_HOST: bs1-db-service    #placeholder <crname>-db-service
+
+db-service.yaml:
+----
+apiVersion: v1
+kind: Service
+metadata:
+  name: backstage-psql # placeholder for 'backstage-psql-<cr-name>' .NOTE: For the time it is static and linked to Secret-> postgres-secrets -> OSTGRES_HOST
+spec:
+  selector:
+    rhdh.redhat.com/app:  backstage-psql-cr1 # placeholder for 'backstage-psql-<cr-name>'
+  clusterIP: None
+  ports:
+    - port: 5432
+
+
 deployment.yaml.k8s:
 ----
 # if securityContext not present in AKS/EKS, the error is like this:
@@ -464,23 +462,6 @@ data:
             frontend:
               red-hat-developer-hub.backstage-plugin-orchestrator-form-widgets: { }
 
-route.yaml:
-----
-apiVersion: route.openshift.io/v1
-kind: Route
-metadata:
-  name: route # placeholder for 'backstage-<cr-name>'
-spec:
-  port:
-    targetPort: http-backend
-  path: /
-  tls:
-    insecureEdgeTerminationPolicy: Redirect
-    termination: edge
-  to:
-    kind: Service
-    name:  # placeholder for 'backstage-<cr-name>'
-
 secret-files.yaml:
 ----
 apiVersion: v1
@@ -507,6 +488,25 @@ stringData:
 
 
 
+
+service.yaml:
+----
+apiVersion: v1
+kind: Service
+metadata:
+  name: backstage # placeholder for 'backstage-<cr-name>'
+spec:
+  type: ClusterIP
+  selector:
+    rhdh.redhat.com/app:  # placeholder for 'backstage-<cr-name>'
+  ports:
+    - name: http-backend
+      port: 80
+      targetPort: backend
+    - name: http-metrics
+      protocol: TCP
+      port: 9464
+      targetPort: 9464
 
 
 BinaryData

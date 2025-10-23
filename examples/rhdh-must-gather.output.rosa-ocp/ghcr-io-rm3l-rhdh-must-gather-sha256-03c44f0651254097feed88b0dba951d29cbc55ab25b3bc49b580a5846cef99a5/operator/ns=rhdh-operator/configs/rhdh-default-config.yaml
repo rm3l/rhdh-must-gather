@@ -438,7 +438,7 @@ data:
       type: NodePort
 kind: ConfigMap
 metadata:
-  creationTimestamp: "2025-09-11T20:45:12Z"
+  creationTimestamp: "2025-10-23T11:09:10Z"
   labels:
     olm.managed: "true"
     operators.coreos.com/rhdh.rhdh-operator: ""
@@ -450,6 +450,6 @@ metadata:
     controller: false
     kind: ClusterServiceVersion
     name: rhdh-operator.v1.7.0
-    uid: b2c5b08f-b794-447f-9379-11664e67167a
-  resourceVersion: "76065"
-  uid: eb95581c-3305-41d7-a313-b44e16cf5d57
+    uid: 09dc6fb2-852d-459e-8003-3456ca9c4bc6
+  resourceVersion: "39246"
+  uid: d6aac0c8-d63d-4588-935a-6a0d680da0da

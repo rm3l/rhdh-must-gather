@@ -99,7 +99,7 @@ data:
                 databaseName: backstage_plugin_orchestrator
 kind: ConfigMap
 metadata:
-  creationTimestamp: "2025-09-11T20:45:11Z"
+  creationTimestamp: "2025-10-23T11:09:10Z"
   labels:
     olm.managed: "true"
     operators.coreos.com/rhdh.rhdh-operator: ""
@@ -111,6 +111,6 @@ metadata:
     controller: false
     kind: ClusterServiceVersion
     name: rhdh-operator.v1.7.0
-    uid: b2c5b08f-b794-447f-9379-11664e67167a
-  resourceVersion: "76031"
-  uid: d1d7db08-3796-4361-9ecb-b8c16460973f
+    uid: 09dc6fb2-852d-459e-8003-3456ca9c4bc6
+  resourceVersion: "39251"
+  uid: b810aa1b-3712-4bdd-b4f7-39860400f08e

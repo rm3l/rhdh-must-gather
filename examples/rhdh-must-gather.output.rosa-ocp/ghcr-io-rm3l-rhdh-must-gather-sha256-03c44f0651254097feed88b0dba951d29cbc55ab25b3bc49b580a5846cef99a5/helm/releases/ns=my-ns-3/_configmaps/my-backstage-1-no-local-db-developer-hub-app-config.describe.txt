@@ -9,7 +9,7 @@ Data
 app-config.yaml:
 ----
 app:
-  baseUrl: https://my-backstage-1-no-local-db-developer-hub-my-ns-3.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com
+  baseUrl: https://my-backstage-1-no-local-db-developer-hub-my-ns-3.apps.example.com
 auth:
   providers: {}
 backend:
@@ -19,9 +19,9 @@ backend:
         secret: ${BACKEND_SECRET}
         subject: legacy-default-config
       type: legacy
-  baseUrl: https://my-backstage-1-no-local-db-developer-hub-my-ns-3.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com
+  baseUrl: https://my-backstage-1-no-local-db-developer-hub-my-ns-3.apps.example.com
   cors:
-    origin: https://my-backstage-1-no-local-db-developer-hub-my-ns-3.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com
+    origin: https://my-backstage-1-no-local-db-developer-hub-my-ns-3.apps.example.com
   database:
     connection:
       password: ${POSTGRESQL_ADMIN_PASSWORD}

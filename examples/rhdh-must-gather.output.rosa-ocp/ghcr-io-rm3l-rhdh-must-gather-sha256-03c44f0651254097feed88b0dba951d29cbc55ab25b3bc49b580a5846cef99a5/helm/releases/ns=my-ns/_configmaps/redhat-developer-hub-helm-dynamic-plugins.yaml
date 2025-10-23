@@ -9,10 +9,10 @@ metadata:
   annotations:
     meta.helm.sh/release-name: redhat-developer-hub-helm
     meta.helm.sh/release-namespace: my-ns
-  creationTimestamp: "2025-09-11T20:53:05Z"
+  creationTimestamp: "2025-10-23T11:11:18Z"
   labels:
     app.kubernetes.io/managed-by: Helm
   name: redhat-developer-hub-helm-dynamic-plugins
   namespace: my-ns
-  resourceVersion: "78770"
-  uid: eddd08a2-f316-40a6-91df-6963de7501ab
+  resourceVersion: "40210"
+  uid: 532820aa-37a6-48f6-9a97-6c4f3b02d68b

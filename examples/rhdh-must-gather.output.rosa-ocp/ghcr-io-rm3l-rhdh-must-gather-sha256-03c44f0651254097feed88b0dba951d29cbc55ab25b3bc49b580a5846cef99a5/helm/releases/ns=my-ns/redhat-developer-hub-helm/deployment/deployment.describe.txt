@@ -1,6 +1,6 @@
 Name:                   redhat-developer-hub-helm
 Namespace:              my-ns
-CreationTimestamp:      Thu, 11 Sep 2025 20:53:05 +0000
+CreationTimestamp:      Thu, 23 Oct 2025 13:11:18 +0200
 Labels:                 app.kubernetes.io/component=backstage
                         app.kubernetes.io/instance=redhat-developer-hub-helm
                         app.kubernetes.io/managed-by=Helm
@@ -20,12 +20,12 @@ Pod Template:
                     app.kubernetes.io/managed-by=Helm
                     app.kubernetes.io/name=developer-hub
                     helm.sh/chart=upstream-2.6.0
-  Annotations:      checksum/app-config: f549a3a86a292f669175bd1d7c508061e136c21c9a8d596791f5d4be6f2dcbf3
+  Annotations:      checksum/app-config: 008f6f5145cbfd5a4b66c2f9ba302b675cc1204617e067623e3c73e543278882
                     checksum/dynamic-plugins: f1f9a92f14a31362d7eb30e67ac1458faf1c685765610f93a8967194d8bc1a5f
   Service Account:  default
   Init Containers:
    install-dynamic-plugins:
-    Image:           registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:0c76994fde2cd71471802d458b682ab652be5a0e291c3a2773cb524259ac79b2
+    Image:           registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:62f32e50727c5006766a34daa5b6472b649cd9894f3fe9543b8ecc67e6760e8e
     Port:            <none>
     Host Port:       <none>
     SeccompProfile:  RuntimeDefault
@@ -51,7 +51,7 @@ Pod Template:
       /tmp from temp (rw)
   Containers:
    backstage-backend:
-    Image:           registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:0c76994fde2cd71471802d458b682ab652be5a0e291c3a2773cb524259ac79b2
+    Image:           registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:62f32e50727c5006766a34daa5b6472b649cd9894f3fe9543b8ecc67e6760e8e
     Port:            7007/TCP
     Host Port:       0/TCP
     SeccompProfile:  RuntimeDefault
@@ -124,8 +124,8 @@ Conditions:
   Available      True    MinimumReplicasAvailable
   Progressing    True    NewReplicaSetAvailable
 OldReplicaSets:  <none>
-NewReplicaSet:   redhat-developer-hub-helm-848554bbb6 (1/1 replicas created)
+NewReplicaSet:   redhat-developer-hub-helm-6698c6d684 (1/1 replicas created)
 Events:
   Type    Reason             Age    From                   Message
   ----    ------             ----   ----                   -------
-  Normal  ScalingReplicaSet  8m27s  deployment-controller  Scaled up replica set redhat-developer-hub-helm-848554bbb6 from 0 to 1
+  Normal  ScalingReplicaSet  8m42s  deployment-controller  Scaled up replica set redhat-developer-hub-helm-6698c6d684 from 0 to 1

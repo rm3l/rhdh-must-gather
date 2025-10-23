@@ -25,8 +25,8 @@ Success. You can now start the database server using:
 
 initdb: warning: enabling "trust" authentication for local connections
 initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
-waiting for server to start....2025-09-11 20:53:30.106 UTC [30] LOG:  redirecting log output to logging collector process
-2025-09-11 20:53:30.106 UTC [30] HINT:  Future log output will appear in directory "log".
+waiting for server to start....2025-10-23 11:11:29.672 UTC [30] LOG:  redirecting log output to logging collector process
+2025-10-23 11:11:29.672 UTC [30] HINT:  Future log output will appear in directory "log".
  done
 server started
 /var/run/postgresql:5432 - accepting connections
@@ -35,5 +35,5 @@ ALTER ROLE
 waiting for server to shut down.... done
 server stopped
 Starting server...
-2025-09-11 20:53:30.498 UTC [1] LOG:  redirecting log output to logging collector process
-2025-09-11 20:53:30.498 UTC [1] HINT:  Future log output will appear in directory "log".
+2025-10-23 11:11:30.152 UTC [1] LOG:  redirecting log output to logging collector process
+2025-10-23 11:11:30.152 UTC [1] HINT:  Future log output will appear in directory "log".

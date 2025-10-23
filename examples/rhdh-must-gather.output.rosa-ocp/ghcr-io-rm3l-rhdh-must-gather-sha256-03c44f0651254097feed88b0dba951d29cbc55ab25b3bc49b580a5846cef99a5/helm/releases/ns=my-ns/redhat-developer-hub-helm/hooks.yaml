@@ -6,10 +6,10 @@ metadata:
   name: "redhat-developer-hub-helm-test-connection"
   labels:
     app.kubernetes.io/name: developer-hub
-    helm.sh/chart: redhat-developer-hub-1.7.0
+    helm.sh/chart: redhat-developer-hub-1.7.1
     app.kubernetes.io/instance: redhat-developer-hub-helm
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/version: "1.7.0"
+    app.kubernetes.io/version: "1.7.1"
     app.kubernetes.io/component: backstage
   annotations:
     helm.sh/hook: test

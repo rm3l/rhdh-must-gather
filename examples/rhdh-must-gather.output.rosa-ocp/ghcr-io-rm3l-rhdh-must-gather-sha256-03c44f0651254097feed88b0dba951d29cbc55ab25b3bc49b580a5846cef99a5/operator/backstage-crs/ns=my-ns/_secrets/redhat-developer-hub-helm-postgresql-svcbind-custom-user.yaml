@@ -12,7 +12,7 @@ metadata:
   annotations:
     meta.helm.sh/release-name: redhat-developer-hub-helm
     meta.helm.sh/release-namespace: my-ns
-  creationTimestamp: "2025-09-11T20:53:05Z"
+  creationTimestamp: "2025-10-23T11:11:18Z"
   labels:
     app.kubernetes.io/instance: redhat-developer-hub-helm
     app.kubernetes.io/managed-by: Helm
@@ -21,6 +21,6 @@ metadata:
     helm.sh/chart: postgresql-12.10.0
   name: redhat-developer-hub-helm-postgresql-svcbind-custom-user
   namespace: my-ns
-  resourceVersion: "78766"
-  uid: 35c1fe35-e9e1-48a3-8658-b1028e22647a
+  resourceVersion: "40209"
+  uid: ae42ffff-4e0d-4f06-9adf-5dd1d55a821a
 type: servicebinding.io/postgresql

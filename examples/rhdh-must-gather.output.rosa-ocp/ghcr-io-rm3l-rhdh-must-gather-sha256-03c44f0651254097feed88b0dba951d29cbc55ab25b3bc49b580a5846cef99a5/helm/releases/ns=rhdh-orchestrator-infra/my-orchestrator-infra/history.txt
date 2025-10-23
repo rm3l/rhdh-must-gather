@@ -1,2 +1,2 @@
 REVISION	UPDATED                 	STATUS  	CHART                                        	APP VERSION	DESCRIPTION     
-1       	Thu Sep 11 22:42:32 2025	deployed	redhat-developer-hub-orchestrator-infra-0.2.2	           	Install complete
+1       	Thu Oct 23 13:07:28 2025	deployed	redhat-developer-hub-orchestrator-infra-0.3.0	           	Install complete

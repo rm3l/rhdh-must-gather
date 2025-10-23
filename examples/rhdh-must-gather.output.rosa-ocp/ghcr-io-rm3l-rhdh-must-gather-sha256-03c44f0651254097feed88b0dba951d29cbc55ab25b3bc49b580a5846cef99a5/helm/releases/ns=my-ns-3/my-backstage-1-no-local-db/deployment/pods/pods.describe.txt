@@ -1,27 +1,27 @@
-Name:             my-backstage-1-no-local-db-developer-hub-7546fd7b4-cqx4c
+Name:             my-backstage-1-no-local-db-developer-hub-56fbb8cf48-gzwxj
 Namespace:        my-ns-3
 Priority:         0
 Service Account:  default
-Node:             ip-10-0-1-22.ec2.internal/10.0.1.22
-Start Time:       Thu, 11 Sep 2025 20:43:18 +0000
+Node:             ip-10-0-1-102.ec2.internal/10.0.1.102
+Start Time:       Thu, 23 Oct 2025 13:08:19 +0200
 Labels:           app.kubernetes.io/component=backstage
                   app.kubernetes.io/instance=my-backstage-1-no-local-db
                   app.kubernetes.io/managed-by=Helm
                   app.kubernetes.io/name=developer-hub
                   helm.sh/chart=upstream-2.6.1
-                  pod-template-hash=7546fd7b4
-Annotations:      checksum/app-config: 6b543a5d75264fcb56759ebf60ab56cd9f079cf1e4d9d8c7fa74cb83e0f4212e
+                  pod-template-hash=56fbb8cf48
+Annotations:      checksum/app-config: 17ff9d7d3ac62ad797cdf103fb3f3be8827f06b3e100a1b934551c5bf52b0093
                   checksum/dynamic-plugins: f1f9a92f14a31362d7eb30e67ac1458faf1c685765610f93a8967194d8bc1a5f
                   k8s.ovn.org/pod-networks:
-                    {"default":{"ip_addresses":["10.129.0.56/23"],"mac_address":"0a:58:0a:81:00:38","gateway_ips":["10.129.0.1"],"routes":[{"dest":"10.128.0.0...
+                    {"default":{"ip_addresses":["10.128.0.60/23"],"mac_address":"0a:58:0a:80:00:3c","gateway_ips":["10.128.0.1"],"routes":[{"dest":"10.128.0.0...
                   k8s.v1.cni.cncf.io/network-status:
                     [{
                         "name": "ovn-kubernetes",
                         "interface": "eth0",
                         "ips": [
-                            "10.129.0.56"
+                            "10.128.0.60"
                         ],
-                        "mac": "0a:58:0a:81:00:38",
+                        "mac": "0a:58:0a:80:00:3c",
                         "default": true,
                         "dns": {}
                     }]
@@ -29,15 +29,15 @@ Annotations:      checksum/app-config: 6b543a5d75264fcb56759ebf60ab56cd9f079cf1e
                   seccomp.security.alpha.kubernetes.io/pod: runtime/default
 Status:           Pending
 SeccompProfile:   RuntimeDefault
-IP:               10.129.0.56
+IP:               10.128.0.60
 IPs:
-  IP:           10.129.0.56
-Controlled By:  ReplicaSet/my-backstage-1-no-local-db-developer-hub-7546fd7b4
+  IP:           10.128.0.60
+Controlled By:  ReplicaSet/my-backstage-1-no-local-db-developer-hub-56fbb8cf48
 Init Containers:
   install-dynamic-plugins:
-    Container ID:    cri-o://693a1fc2e9433c292d480ea1874839a5937d2ff76b94b5844507bc1d2896f73c
+    Container ID:    cri-o://61201aa9401a67d153dd9dd0f0615d4be7a18818e2f37d75f49665e23632751a
     Image:           quay.io/rhdh/rhdh-hub-rhel9:latest
-    Image ID:        quay.io/rhdh/rhdh-hub-rhel9@sha256:1833cd22478ed53a99e08596b97c892559120b602a7cadcfe4be2a3ecf74a91a
+    Image ID:        quay.io/rhdh/rhdh-hub-rhel9@sha256:42281e7004d43443b7147e5a699c42cb3368ba7cd11d83c5219cbc9d87860ad6
     Port:            <none>
     Host Port:       <none>
     SeccompProfile:  RuntimeDefault
@@ -47,8 +47,8 @@ Init Containers:
     State:          Terminated
       Reason:       Completed
       Exit Code:    0
-      Started:      Thu, 11 Sep 2025 20:45:01 +0000
-      Finished:     Thu, 11 Sep 2025 20:46:24 +0000
+      Started:      Thu, 23 Oct 2025 13:09:51 +0200
+      Finished:     Thu, 23 Oct 2025 13:11:18 +0200
     Ready:          True
     Restart Count:  0
     Limits:
@@ -69,7 +69,7 @@ Init Containers:
       /opt/app-root/src/.npmrc.dynamic-plugins from dynamic-plugins-npmrc (ro,path=".npmrc")
       /opt/app-root/src/dynamic-plugins.yaml from dynamic-plugins (ro,path="dynamic-plugins.yaml")
       /tmp from temp (rw)
-      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-tnt2c (ro)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-tr26m (ro)
 Containers:
   backstage-backend:
     Container ID:    
@@ -106,7 +106,7 @@ Containers:
       /opt/app-root/src/app-config-from-configmap.yaml from backstage-app-config (rw,path="app-config.yaml")
       /opt/app-root/src/dynamic-plugins-root from dynamic-plugins-root (rw)
       /tmp from temp (rw)
-      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-tnt2c (ro)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-tr26m (ro)
 Conditions:
   Type                        Status
   PodReadyToStartContainers   True 
@@ -148,38 +148,29 @@ Volumes:
     Type:      ConfigMap (a volume populated by a ConfigMap)
     Name:      my-backstage-1-no-local-db-developer-hub-app-config
     Optional:  false
-  kube-api-access-tnt2c:
+  kube-api-access-tr26m:
     Type:                    Projected (a volume that contains injected data from multiple sources)
     TokenExpirationSeconds:  3607
     ConfigMapName:           kube-root-ca.crt
-    Optional:                false
+    ConfigMapOptional:       <nil>
     DownwardAPI:             true
     ConfigMapName:           openshift-service-ca.crt
-    Optional:                false
+    ConfigMapOptional:       <nil>
 QoS Class:                   Burstable
 Node-Selectors:              <none>
 Tolerations:                 node.kubernetes.io/memory-pressure:NoSchedule op=Exists
                              node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
                              node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
 Events:
-  Type     Reason                  Age                   From                     Message
-  ----     ------                  ----                  ----                     -------
-  Normal   Scheduled               18m                   default-scheduler        Successfully assigned my-ns-3/my-backstage-1-no-local-db-developer-hub-7546fd7b4-cqx4c to ip-10-0-1-22.ec2.internal
-  Warning  FailedScheduling        18m                   default-scheduler        0/2 nodes are available: waiting for ephemeral volume controller to create the persistentvolumeclaim "my-backstage-1-no-local-db-developer-hub-7546fd7b4-cqx4c-dynamic-plugins-root". preemption: 0/2 nodes are available: 2 Preemption is not helpful for scheduling.
-  Normal   SuccessfulAttachVolume  18m                   attachdetach-controller  AttachVolume.Attach succeeded for volume "pvc-ca529f77-611b-448b-9d89-afcd163e9f89"
-  Normal   AddedInterface          18m                   multus                   Add eth0 [10.129.0.56/23] from ovn-kubernetes
-  Normal   Pulling                 18m                   kubelet                  Pulling image "quay.io/rhdh/rhdh-hub-rhel9:latest"
-  Normal   Pulled                  16m                   kubelet                  Successfully pulled image "quay.io/rhdh/rhdh-hub-rhel9:latest" in 1m34.073s (1m34.073s including waiting). Image size: 4179534415 bytes.
-  Normal   Created                 16m                   kubelet                  Created container: install-dynamic-plugins
-  Normal   Started                 16m                   kubelet                  Started container install-dynamic-plugins
-  Normal   Pulled                  15m                   kubelet                  Successfully pulled image "quay.io/rhdh/rhdh-hub-rhel9:latest" in 334ms (334ms including waiting). Image size: 4179534415 bytes.
-  Normal   Pulled                  14m                   kubelet                  Successfully pulled image "quay.io/rhdh/rhdh-hub-rhel9:latest" in 408ms (408ms including waiting). Image size: 4179534415 bytes.
-  Normal   Pulled                  14m                   kubelet                  Successfully pulled image "quay.io/rhdh/rhdh-hub-rhel9:latest" in 630ms (630ms including waiting). Image size: 4179534415 bytes.
-  Normal   Pulled                  14m                   kubelet                  Successfully pulled image "quay.io/rhdh/rhdh-hub-rhel9:latest" in 668ms (668ms including waiting). Image size: 4179534415 bytes.
-  Normal   Pulled                  14m                   kubelet                  Successfully pulled image "quay.io/rhdh/rhdh-hub-rhel9:latest" in 458ms (458ms including waiting). Image size: 4179534415 bytes.
-  Normal   Pulled                  13m                   kubelet                  Successfully pulled image "quay.io/rhdh/rhdh-hub-rhel9:latest" in 608ms (608ms including waiting). Image size: 4179534415 bytes.
-  Normal   Pulled                  13m                   kubelet                  Successfully pulled image "quay.io/rhdh/rhdh-hub-rhel9:latest" in 555ms (555ms including waiting). Image size: 4179534415 bytes.
-  Normal   Pulled                  13m                   kubelet                  Successfully pulled image "quay.io/rhdh/rhdh-hub-rhel9:latest" in 623ms (623ms including waiting). Image size: 4179534415 bytes.
-  Normal   Pulled                  12m (x3 over 13m)     kubelet                  (combined from similar events): Successfully pulled image "quay.io/rhdh/rhdh-hub-rhel9:latest" in 437ms (437ms including waiting). Image size: 4179534415 bytes.
-  Warning  Failed                  4m59s (x46 over 15m)  kubelet                  Error: secret "my-backstage-1-no-local-db-postgresql" not found
-  Normal   Pulling                 2m57s (x55 over 15m)  kubelet                  Pulling image "quay.io/rhdh/rhdh-hub-rhel9:latest"
+  Type     Reason                  Age                    From                     Message
+  ----     ------                  ----                   ----                     -------
+  Warning  FailedScheduling        11m                    default-scheduler        0/2 nodes are available: waiting for ephemeral volume controller to create the persistentvolumeclaim "my-backstage-1-no-local-db-developer-hub-56fbb8cf48-gzwxj-dynamic-plugins-root". preemption: 0/2 nodes are available: 2 Preemption is not helpful for scheduling.
+  Normal   Scheduled               11m                    default-scheduler        Successfully assigned my-ns-3/my-backstage-1-no-local-db-developer-hub-56fbb8cf48-gzwxj to ip-10-0-1-102.ec2.internal
+  Normal   SuccessfulAttachVolume  11m                    attachdetach-controller  AttachVolume.Attach succeeded for volume "pvc-1b126332-bd82-42a2-b454-b29397a55bbf"
+  Normal   AddedInterface          11m                    multus                   Add eth0 [10.128.0.60/23] from ovn-kubernetes
+  Normal   Pulling                 11m                    kubelet                  Pulling image "quay.io/rhdh/rhdh-hub-rhel9:latest"
+  Normal   Pulled                  9m52s                  kubelet                  Successfully pulled image "quay.io/rhdh/rhdh-hub-rhel9:latest" in 1m28.158s (1m28.158s including waiting). Image size: 4045599803 bytes.
+  Normal   Created                 9m52s                  kubelet                  Created container: install-dynamic-plugins
+  Normal   Started                 9m52s                  kubelet                  Started container install-dynamic-plugins
+  Warning  Failed                  2m6s (x26 over 8m25s)  kubelet                  Error: secret "my-backstage-1-no-local-db-postgresql" not found
+  Normal   Pulled                  79s (x30 over 8m25s)   kubelet                  Container image "quay.io/rhdh/rhdh-hub-rhel9:latest" already present on machine

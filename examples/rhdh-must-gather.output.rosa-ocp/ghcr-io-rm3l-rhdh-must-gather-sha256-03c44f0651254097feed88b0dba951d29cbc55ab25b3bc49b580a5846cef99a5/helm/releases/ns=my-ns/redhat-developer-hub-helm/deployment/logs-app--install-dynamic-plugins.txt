@@ -78,50 +78,50 @@
 	==> Grabbing package archive through `npm pack`
 	==> Extracting package archive /dynamic-plugins-root/red-hat-developer-hub-backstage-plugin-global-header-1.14.0.tgz
 	==> Removing package archive /dynamic-plugins-root/red-hat-developer-hub-backstage-plugin-global-header-1.14.0.tgz
+	==> Successfully installed dynamic plugin ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-global-header
 	==> Merging plugin-specific configuration
-	==> Successfully installed dynamic plugin /opt/app-root/src/dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-global-header
 
 ======= Installing dynamic plugin ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-global-floating-action-button
 	==> Grabbing package archive through `npm pack`
 	==> Extracting package archive /dynamic-plugins-root/red-hat-developer-hub-backstage-plugin-global-floating-action-button-1.2.1.tgz
 	==> Removing package archive /dynamic-plugins-root/red-hat-developer-hub-backstage-plugin-global-floating-action-button-1.2.1.tgz
+	==> Successfully installed dynamic plugin ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-global-floating-action-button
 	==> Merging plugin-specific configuration
-	==> Successfully installed dynamic plugin /opt/app-root/src/dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-global-floating-action-button
 
 ======= Installing dynamic plugin ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-quickstart
 	==> Grabbing package archive through `npm pack`
 	==> Extracting package archive /dynamic-plugins-root/red-hat-developer-hub-backstage-plugin-quickstart-1.1.1.tgz
 	==> Removing package archive /dynamic-plugins-root/red-hat-developer-hub-backstage-plugin-quickstart-1.1.1.tgz
+	==> Successfully installed dynamic plugin ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-quickstart
 	==> Merging plugin-specific configuration
-	==> Successfully installed dynamic plugin /opt/app-root/src/dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-quickstart
 
 ======= Installing dynamic plugin ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-dynamic-home-page
 	==> Grabbing package archive through `npm pack`
 	==> Extracting package archive /dynamic-plugins-root/red-hat-developer-hub-backstage-plugin-dynamic-home-page-1.5.3.tgz
 	==> Removing package archive /dynamic-plugins-root/red-hat-developer-hub-backstage-plugin-dynamic-home-page-1.5.3.tgz
+	==> Successfully installed dynamic plugin ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-dynamic-home-page
 	==> Merging plugin-specific configuration
-	==> Successfully installed dynamic plugin /opt/app-root/src/dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-dynamic-home-page
 
 ======= Installing dynamic plugin ./dynamic-plugins/dist/backstage-plugin-techdocs-backend-dynamic
 	==> Grabbing package archive through `npm pack`
 	==> Extracting package archive /dynamic-plugins-root/backstage-plugin-techdocs-backend-dynamic-2.0.2.tgz
 	==> Removing package archive /dynamic-plugins-root/backstage-plugin-techdocs-backend-dynamic-2.0.2.tgz
+	==> Successfully installed dynamic plugin ./dynamic-plugins/dist/backstage-plugin-techdocs-backend-dynamic
 	==> Merging plugin-specific configuration
-	==> Successfully installed dynamic plugin /opt/app-root/src/dynamic-plugins/dist/backstage-plugin-techdocs-backend-dynamic
 
 ======= Installing dynamic plugin ./dynamic-plugins/dist/backstage-plugin-techdocs
 	==> Grabbing package archive through `npm pack`
 	==> Extracting package archive /dynamic-plugins-root/backstage-plugin-techdocs-1.12.6.tgz
 	==> Removing package archive /dynamic-plugins-root/backstage-plugin-techdocs-1.12.6.tgz
+	==> Successfully installed dynamic plugin ./dynamic-plugins/dist/backstage-plugin-techdocs
 	==> Merging plugin-specific configuration
-	==> Successfully installed dynamic plugin /opt/app-root/src/dynamic-plugins/dist/backstage-plugin-techdocs
 
 ======= Installing dynamic plugin ./dynamic-plugins/dist/backstage-plugin-techdocs-module-addons-contrib
 	==> Grabbing package archive through `npm pack`
 	==> Extracting package archive /dynamic-plugins-root/backstage-plugin-techdocs-module-addons-contrib-1.1.24.tgz
 	==> Removing package archive /dynamic-plugins-root/backstage-plugin-techdocs-module-addons-contrib-1.1.24.tgz
+	==> Successfully installed dynamic plugin ./dynamic-plugins/dist/backstage-plugin-techdocs-module-addons-contrib
 	==> Merging plugin-specific configuration
-	==> Successfully installed dynamic plugin /opt/app-root/src/dynamic-plugins/dist/backstage-plugin-techdocs-module-addons-contrib
 
 ======= Skipping disabled dynamic plugin ./dynamic-plugins/dist/pagerduty-backstage-plugin
 
@@ -139,13 +139,13 @@
 	==> Grabbing package archive through `npm pack`
 	==> Extracting package archive /dynamic-plugins-root/backstage-community-plugin-scaffolder-backend-module-quay-dynamic-2.9.1.tgz
 	==> Removing package archive /dynamic-plugins-root/backstage-community-plugin-scaffolder-backend-module-quay-dynamic-2.9.1.tgz
-	==> Successfully installed dynamic plugin /opt/app-root/src/dynamic-plugins/dist/backstage-community-plugin-scaffolder-backend-module-quay-dynamic
+	==> Successfully installed dynamic plugin ./dynamic-plugins/dist/backstage-community-plugin-scaffolder-backend-module-quay-dynamic
 
 ======= Installing dynamic plugin ./dynamic-plugins/dist/backstage-community-plugin-scaffolder-backend-module-regex-dynamic
 	==> Grabbing package archive through `npm pack`
 	==> Extracting package archive /dynamic-plugins-root/backstage-community-plugin-scaffolder-backend-module-regex-dynamic-2.7.0.tgz
 	==> Removing package archive /dynamic-plugins-root/backstage-community-plugin-scaffolder-backend-module-regex-dynamic-2.7.0.tgz
-	==> Successfully installed dynamic plugin /opt/app-root/src/dynamic-plugins/dist/backstage-community-plugin-scaffolder-backend-module-regex-dynamic
+	==> Successfully installed dynamic plugin ./dynamic-plugins/dist/backstage-community-plugin-scaffolder-backend-module-regex-dynamic
 
 ======= Skipping disabled dynamic plugin ./dynamic-plugins/dist/backstage-community-plugin-rbac
 
@@ -191,8 +191,8 @@
 	==> Grabbing package archive through `npm pack`
 	==> Extracting package archive /dynamic-plugins-root/backstage-community-plugin-analytics-provider-segment-1.16.0.tgz
 	==> Removing package archive /dynamic-plugins-root/backstage-community-plugin-analytics-provider-segment-1.16.0.tgz
+	==> Successfully installed dynamic plugin ./dynamic-plugins/dist/backstage-community-plugin-analytics-provider-segment
 	==> Merging plugin-specific configuration
-	==> Successfully installed dynamic plugin /opt/app-root/src/dynamic-plugins/dist/backstage-community-plugin-analytics-provider-segment
 
 ======= Skipping disabled dynamic plugin ./dynamic-plugins/dist/backstage-community-plugin-catalog-backend-module-scaffolder-relation-processor-dynamic
 
@@ -206,47 +206,47 @@
 	==> Grabbing package archive through `npm pack`
 	==> Extracting package archive /dynamic-plugins-root/red-hat-developer-hub-backstage-plugin-catalog-backend-module-marketplace-dynamic-0.4.4.tgz
 	==> Removing package archive /dynamic-plugins-root/red-hat-developer-hub-backstage-plugin-catalog-backend-module-marketplace-dynamic-0.4.4.tgz
-	==> Successfully installed dynamic plugin /opt/app-root/src/dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-catalog-backend-module-marketplace-dynamic
+	==> Successfully installed dynamic plugin ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-catalog-backend-module-marketplace-dynamic
 
 ======= Installing dynamic plugin ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-marketplace-backend-dynamic
 	==> Grabbing package archive through `npm pack`
 	==> Extracting package archive /dynamic-plugins-root/red-hat-developer-hub-backstage-plugin-marketplace-backend-dynamic-0.7.3.tgz
 	==> Removing package archive /dynamic-plugins-root/red-hat-developer-hub-backstage-plugin-marketplace-backend-dynamic-0.7.3.tgz
-	==> Successfully installed dynamic plugin /opt/app-root/src/dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-marketplace-backend-dynamic
+	==> Successfully installed dynamic plugin ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-marketplace-backend-dynamic
 
 ======= Installing dynamic plugin ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-marketplace
 	==> Grabbing package archive through `npm pack`
 	==> Extracting package archive /dynamic-plugins-root/red-hat-developer-hub-backstage-plugin-marketplace-0.8.6.tgz
 	==> Removing package archive /dynamic-plugins-root/red-hat-developer-hub-backstage-plugin-marketplace-0.8.6.tgz
+	==> Successfully installed dynamic plugin ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-marketplace
 	==> Merging plugin-specific configuration
-	==> Successfully installed dynamic plugin /opt/app-root/src/dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-marketplace
 
-======= Skipping disabled dynamic plugin @redhat/backstage-plugin-orchestrator@1.6.0
+======= Skipping disabled dynamic plugin @redhat/backstage-plugin-orchestrator@1.7.1
 
-======= Skipping disabled dynamic plugin @redhat/backstage-plugin-orchestrator-backend-dynamic@1.6.0
+======= Skipping disabled dynamic plugin @redhat/backstage-plugin-orchestrator-backend-dynamic@1.7.1
 
-======= Skipping disabled dynamic plugin @redhat/backstage-plugin-scaffolder-backend-module-orchestrator-dynamic@1.6.0
+======= Skipping disabled dynamic plugin @redhat/backstage-plugin-scaffolder-backend-module-orchestrator-dynamic@1.7.1
 
-======= Skipping disabled dynamic plugin @redhat/backstage-plugin-orchestrator-form-widgets@1.6.0
+======= Skipping disabled dynamic plugin @redhat/backstage-plugin-orchestrator-form-widgets@1.7.1
 
 ======= Installing dynamic plugin ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-adoption-insights
 	==> Grabbing package archive through `npm pack`
 	==> Extracting package archive /dynamic-plugins-root/red-hat-developer-hub-backstage-plugin-adoption-insights-0.2.1.tgz
 	==> Removing package archive /dynamic-plugins-root/red-hat-developer-hub-backstage-plugin-adoption-insights-0.2.1.tgz
+	==> Successfully installed dynamic plugin ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-adoption-insights
 	==> Merging plugin-specific configuration
-	==> Successfully installed dynamic plugin /opt/app-root/src/dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-adoption-insights
 
 ======= Installing dynamic plugin ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-adoption-insights-backend-dynamic
 	==> Grabbing package archive through `npm pack`
 	==> Extracting package archive /dynamic-plugins-root/red-hat-developer-hub-backstage-plugin-adoption-insights-backend-dynamic-0.2.2.tgz
 	==> Removing package archive /dynamic-plugins-root/red-hat-developer-hub-backstage-plugin-adoption-insights-backend-dynamic-0.2.2.tgz
+	==> Successfully installed dynamic plugin ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-adoption-insights-backend-dynamic
 	==> Merging plugin-specific configuration
-	==> Successfully installed dynamic plugin /opt/app-root/src/dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-adoption-insights-backend-dynamic
 
 ======= Installing dynamic plugin ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-analytics-module-adoption-insights-dynamic
 	==> Grabbing package archive through `npm pack`
 	==> Extracting package archive /dynamic-plugins-root/red-hat-developer-hub-backstage-plugin-analytics-module-adoption-insights-dynamic-0.2.0.tgz
 	==> Removing package archive /dynamic-plugins-root/red-hat-developer-hub-backstage-plugin-analytics-module-adoption-insights-dynamic-0.2.0.tgz
+	==> Successfully installed dynamic plugin ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-analytics-module-adoption-insights-dynamic
 	==> Merging plugin-specific configuration
-	==> Successfully installed dynamic plugin /opt/app-root/src/dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-analytics-module-adoption-insights-dynamic
 ======= Removed lock file: /dynamic-plugins-root/install-dynamic-plugins.lock

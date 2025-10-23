@@ -59,7 +59,7 @@ else
         | tr ' ' '\n' | sort | uniq || echo "")
     
     # Combine and deduplicate
-    all_namespaces=$(echo -e "${helm_namespaces}\n${cr_namespaces}\n${operator_namespaces}" | grep -v '^$' | sort | uniq)
+    all_namespaces=$(echo -e "${helm_namespaces}\n${cr_namespaces}\n${operator_namespaces}" | grep -v '^$' | sort | uniq || echo "")
     
     if [[ -z "$all_namespaces" ]]; then
         log_warn "No RHDH deployments found in cluster"

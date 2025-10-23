@@ -5,7 +5,7 @@ metadata:
     deployment.kubernetes.io/revision: "1"
     meta.helm.sh/release-name: redhat-developer-hub-helm
     meta.helm.sh/release-namespace: my-ns
-  creationTimestamp: "2025-09-11T20:53:05Z"
+  creationTimestamp: "2025-10-23T11:11:18Z"
   generation: 1
   labels:
     app.kubernetes.io/component: backstage
@@ -15,8 +15,8 @@ metadata:
     helm.sh/chart: upstream-2.6.0
   name: redhat-developer-hub-helm
   namespace: my-ns
-  resourceVersion: "80033"
-  uid: ea4a35b3-8c07-4593-b181-5189214f6549
+  resourceVersion: "41192"
+  uid: ed3f9b1f-5409-4cab-9d62-9b8a87afa6db
 spec:
   progressDeadlineSeconds: 600
   replicas: 1
@@ -34,7 +34,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/app-config: f549a3a86a292f669175bd1d7c508061e136c21c9a8d596791f5d4be6f2dcbf3
+        checksum/app-config: 008f6f5145cbfd5a4b66c2f9ba302b675cc1204617e067623e3c73e543278882
         checksum/dynamic-plugins: f1f9a92f14a31362d7eb30e67ac1458faf1c685765610f93a8967194d8bc1a5f
       creationTimestamp: null
       labels:
@@ -74,7 +74,7 @@ spec:
             secretKeyRef:
               key: postgres-password
               name: redhat-developer-hub-helm-postgresql
-        image: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:0c76994fde2cd71471802d458b682ab652be5a0e291c3a2773cb524259ac79b2
+        image: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:62f32e50727c5006766a34daa5b6472b649cd9894f3fe9543b8ecc67e6760e8e
         imagePullPolicy: Always
         livenessProbe:
           failureThreshold: 3
@@ -146,7 +146,7 @@ spec:
           value: /opt/app-root/src/.npmrc.dynamic-plugins
         - name: MAX_ENTRY_SIZE
           value: "30000000"
-        image: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:0c76994fde2cd71471802d458b682ab652be5a0e291c3a2773cb524259ac79b2
+        image: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:62f32e50727c5006766a34daa5b6472b649cd9894f3fe9543b8ecc67e6760e8e
         imagePullPolicy: Always
         name: install-dynamic-plugins
         resources:
@@ -232,15 +232,15 @@ spec:
 status:
   availableReplicas: 1
   conditions:
-  - lastTransitionTime: "2025-09-11T20:55:50Z"
-    lastUpdateTime: "2025-09-11T20:55:50Z"
+  - lastTransitionTime: "2025-10-23T11:16:17Z"
+    lastUpdateTime: "2025-10-23T11:16:17Z"
     message: Deployment has minimum availability.
     reason: MinimumReplicasAvailable
     status: "True"
     type: Available
-  - lastTransitionTime: "2025-09-11T20:53:05Z"
-    lastUpdateTime: "2025-09-11T20:55:50Z"
-    message: ReplicaSet "redhat-developer-hub-helm-848554bbb6" has successfully progressed.
+  - lastTransitionTime: "2025-10-23T11:11:18Z"
+    lastUpdateTime: "2025-10-23T11:16:17Z"
+    message: ReplicaSet "redhat-developer-hub-helm-6698c6d684" has successfully progressed.
     reason: NewReplicaSetAvailable
     status: "True"
     type: Progressing

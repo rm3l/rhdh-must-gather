@@ -4,42 +4,42 @@ items:
   kind: Pod
   metadata:
     annotations:
-      checksum/app-config: f549a3a86a292f669175bd1d7c508061e136c21c9a8d596791f5d4be6f2dcbf3
+      checksum/app-config: 008f6f5145cbfd5a4b66c2f9ba302b675cc1204617e067623e3c73e543278882
       checksum/dynamic-plugins: f1f9a92f14a31362d7eb30e67ac1458faf1c685765610f93a8967194d8bc1a5f
-      k8s.ovn.org/pod-networks: '{"default":{"ip_addresses":["10.128.0.41/23"],"mac_address":"0a:58:0a:80:00:29","gateway_ips":["10.128.0.1"],"routes":[{"dest":"10.128.0.0/14","nextHop":"10.128.0.1"},{"dest":"172.30.0.0/16","nextHop":"10.128.0.1"},{"dest":"169.254.0.5/32","nextHop":"10.128.0.1"},{"dest":"100.64.0.0/16","nextHop":"10.128.0.1"}],"ip_address":"10.128.0.41/23","gateway_ip":"10.128.0.1","role":"primary"}}'
+      k8s.ovn.org/pod-networks: '{"default":{"ip_addresses":["10.128.0.62/23"],"mac_address":"0a:58:0a:80:00:3e","gateway_ips":["10.128.0.1"],"routes":[{"dest":"10.128.0.0/14","nextHop":"10.128.0.1"},{"dest":"172.30.0.0/16","nextHop":"10.128.0.1"},{"dest":"169.254.0.5/32","nextHop":"10.128.0.1"},{"dest":"100.64.0.0/16","nextHop":"10.128.0.1"}],"ip_address":"10.128.0.62/23","gateway_ip":"10.128.0.1","role":"primary"}}'
       k8s.v1.cni.cncf.io/network-status: |-
         [{
             "name": "ovn-kubernetes",
             "interface": "eth0",
             "ips": [
-                "10.128.0.41"
+                "10.128.0.62"
             ],
-            "mac": "0a:58:0a:80:00:29",
+            "mac": "0a:58:0a:80:00:3e",
             "default": true,
             "dns": {}
         }]
       openshift.io/scc: restricted-v2
       seccomp.security.alpha.kubernetes.io/pod: runtime/default
-    creationTimestamp: "2025-09-11T20:53:05Z"
-    generateName: redhat-developer-hub-helm-848554bbb6-
+    creationTimestamp: "2025-10-23T11:11:18Z"
+    generateName: redhat-developer-hub-helm-6698c6d684-
     labels:
       app.kubernetes.io/component: backstage
       app.kubernetes.io/instance: redhat-developer-hub-helm
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/name: developer-hub
       helm.sh/chart: upstream-2.6.0
-      pod-template-hash: 848554bbb6
-    name: redhat-developer-hub-helm-848554bbb6-h7sj4
+      pod-template-hash: 6698c6d684
+    name: redhat-developer-hub-helm-6698c6d684-ccdhj
     namespace: my-ns
     ownerReferences:
     - apiVersion: apps/v1
       blockOwnerDeletion: true
       controller: true
       kind: ReplicaSet
-      name: redhat-developer-hub-helm-848554bbb6
-      uid: 78266e5c-9463-4223-ab49-20065c34c4e8
-    resourceVersion: "80029"
-    uid: 22606a55-d948-44d0-a7e1-96a0934961e2
+      name: redhat-developer-hub-helm-6698c6d684
+      uid: a5126190-8382-4e2f-a7d4-637f70d350dc
+    resourceVersion: "41188"
+    uid: b1308212-07da-460c-b72c-f8f1aa182e57
   spec:
     containers:
     - args:
@@ -71,7 +71,7 @@ items:
           secretKeyRef:
             key: postgres-password
             name: redhat-developer-hub-helm-postgresql
-      image: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:0c76994fde2cd71471802d458b682ab652be5a0e291c3a2773cb524259ac79b2
+      image: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:62f32e50727c5006766a34daa5b6472b649cd9894f3fe9543b8ecc67e6760e8e
       imagePullPolicy: Always
       livenessProbe:
         failureThreshold: 3
@@ -136,12 +136,12 @@ items:
       - mountPath: /tmp
         name: temp
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-686sf
+        name: kube-api-access-zjtzs
         readOnly: true
     dnsPolicy: ClusterFirst
     enableServiceLinks: true
     imagePullSecrets:
-    - name: default-dockercfg-hbnf5
+    - name: default-dockercfg-k4hmt
     initContainers:
     - command:
       - ./install-dynamic-plugins.sh
@@ -151,7 +151,7 @@ items:
         value: /opt/app-root/src/.npmrc.dynamic-plugins
       - name: MAX_ENTRY_SIZE
         value: "30000000"
-      image: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:0c76994fde2cd71471802d458b682ab652be5a0e291c3a2773cb524259ac79b2
+      image: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:62f32e50727c5006766a34daa5b6472b649cd9894f3fe9543b8ecc67e6760e8e
       imagePullPolicy: Always
       name: install-dynamic-plugins
       resources:
@@ -194,10 +194,10 @@ items:
       - mountPath: /tmp
         name: temp
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-686sf
+        name: kube-api-access-zjtzs
         readOnly: true
       workingDir: /opt/app-root/src
-    nodeName: ip-10-0-1-180.ec2.internal
+    nodeName: ip-10-0-1-102.ec2.internal
     preemptionPolicy: PreemptLowerPriority
     priority: 0
     restartPolicy: Always
@@ -259,7 +259,7 @@ items:
         defaultMode: 420
         name: redhat-developer-hub-helm-app-config
       name: backstage-app-config
-    - name: kube-api-access-686sf
+    - name: kube-api-access-zjtzs
       projected:
         defaultMode: 420
         sources:
@@ -285,29 +285,29 @@ items:
   status:
     conditions:
     - lastProbeTime: null
-      lastTransitionTime: "2025-09-11T20:53:22Z"
+      lastTransitionTime: "2025-10-23T11:13:56Z"
       status: "True"
       type: PodReadyToStartContainers
     - lastProbeTime: null
-      lastTransitionTime: "2025-09-11T20:54:54Z"
+      lastTransitionTime: "2025-10-23T11:15:18Z"
       status: "True"
       type: Initialized
     - lastProbeTime: null
-      lastTransitionTime: "2025-09-11T20:55:50Z"
+      lastTransitionTime: "2025-10-23T11:16:17Z"
       status: "True"
       type: Ready
     - lastProbeTime: null
-      lastTransitionTime: "2025-09-11T20:55:50Z"
+      lastTransitionTime: "2025-10-23T11:16:17Z"
       status: "True"
       type: ContainersReady
     - lastProbeTime: null
-      lastTransitionTime: "2025-09-11T20:53:10Z"
+      lastTransitionTime: "2025-10-23T11:11:23Z"
       status: "True"
       type: PodScheduled
     containerStatuses:
-    - containerID: cri-o://1d4b7bbfa4088ceb87cff35dd36816122ca1725891e4712dc87f9302b1a17daf
-      image: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:0c76994fde2cd71471802d458b682ab652be5a0e291c3a2773cb524259ac79b2
-      imageID: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:0c76994fde2cd71471802d458b682ab652be5a0e291c3a2773cb524259ac79b2
+    - containerID: cri-o://6e8bb51e34af869941f2ef39710b9fd07b7858393df023ac64e546e22c034535
+      image: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:62f32e50727c5006766a34daa5b6472b649cd9894f3fe9543b8ecc67e6760e8e
+      imageID: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:34534577a381685582d880b753a44b243fdd09697c878d5fbee790f55dba3d7a
       lastState: {}
       name: backstage-backend
       ready: true
@@ -315,7 +315,7 @@ items:
       started: true
       state:
         running:
-          startedAt: "2025-09-11T20:54:55Z"
+          startedAt: "2025-10-23T11:15:19Z"
       volumeMounts:
       - mountPath: /opt/app-root/src/app-config-from-configmap.yaml
         name: backstage-app-config
@@ -324,16 +324,16 @@ items:
       - mountPath: /tmp
         name: temp
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-686sf
+        name: kube-api-access-zjtzs
         readOnly: true
         recursiveReadOnly: Disabled
-    hostIP: 10.0.1.180
+    hostIP: 10.0.1.102
     hostIPs:
-    - ip: 10.0.1.180
+    - ip: 10.0.1.102
     initContainerStatuses:
-    - containerID: cri-o://a6047c0945a6e2737de451185c7c8ce5a323ac0bf7ac81859d2a187000299a8f
-      image: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:0c76994fde2cd71471802d458b682ab652be5a0e291c3a2773cb524259ac79b2
-      imageID: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:0c76994fde2cd71471802d458b682ab652be5a0e291c3a2773cb524259ac79b2
+    - containerID: cri-o://d1679c3473f83ce1ead5689dbda1a0b25d3b06f51f1b939668a13d91bcd6d080
+      image: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:62f32e50727c5006766a34daa5b6472b649cd9894f3fe9543b8ecc67e6760e8e
+      imageID: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:34534577a381685582d880b753a44b243fdd09697c878d5fbee790f55dba3d7a
       lastState: {}
       name: install-dynamic-plugins
       ready: true
@@ -341,11 +341,11 @@ items:
       started: false
       state:
         terminated:
-          containerID: cri-o://a6047c0945a6e2737de451185c7c8ce5a323ac0bf7ac81859d2a187000299a8f
+          containerID: cri-o://d1679c3473f83ce1ead5689dbda1a0b25d3b06f51f1b939668a13d91bcd6d080
           exitCode: 0
-          finishedAt: "2025-09-11T20:54:54Z"
+          finishedAt: "2025-10-23T11:15:17Z"
           reason: Completed
-          startedAt: "2025-09-11T20:53:21Z"
+          startedAt: "2025-10-23T11:13:55Z"
       volumeMounts:
       - mountPath: /dynamic-plugins-root
         name: dynamic-plugins-root
@@ -366,15 +366,15 @@ items:
       - mountPath: /tmp
         name: temp
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-686sf
+        name: kube-api-access-zjtzs
         readOnly: true
         recursiveReadOnly: Disabled
     phase: Running
-    podIP: 10.128.0.41
+    podIP: 10.128.0.62
     podIPs:
-    - ip: 10.128.0.41
+    - ip: 10.128.0.62
     qosClass: Burstable
-    startTime: "2025-09-11T20:53:10Z"
+    startTime: "2025-10-23T11:11:23Z"
 kind: List
 metadata:
   resourceVersion: ""

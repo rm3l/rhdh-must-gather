@@ -1,9 +1,9 @@
 Name:                   rhdh-operator
 Namespace:              rhdh-operator
-CreationTimestamp:      Thu, 11 Sep 2025 20:45:14 +0000
+CreationTimestamp:      Thu, 23 Oct 2025 13:09:13 +0200
 Labels:                 app=rhdh-operator
                         control-plane=controller-manager
-                        olm.deployment-spec-hash=2jIB2luOR3dUF8Vcagm7pSYeUMYKbLEvteOSpE
+                        olm.deployment-spec-hash=afn8SmeSwoFpx8jU8uCE009VMMxp1HDhMUjPEt
                         olm.managed=true
                         olm.owner=rhdh-operator.v1.7.0
                         olm.owner.kind=ClusterServiceVersion
@@ -70,7 +70,7 @@ Pod Template:
                     features.operators.openshift.io/token-auth-azure: false
                     features.operators.openshift.io/token-auth-gcp: false
                     kubectl.kubernetes.io/default-container: manager
-                    olm.operatorGroup: rhdh-operator-hhkf2
+                    olm.operatorGroup: rhdh-operator-wtgrm
                     olm.operatorNamespace: rhdh-operator
                     olm.targetNamespaces: 
                     operatorframework.io/properties:
@@ -130,8 +130,8 @@ Conditions:
   Available      True    MinimumReplicasAvailable
   Progressing    True    NewReplicaSetAvailable
 OldReplicaSets:  <none>
-NewReplicaSet:   rhdh-operator-7d56656b4 (1/1 replicas created)
+NewReplicaSet:   rhdh-operator-6c8ffc4648 (1/1 replicas created)
 Events:
   Type    Reason             Age   From                   Message
   ----    ------             ----  ----                   -------
-  Normal  ScalingReplicaSet  16m   deployment-controller  Scaled up replica set rhdh-operator-7d56656b4 from 0 to 1
+  Normal  ScalingReplicaSet  11m   deployment-controller  Scaled up replica set rhdh-operator-6c8ffc4648 from 0 to 1

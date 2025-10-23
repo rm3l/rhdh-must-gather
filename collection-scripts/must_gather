@@ -192,7 +192,7 @@ function run_scripts {
     script_name="gather_${script}"
     log_info "running ${script_name}"
     if ! eval "${DIR_NAME}/${script_name}"; then
-      log_error "Failed to run ${script_name}, continuing with next script..."
+      log_warn "Failed to run ${script_name}, continuing with next script..."
     fi
   done
 }
@@ -200,7 +200,7 @@ function run_scripts {
 function run_logs {
   log_info "running logs"
   if ! "${DIR_NAME}"/logs.sh; then
-    log_error "Failed to run logs.sh, continuing..."
+    log_warn "Failed to run logs.sh, continuing..."
   fi
 }
 

@@ -1,6 +1,6 @@
 Name:                   my-backstage-1-no-local-db-developer-hub
 Namespace:              my-ns-3
-CreationTimestamp:      Thu, 11 Sep 2025 20:43:14 +0000
+CreationTimestamp:      Thu, 23 Oct 2025 13:08:15 +0200
 Labels:                 app.kubernetes.io/component=backstage
                         app.kubernetes.io/instance=my-backstage-1-no-local-db
                         app.kubernetes.io/managed-by=Helm
@@ -20,7 +20,7 @@ Pod Template:
                     app.kubernetes.io/managed-by=Helm
                     app.kubernetes.io/name=developer-hub
                     helm.sh/chart=upstream-2.6.1
-  Annotations:      checksum/app-config: 6b543a5d75264fcb56759ebf60ab56cd9f079cf1e4d9d8c7fa74cb83e0f4212e
+  Annotations:      checksum/app-config: 17ff9d7d3ac62ad797cdf103fb3f3be8827f06b3e100a1b934551c5bf52b0093
                     checksum/dynamic-plugins: f1f9a92f14a31362d7eb30e67ac1458faf1c685765610f93a8967194d8bc1a5f
   Service Account:  default
   Init Containers:
@@ -120,8 +120,8 @@ Conditions:
   Available      False   MinimumReplicasUnavailable
   Progressing    False   ProgressDeadlineExceeded
 OldReplicaSets:  <none>
-NewReplicaSet:   my-backstage-1-no-local-db-developer-hub-7546fd7b4 (1/1 replicas created)
+NewReplicaSet:   my-backstage-1-no-local-db-developer-hub-56fbb8cf48 (1/1 replicas created)
 Events:
   Type    Reason             Age   From                   Message
   ----    ------             ----  ----                   -------
-  Normal  ScalingReplicaSet  18m   deployment-controller  Scaled up replica set my-backstage-1-no-local-db-developer-hub-7546fd7b4 from 0 to 1
+  Normal  ScalingReplicaSet  11m   deployment-controller  Scaled up replica set my-backstage-1-no-local-db-developer-hub-56fbb8cf48 from 0 to 1

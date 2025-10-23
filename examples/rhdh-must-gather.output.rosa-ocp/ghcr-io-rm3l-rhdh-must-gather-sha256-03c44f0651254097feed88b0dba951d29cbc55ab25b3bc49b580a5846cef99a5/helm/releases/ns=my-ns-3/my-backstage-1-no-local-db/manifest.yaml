@@ -7,7 +7,7 @@ metadata:
   namespace: "my-ns-3"
   labels:
     app.kubernetes.io/name: developer-hub
-    helm.sh/chart: backstage-4.5.8
+    helm.sh/chart: backstage-4.6.0
     app.kubernetes.io/instance: my-backstage-1-no-local-db
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: backstage
@@ -25,7 +25,7 @@ metadata:
 data:
   app-config.yaml: [REDACTED]
     app:
-      baseUrl: https://my-backstage-1-no-local-db-developer-hub-my-ns-3.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com
+      baseUrl: https://my-backstage-1-no-local-db-developer-hub-my-ns-3.apps.example.com
     auth:
       providers: {}
     backend:
@@ -35,9 +35,9 @@ data:
             secret: ${BACKEND_SECRET}
             subject: legacy-default-config
           type: legacy
-      baseUrl: https://my-backstage-1-no-local-db-developer-hub-my-ns-3.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com
+      baseUrl: https://my-backstage-1-no-local-db-developer-hub-my-ns-3.apps.example.com
       cors:
-        origin: https://my-backstage-1-no-local-db-developer-hub-my-ns-3.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com
+        origin: https://my-backstage-1-no-local-db-developer-hub-my-ns-3.apps.example.com
       database:
         connection:
           password: ${POSTGRESQL_ADMIN_PASSWORD}
@@ -113,7 +113,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/component: backstage
       annotations:
-        checksum/app-config: 6b543a5d75264fcb56759ebf60ab56cd9f079cf1e4d9d8c7fa74cb83e0f4212e
+        checksum/app-config: 17ff9d7d3ac62ad797cdf103fb3f3be8827f06b3e100a1b934551c5bf52b0093
         checksum/dynamic-plugins: 'f1f9a92f14a31362d7eb30e67ac1458faf1c685765610f93a8967194d8bc1a5f'
     spec:
       serviceAccountName: default
@@ -160,7 +160,7 @@ spec:
           - name: MAX_ENTRY_SIZE
             value: "30000000"
           image: 'quay.io/rhdh/rhdh-hub-rhel9:latest'
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           name: install-dynamic-plugins
           resources:
             limits:
@@ -201,7 +201,7 @@ spec:
       containers:
         - name: backstage-backend
           image: quay.io/rhdh/rhdh-hub-rhel9:latest
-          imagePullPolicy: "Always"
+          imagePullPolicy: "IfNotPresent"
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -281,30 +281,4 @@ spec:
 # Source: backstage/templates/tests/test-secret.yaml
 # RHDHBUGS-1893: test-only option to inject a user-provided dynamic plugins npmrc secret.
 # Doing it this way because the secret name is dynamic and depends on the release name.
----
-# Source: backstage/templates/route.yaml
-apiVersion: route.openshift.io/v1
-kind: Route
-metadata:
-  name: my-backstage-1-no-local-db-developer-hub
-  namespace: "my-ns-3"
-  labels:
-    app.kubernetes.io/name: developer-hub
-    helm.sh/chart: backstage-4.5.8
-    app.kubernetes.io/instance: my-backstage-1-no-local-db
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/component: backstage
-spec:
-  host: my-backstage-1-no-local-db-developer-hub-my-ns-3.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com
-  path: /
-  port:
-    targetPort: http-backend
-  tls:
-    insecureEdgeTerminationPolicy: Redirect
-    termination: edge
-  to:
-    kind: Service
-    name: my-backstage-1-no-local-db-developer-hub
-    weight: 100
-  wildcardPolicy: None
 

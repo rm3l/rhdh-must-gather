@@ -1,6 +1,6 @@
 Name:         sh.helm.release.v1.my-orchestrator-infra.v1
 Namespace:    rhdh-orchestrator-infra
-Labels:       modifiedAt=1757623357
+Labels:       modifiedAt=1761217655
               name=my-orchestrator-infra
               owner=helm
               status=deployed
@@ -11,4 +11,4 @@ Type:  helm.sh/release.v1
 
 Data
 ====
-release:  96272 bytes
+release:  96276 bytes

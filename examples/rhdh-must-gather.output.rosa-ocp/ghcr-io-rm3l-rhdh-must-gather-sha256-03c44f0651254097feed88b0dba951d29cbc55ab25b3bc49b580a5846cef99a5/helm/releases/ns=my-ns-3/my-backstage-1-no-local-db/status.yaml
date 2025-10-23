@@ -1,6 +1,6 @@
 config:
-  global:
-    clusterRouterBase: apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com
+  route:
+    enabled: false
   upstream:
     postgresql:
       enabled: false
@@ -19,7 +19,7 @@ hooks:
       name: "my-backstage-1-no-local-db-developer-hub-test-connection"
       labels:
         app.kubernetes.io/name: developer-hub
-        helm.sh/chart: backstage-4.5.8
+        helm.sh/chart: backstage-4.6.0
         app.kubernetes.io/instance: my-backstage-1-no-local-db
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/component: backstage
@@ -46,7 +46,7 @@ hooks:
               - ls
               - /usr/bin/curl
           image: "quay.io/curl/curl:latest"
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -56,23 +56,23 @@ hooks:
   path: backstage/templates/tests/test-connection.yaml
 info:
   deleted: ""
-  description: Install complete
-  first_deployed: "2025-09-11T22:43:11.066885915+02:00"
-  last_deployed: "2025-09-11T22:43:11.066885915+02:00"
+  description: Upgrade complete
+  first_deployed: "2025-10-23T13:08:12.183675081+02:00"
+  last_deployed: "2025-10-23T13:08:18.940726087+02:00"
   status: deployed
 manifest: "---\n# Source: backstage/templates/secrets.yaml\napiVersion: v1\nkind:
   Secret\nmetadata:\n  name: my-backstage-1-no-local-db-auth\n  namespace: \"my-ns-3\"\n
-  \ labels:\n    app.kubernetes.io/name: developer-hub\n    helm.sh/chart: backstage-4.5.8\n
+  \ labels:\n    app.kubernetes.io/name: developer-hub\n    helm.sh/chart: backstage-4.6.0\n
   \   app.kubernetes.io/instance: my-backstage-1-no-local-db\n    app.kubernetes.io/managed-by:
   Helm\n    app.kubernetes.io/component: backstage\n  annotations:\ntype: Opaque\ndata:\n
-  \ backend-secret: \"ZGhDbkI5VlF3M3dxSkp0c0N0UjRxV09U\"\n---\n# Source: backstage/charts/upstream/templates/app-config-configmap.yaml\napiVersion:
+  \ backend-secret: \"MFppN1BFMExmTDY5Qk90MlF0bU5Cd2o2\"\n---\n# Source: backstage/charts/upstream/templates/app-config-configmap.yaml\napiVersion:
   v1\nkind: ConfigMap\nmetadata:\n  name: my-backstage-1-no-local-db-developer-hub-app-config\n
   \ namespace: \"my-ns-3\"\ndata:\n  app-config.yaml: |\n    app:\n      baseUrl:
-  https://my-backstage-1-no-local-db-developer-hub-my-ns-3.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com\n
-  \   auth:\n      providers: {}\n    backend:\n      auth:\n        externalAccess:\n
-  \       - options:\n            secret: ${BACKEND_SECRET}\n            subject:
-  legacy-default-config\n          type: legacy\n      baseUrl: https://my-backstage-1-no-local-db-developer-hub-my-ns-3.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com\n
-  \     cors:\n        origin: https://my-backstage-1-no-local-db-developer-hub-my-ns-3.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com\n
+  https://my-backstage-1-no-local-db-developer-hub-my-ns-3.apps.example.com\n    auth:\n
+  \     providers: {}\n    backend:\n      auth:\n        externalAccess:\n        -
+  options:\n            secret: ${BACKEND_SECRET}\n            subject: legacy-default-config\n
+  \         type: legacy\n      baseUrl: https://my-backstage-1-no-local-db-developer-hub-my-ns-3.apps.example.com\n
+  \     cors:\n        origin: https://my-backstage-1-no-local-db-developer-hub-my-ns-3.apps.example.com\n
   \     database:\n        connection:\n          password: ${POSTGRESQL_ADMIN_PASSWORD}\n
   \         user: postgres\n---\n# Source: backstage/templates/dynamic-plugins-configmap.yaml\napiVersion:
   v1\nkind: ConfigMap\nmetadata:\n  name: my-backstage-1-no-local-db-dynamic-plugins\ndata:\n
@@ -97,7 +97,7 @@ manifest: "---\n# Source: backstage/templates/secrets.yaml\napiVersion: v1\nkind
   \   metadata:\n      labels:\n        app.kubernetes.io/name: developer-hub\n        helm.sh/chart:
   upstream-2.6.1\n        app.kubernetes.io/instance: my-backstage-1-no-local-db\n
   \       app.kubernetes.io/managed-by: Helm\n        app.kubernetes.io/component:
-  backstage\n      annotations:\n        checksum/app-config: 6b543a5d75264fcb56759ebf60ab56cd9f079cf1e4d9d8c7fa74cb83e0f4212e\n
+  backstage\n      annotations:\n        checksum/app-config: 17ff9d7d3ac62ad797cdf103fb3f3be8827f06b3e100a1b934551c5bf52b0093\n
   \       checksum/dynamic-plugins: 'f1f9a92f14a31362d7eb30e67ac1458faf1c685765610f93a8967194d8bc1a5f'\n
   \   spec:\n      serviceAccountName: default\n      volumes:\n        - ephemeral:\n
   \           volumeClaimTemplate:\n              spec:\n                accessModes:\n
@@ -115,8 +115,8 @@ manifest: "---\n# Source: backstage/templates/secrets.yaml\napiVersion: v1\nkind
   \         - /dynamic-plugins-root\n          env:\n          - name: NPM_CONFIG_USERCONFIG\n
   \           value: /opt/app-root/src/.npmrc.dynamic-plugins\n          - name: MAX_ENTRY_SIZE\n
   \           value: \"30000000\"\n          image: 'quay.io/rhdh/rhdh-hub-rhel9:latest'\n
-  \         imagePullPolicy: Always\n          name: install-dynamic-plugins\n          resources:\n
-  \           limits:\n              cpu: 1000m\n              ephemeral-storage:
+  \         imagePullPolicy: IfNotPresent\n          name: install-dynamic-plugins\n
+  \         resources:\n            limits:\n              cpu: 1000m\n              ephemeral-storage:
   5Gi\n              memory: 2.5Gi\n            requests:\n              cpu: 250m\n
   \             memory: 256Mi\n          securityContext:\n            allowPrivilegeEscalation:
   false\n            capabilities:\n              drop:\n              - ALL\n            readOnlyRootFilesystem:
@@ -131,7 +131,7 @@ manifest: "---\n# Source: backstage/templates/secrets.yaml\napiVersion: v1\nkind
   /opt/app-root/src/.npm/_cacache\n            name: npmcacache\n          - mountPath:
   /tmp\n            name: temp\n          workingDir: /opt/app-root/src\n      containers:\n
   \       - name: backstage-backend\n          image: quay.io/rhdh/rhdh-hub-rhel9:latest\n
-  \         imagePullPolicy: \"Always\"\n          securityContext:\n            allowPrivilegeEscalation:
+  \         imagePullPolicy: \"IfNotPresent\"\n          securityContext:\n            allowPrivilegeEscalation:
   false\n            capabilities:\n              drop:\n              - ALL\n            readOnlyRootFilesystem:
   true\n            runAsNonRoot: true\n            seccompProfile:\n              type:
   RuntimeDefault\n          args:\n            - \"--config\"\n            - \"dynamic-plugins-root/app-config.dynamic-plugins.yaml\"\n
@@ -160,15 +160,7 @@ manifest: "---\n# Source: backstage/templates/secrets.yaml\napiVersion: v1\nkind
   \             name: dynamic-plugins-root\n            - mountPath: /tmp\n              name:
   temp\n---\n# Source: backstage/templates/tests/test-secret.yaml\n# RHDHBUGS-1893:
   test-only option to inject a user-provided dynamic plugins npmrc secret.\n# Doing
-  it this way because the secret name is dynamic and depends on the release name.\n---\n#
-  Source: backstage/templates/route.yaml\napiVersion: route.openshift.io/v1\nkind:
-  Route\nmetadata:\n  name: my-backstage-1-no-local-db-developer-hub\n  namespace:
-  \"my-ns-3\"\n  labels:\n    app.kubernetes.io/name: developer-hub\n    helm.sh/chart:
-  backstage-4.5.8\n    app.kubernetes.io/instance: my-backstage-1-no-local-db\n    app.kubernetes.io/managed-by:
-  Helm\n    app.kubernetes.io/component: backstage\nspec:\n  host: my-backstage-1-no-local-db-developer-hub-my-ns-3.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com\n
-  \ path: /\n  port:\n    targetPort: http-backend\n  tls:\n    insecureEdgeTerminationPolicy:
-  Redirect\n    termination: edge\n  to:\n    kind: Service\n    name: my-backstage-1-no-local-db-developer-hub\n
-  \   weight: 100\n  wildcardPolicy: None\n"
+  it this way because the secret name is dynamic and depends on the release name.\n"
 name: my-backstage-1-no-local-db
 namespace: my-ns-3
-version: 1
+version: 2

@@ -4,14 +4,14 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.14.0
     operatorframework.io/installed-alongside-9807ad66ced0da2e: rhdh-operator/rhdh-operator.v1.7.0
-  creationTimestamp: "2025-09-11T20:45:11Z"
+  creationTimestamp: "2025-10-23T11:09:10Z"
   generation: 1
   labels:
     olm.managed: "true"
     operators.coreos.com/rhdh.rhdh-operator: ""
   name: backstages.rhdh.redhat.com
-  resourceVersion: "76040"
-  uid: 81688e49-aadd-469e-9e6f-6b3b54bf4248
+  resourceVersion: "39263"
+  uid: 68e88c28-fc22-4c7a-ad1a-5a010df651ad
 spec:
   conversion:
     strategy: None
@@ -1207,12 +1207,12 @@ status:
     plural: backstages
     singular: backstage
   conditions:
-  - lastTransitionTime: "2025-09-11T20:45:11Z"
+  - lastTransitionTime: "2025-10-23T11:09:10Z"
     message: no conflicts found
     reason: NoConflicts
     status: "True"
     type: NamesAccepted
-  - lastTransitionTime: "2025-09-11T20:45:11Z"
+  - lastTransitionTime: "2025-10-23T11:09:11Z"
     message: the initial names have been accepted
     reason: InitialNamesAccepted
     status: "True"

@@ -6,16 +6,16 @@ metadata:
   annotations:
     meta.helm.sh/release-name: redhat-developer-hub-helm
     meta.helm.sh/release-namespace: my-ns
-  creationTimestamp: "2025-09-11T20:53:05Z"
+  creationTimestamp: "2025-10-23T11:11:18Z"
   labels:
     app.kubernetes.io/component: backstage
     app.kubernetes.io/instance: redhat-developer-hub-helm
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: developer-hub
-    app.kubernetes.io/version: 1.7.0
-    helm.sh/chart: redhat-developer-hub-1.7.0
+    app.kubernetes.io/version: 1.7.1
+    helm.sh/chart: redhat-developer-hub-1.7.1
   name: redhat-developer-hub-helm-auth
   namespace: my-ns
-  resourceVersion: "78767"
-  uid: 5d439f05-d79d-4cf0-8d8e-ba791f0f1b3c
+  resourceVersion: "40206"
+  uid: 48e26e22-9900-43b1-a258-f85c9bbee960
 type: Opaque

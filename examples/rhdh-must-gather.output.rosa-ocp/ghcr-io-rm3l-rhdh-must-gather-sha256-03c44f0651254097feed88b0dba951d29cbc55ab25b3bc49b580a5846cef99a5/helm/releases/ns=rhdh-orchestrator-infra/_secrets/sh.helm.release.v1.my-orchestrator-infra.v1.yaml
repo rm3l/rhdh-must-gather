@@ -3,15 +3,15 @@ data:
   release: [REDACTED]
 kind: Secret
 metadata:
-  creationTimestamp: "2025-09-11T20:42:35Z"
+  creationTimestamp: "2025-10-23T11:07:32Z"
   labels:
-    modifiedAt: "1757623357"
+    modifiedAt: "1761217655"
     name: my-orchestrator-infra
     owner: helm
     status: deployed
     version: "1"
   name: sh.helm.release.v1.my-orchestrator-infra.v1
   namespace: rhdh-orchestrator-infra
-  resourceVersion: "74816"
-  uid: 8c9dfbd9-eaa9-47c3-9348-178970a6d10e
+  resourceVersion: "38762"
+  uid: b82428b1-061c-4fae-847f-5395cf59c4e7
 type: helm.sh/release.v1

@@ -7,10 +7,10 @@ Annotations:  controller-gen.kubebuilder.io/version: v0.14.0
 API Version:  apiextensions.k8s.io/v1
 Kind:         CustomResourceDefinition
 Metadata:
-  Creation Timestamp:  2025-09-11T20:45:11Z
+  Creation Timestamp:  2025-10-23T11:09:10Z
   Generation:          1
-  Resource Version:    76040
-  UID:                 81688e49-aadd-469e-9e6f-6b3b54bf4248
+  Resource Version:    39263
+  UID:                 68e88c28-fc22-4c7a-ad1a-5a010df651ad
 Spec:
   Conversion:
     Strategy:  None
@@ -1099,12 +1099,12 @@ Status:
     Plural:     backstages
     Singular:   backstage
   Conditions:
-    Last Transition Time:  2025-09-11T20:45:11Z
+    Last Transition Time:  2025-10-23T11:09:10Z
     Message:               no conflicts found
     Reason:                NoConflicts
     Status:                True
     Type:                  NamesAccepted
-    Last Transition Time:  2025-09-11T20:45:11Z
+    Last Transition Time:  2025-10-23T11:09:11Z
     Message:               the initial names have been accepted
     Reason:                InitialNamesAccepted
     Status:                True

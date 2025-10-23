@@ -70,10 +70,10 @@ metadata:
   namespace: "my-ns"
   labels:
     app.kubernetes.io/name: developer-hub
-    helm.sh/chart: redhat-developer-hub-1.7.0
+    helm.sh/chart: redhat-developer-hub-1.7.1
     app.kubernetes.io/instance: redhat-developer-hub-helm
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/version: "1.7.0"
+    app.kubernetes.io/version: "1.7.1"
     app.kubernetes.io/component: backstage
   annotations:
 type: Opaque
@@ -89,7 +89,7 @@ metadata:
 data:
   app-config.yaml: [REDACTED]
     app:
-      baseUrl: https://redhat-developer-hub-helm-my-ns.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com
+      baseUrl: https://redhat-developer-hub-helm-my-ns.apps.rosa.pdgba-acqm3-3em.42wz.p3.openshiftapps.com
     auth:
       providers: {}
     backend:
@@ -99,9 +99,9 @@ data:
             secret: ${BACKEND_SECRET}
             subject: legacy-default-config
           type: legacy
-      baseUrl: https://redhat-developer-hub-helm-my-ns.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com
+      baseUrl: https://redhat-developer-hub-helm-my-ns.apps.rosa.pdgba-acqm3-3em.42wz.p3.openshiftapps.com
       cors:
-        origin: https://redhat-developer-hub-helm-my-ns.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com
+        origin: https://redhat-developer-hub-helm-my-ns.apps.rosa.pdgba-acqm3-3em.42wz.p3.openshiftapps.com
       database:
         connection:
           password: ${POSTGRESQL_ADMIN_PASSWORD}
@@ -238,7 +238,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/component: backstage
       annotations:
-        checksum/app-config: f549a3a86a292f669175bd1d7c508061e136c21c9a8d596791f5d4be6f2dcbf3
+        checksum/app-config: 008f6f5145cbfd5a4b66c2f9ba302b675cc1204617e067623e3c73e543278882
         checksum/dynamic-plugins: 'f1f9a92f14a31362d7eb30e67ac1458faf1c685765610f93a8967194d8bc1a5f'
     spec:
       serviceAccountName: default
@@ -282,7 +282,7 @@ spec:
             value: /opt/app-root/src/.npmrc.dynamic-plugins
           - name: MAX_ENTRY_SIZE
             value: "30000000"
-          image: 'registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:0c76994fde2cd71471802d458b682ab652be5a0e291c3a2773cb524259ac79b2'
+          image: 'registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:62f32e50727c5006766a34daa5b6472b649cd9894f3fe9543b8ecc67e6760e8e'
           imagePullPolicy: Always
           name: install-dynamic-plugins
           resources:
@@ -323,7 +323,7 @@ spec:
           workingDir: /opt/app-root/src
       containers:
         - name: backstage-backend
-          image: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:0c76994fde2cd71471802d458b682ab652be5a0e291c3a2773cb524259ac79b2
+          image: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:62f32e50727c5006766a34daa5b6472b649cd9894f3fe9543b8ecc67e6760e8e
           imagePullPolicy: "Always"
           securityContext:
             allowPrivilegeEscalation: false
@@ -468,7 +468,7 @@ spec:
       hostIPC: false
       containers:
         - name: postgresql
-          image: registry.redhat.io/rhel9/postgresql-15@sha256:7e2529e27bdbfad42953b5bcd2f6d0036ef54f7f0031fd180ee1fa58a3790f69
+          image: registry.redhat.io/rhel9/postgresql-15@sha256:4d707fc04f13c271b455f7b56c1fda9e232a62214ffc6213c02e41177dd4a13f
           imagePullPolicy: "IfNotPresent"
           env:
             - name: BITNAMI_DEBUG
@@ -588,13 +588,13 @@ metadata:
   namespace: "my-ns"
   labels:
     app.kubernetes.io/name: developer-hub
-    helm.sh/chart: redhat-developer-hub-1.7.0
+    helm.sh/chart: redhat-developer-hub-1.7.1
     app.kubernetes.io/instance: redhat-developer-hub-helm
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/version: "1.7.0"
+    app.kubernetes.io/version: "1.7.1"
     app.kubernetes.io/component: backstage
 spec:
-  host: redhat-developer-hub-helm-my-ns.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com
+  host: redhat-developer-hub-helm-my-ns.apps.rosa.pdgba-acqm3-3em.42wz.p3.openshiftapps.com
   path: /
   port:
     targetPort: http-backend

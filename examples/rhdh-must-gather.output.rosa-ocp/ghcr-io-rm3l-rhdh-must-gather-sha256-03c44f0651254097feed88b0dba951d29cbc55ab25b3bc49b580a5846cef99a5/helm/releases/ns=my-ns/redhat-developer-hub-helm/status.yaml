@@ -3,7 +3,7 @@ config:
     auth:
       backend:
         enabled: true
-    clusterRouterBase: apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com
+    clusterRouterBase: apps.rosa.pdgba-acqm3-3em.42wz.p3.openshiftapps.com
     dynamic:
       includes:
       - dynamic-plugins.default.yaml
@@ -12,16 +12,16 @@ config:
     enabled: false
     plugins:
     - disabled: false
-      integrity: sha512-Kr55YbuVwEADwGef9o9wyimcgHmiwehPeAtVHa9g2RQYoSPEa6BeOlaPzB6W5Ke3M2bN/0j0XXtpLuvrlXQogA==
-      package: https://npm.registry.redhat.com/@redhat/backstage-plugin-orchestrator-backend-dynamic/-/backstage-plugin-orchestrator-backend-dynamic-1.6.0.tgz
+      integrity: sha512-9cXbedr0lC7ns7SNqARrWSQI4JGcZFw5xpfpUzA1tJaMMUjzAdPHTXqljf62/fs4hYBK8TJsWJ2KJkGVMzbrHQ==
+      package: https://npm.registry.redhat.com/@redhat/backstage-plugin-orchestrator-backend-dynamic/-/backstage-plugin-orchestrator-backend-dynamic-1.7.1.tgz
       pluginConfig:
         orchestrator:
           dataIndexService:
             url: http://sonataflow-platform-data-index-service.{{ .Release.Namespace
               }}
     - disabled: false
-      integrity: sha512-fOSJv2PgtD2urKwBM7p9W6gV/0UIHSf4pkZ9V/wQO0eg0Zi5Mys/CL1ba3nO9x9l84MX11UBZ2r7PPVJPrmOtw==
-      package: https://npm.registry.redhat.com/@redhat/backstage-plugin-orchestrator/-/backstage-plugin-orchestrator-1.6.0.tgz
+      integrity: sha512-Cqu9EQwVQ4mpdgWTUA0MW89Gul0IklhvkkqVoO3CloQ1dnAj1XyXikCphzH5TmNDDd9K66dOpaKKCaW9KeJ4WA==
+      package: https://npm.registry.redhat.com/@redhat/backstage-plugin-orchestrator/-/backstage-plugin-orchestrator-1.7.1.tgz
       pluginConfig:
         dynamicPlugins:
           frontend:
@@ -35,17 +35,30 @@ config:
                   icon: orchestratorIcon
                   text: Orchestrator
                 path: /orchestrator
+              entityTabs:
+              - mountPoint: entity.page.workflows
+                path: /workflows
+                title: Workflows
+              mountPoints:
+              - config:
+                  if:
+                    anyOf:
+                    - IsOrchestratorCatalogTabAvailable
+                  layout:
+                    gridColumn: 1 / -1
+                importName: OrchestratorCatalogTab
+                mountPoint: entity.page.workflows/cards
     - disabled: false
-      integrity: sha512-Bueeix4661fXEnfJ9y31Yw91LXJgw6hJUG7lPVdESCi9VwBCjDB9Rm8u2yPqP8sriwr0OMtKtqD+Odn3LOPyVw==
-      package: https://npm.registry.redhat.com/@redhat/backstage-plugin-scaffolder-backend-module-orchestrator-dynamic/-/backstage-plugin-scaffolder-backend-module-orchestrator-dynamic-1.6.0.tgz
+      integrity: sha512-J1sTjA5kj6DphG8D65go9KlpIfKyLN/wq+XlY5Cb5djEo8mvF3wn3Haf60OGFo5cP4OfRSWqFwT7LM5/dNVwAg==
+      package: https://npm.registry.redhat.com/@redhat/backstage-plugin-scaffolder-backend-module-orchestrator-dynamic/-/backstage-plugin-scaffolder-backend-module-orchestrator-dynamic-1.7.1.tgz
       pluginConfig:
         orchestrator:
           dataIndexService:
             url: http://sonataflow-platform-data-index-service.{{ .Release.Namespace
               }}
     - disabled: false
-      integrity: sha512-Tqn6HO21Q1TQ7TFUoRhwBVCtSBzbQYz+OaanzzIB0R24O6YtVx3wR7Chtr5TzC05Vz5GkBO1+FZid8BKpqljgA==
-      package: https://npm.registry.redhat.com/@redhat/backstage-plugin-orchestrator-form-widgets/-/backstage-plugin-orchestrator-form-widgets-1.6.0.tgz
+      integrity: sha512-0KIXrZoJ+O4xNNzN/zB4+VMuaRPuiUviAmM+fIhTo/P9aLA36F9aIlyMbUbki49uaJ0zd8KXMBvmJSHZNrYkGQ==
+      package: https://npm.registry.redhat.com/@redhat/backstage-plugin-orchestrator-form-widgets/-/backstage-plugin-orchestrator-form-widgets-1.7.1.tgz
     serverlessLogicOperator:
       enabled: true
     serverlessOperator:
@@ -166,7 +179,7 @@ config:
         pullPolicy: Always
         registry: registry.redhat.io
         repository: rhdh/rhdh-hub-rhel9@sha256
-        tag: 0c76994fde2cd71471802d458b682ab652be5a0e291c3a2773cb524259ac79b2
+        tag: 62f32e50727c5006766a34daa5b6472b649cd9894f3fe9543b8ecc67e6760e8e
       initContainers:
       - command:
         - ./install-dynamic-plugins.sh
@@ -291,7 +304,7 @@ config:
       image:
         registry: registry.redhat.io
         repository: rhel9/postgresql-15@sha256
-        tag: 7e2529e27bdbfad42953b5bcd2f6d0036ef54f7f0031fd180ee1fa58a3790f69
+        tag: 4d707fc04f13c271b455f7b56c1fda9e232a62214ffc6213c02e41177dd4a13f
       postgresqlDataDir: /var/lib/pgsql/data/userdata
       primary:
         containerSecurityContext:
@@ -352,10 +365,10 @@ hooks:
       name: "redhat-developer-hub-helm-test-connection"
       labels:
         app.kubernetes.io/name: developer-hub
-        helm.sh/chart: redhat-developer-hub-1.7.0
+        helm.sh/chart: redhat-developer-hub-1.7.1
         app.kubernetes.io/instance: redhat-developer-hub-helm
         app.kubernetes.io/managed-by: Helm
-        app.kubernetes.io/version: "1.7.0"
+        app.kubernetes.io/version: "1.7.1"
         app.kubernetes.io/component: backstage
       annotations:
         helm.sh/hook: test
@@ -391,15 +404,15 @@ hooks:
 info:
   deleted: ""
   description: Install complete
-  first_deployed: "2025-09-11T20:53:04.559589899Z"
-  last_deployed: "2025-09-11T20:53:04.559589899Z"
+  first_deployed: "2025-10-23T11:11:17.868099136Z"
+  last_deployed: "2025-10-23T11:11:17.868099136Z"
   status: deployed
 manifest: "---\n# Source: redhat-developer-hub/charts/upstream/charts/postgresql/templates/secrets.yaml\napiVersion:
   v1\nkind: Secret\nmetadata:\n  name: redhat-developer-hub-helm-postgresql\n  namespace:
   \"my-ns\"\n  labels:\n    app.kubernetes.io/instance: redhat-developer-hub-helm\n
   \   app.kubernetes.io/managed-by: Helm\n    app.kubernetes.io/name: postgresql\n
   \   app.kubernetes.io/version: 15.4.0\n    helm.sh/chart: postgresql-12.10.0\ntype:
-  Opaque\ndata:\n  postgres-password: \"bjZ0UGhqN3ZPbg==\"\n  password: \"RHl5Yk40SkxIaw==\"\n
+  Opaque\ndata:\n  postgres-password: \"NjVERjZWVWxYRA==\"\n  password: \"RHFvY3FSRkRXeg==\"\n
   \ # We don't auto-generate LDAP password when it's not provided as we do for other
   passwords\n---\n# Source: redhat-developer-hub/charts/upstream/charts/postgresql/templates/secrets.yaml\napiVersion:
   v1\nkind: Secret\nmetadata:\n  name: redhat-developer-hub-helm-postgresql-svcbind-postgres\n
@@ -408,8 +421,8 @@ manifest: "---\n# Source: redhat-developer-hub/charts/upstream/charts/postgresql
   \   app.kubernetes.io/version: 15.4.0\n    helm.sh/chart: postgresql-12.10.0\ntype:
   servicebinding.io/postgresql\ndata:\n  provider: \"Yml0bmFtaQ==\"\n  type: \"cG9zdGdyZXNxbA==\"\n
   \ host: \"cmVkaGF0LWRldmVsb3Blci1odWItaGVsbS1wb3N0Z3Jlc3Fs\"\n  port: \"NTQzMg==\"\n
-  \ username: \"cG9zdGdyZXM=\"\n  database: \"cG9zdGdyZXM=\"\n  password: \"bjZ0UGhqN3ZPbg==\"\n
-  \ uri: \"cG9zdGdyZXNxbDovL3Bvc3RncmVzOm42dFBoajd2T25AcmVkaGF0LWRldmVsb3Blci1odWItaGVsbS1wb3N0Z3Jlc3FsOjU0MzIvcG9zdGdyZXM=\"\n---\n#
+  \ username: \"cG9zdGdyZXM=\"\n  database: \"cG9zdGdyZXM=\"\n  password: \"NjVERjZWVWxYRA==\"\n
+  \ uri: \"cG9zdGdyZXNxbDovL3Bvc3RncmVzOjY1REY2VlVsWERAcmVkaGF0LWRldmVsb3Blci1odWItaGVsbS1wb3N0Z3Jlc3FsOjU0MzIvcG9zdGdyZXM=\"\n---\n#
   Source: redhat-developer-hub/charts/upstream/charts/postgresql/templates/secrets.yaml\napiVersion:
   v1\nkind: Secret\nmetadata:\n  name: redhat-developer-hub-helm-postgresql-svcbind-custom-user\n
   \ namespace: \"my-ns\"\n  labels:\n    app.kubernetes.io/instance: redhat-developer-hub-helm\n
@@ -417,19 +430,19 @@ manifest: "---\n# Source: redhat-developer-hub/charts/upstream/charts/postgresql
   \   app.kubernetes.io/version: 15.4.0\n    helm.sh/chart: postgresql-12.10.0\ntype:
   servicebinding.io/postgresql\ndata:\n  provider: \"Yml0bmFtaQ==\"\n  type: \"cG9zdGdyZXNxbA==\"\n
   \ host: \"cmVkaGF0LWRldmVsb3Blci1odWItaGVsbS1wb3N0Z3Jlc3Fs\"\n  port: \"NTQzMg==\"\n
-  \ username: \"Ym5fYmFja3N0YWdl\"\n  password: \"RHl5Yk40SkxIaw==\"\n  uri: \"cG9zdGdyZXNxbDovL2JuX2JhY2tzdGFnZTpEeXliTjRKTEhrQHJlZGhhdC1kZXZlbG9wZXItaHViLWhlbG0tcG9zdGdyZXNxbDo1NDMyLw==\"\n---\n#
+  \ username: \"Ym5fYmFja3N0YWdl\"\n  password: \"RHFvY3FSRkRXeg==\"\n  uri: \"cG9zdGdyZXNxbDovL2JuX2JhY2tzdGFnZTpEcW9jcVJGRFd6QHJlZGhhdC1kZXZlbG9wZXItaHViLWhlbG0tcG9zdGdyZXNxbDo1NDMyLw==\"\n---\n#
   Source: redhat-developer-hub/templates/secrets.yaml\napiVersion: v1\nkind: Secret\nmetadata:\n
   \ name: redhat-developer-hub-helm-auth\n  namespace: \"my-ns\"\n  labels:\n    app.kubernetes.io/name:
-  developer-hub\n    helm.sh/chart: redhat-developer-hub-1.7.0\n    app.kubernetes.io/instance:
+  developer-hub\n    helm.sh/chart: redhat-developer-hub-1.7.1\n    app.kubernetes.io/instance:
   redhat-developer-hub-helm\n    app.kubernetes.io/managed-by: Helm\n    app.kubernetes.io/version:
-  \"1.7.0\"\n    app.kubernetes.io/component: backstage\n  annotations:\ntype: Opaque\ndata:\n
-  \ backend-secret: \"S2M2eVRmM2pTUEpXTzFNOUhXN2w1Zm4x\"\n---\n# Source: redhat-developer-hub/charts/upstream/templates/app-config-configmap.yaml\napiVersion:
+  \"1.7.1\"\n    app.kubernetes.io/component: backstage\n  annotations:\ntype: Opaque\ndata:\n
+  \ backend-secret: \"RjZDcUlFM2NqTTBXdjFaRkFHSnIyUks3\"\n---\n# Source: redhat-developer-hub/charts/upstream/templates/app-config-configmap.yaml\napiVersion:
   v1\nkind: ConfigMap\nmetadata:\n  name: redhat-developer-hub-helm-app-config\n  namespace:
-  \"my-ns\"\ndata:\n  app-config.yaml: |\n    app:\n      baseUrl: https://redhat-developer-hub-helm-my-ns.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com\n
+  \"my-ns\"\ndata:\n  app-config.yaml: |\n    app:\n      baseUrl: https://redhat-developer-hub-helm-my-ns.apps.rosa.pdgba-acqm3-3em.42wz.p3.openshiftapps.com\n
   \   auth:\n      providers: {}\n    backend:\n      auth:\n        externalAccess:\n
   \       - options:\n            secret: ${BACKEND_SECRET}\n            subject:
-  legacy-default-config\n          type: legacy\n      baseUrl: https://redhat-developer-hub-helm-my-ns.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com\n
-  \     cors:\n        origin: https://redhat-developer-hub-helm-my-ns.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com\n
+  legacy-default-config\n          type: legacy\n      baseUrl: https://redhat-developer-hub-helm-my-ns.apps.rosa.pdgba-acqm3-3em.42wz.p3.openshiftapps.com\n
+  \     cors:\n        origin: https://redhat-developer-hub-helm-my-ns.apps.rosa.pdgba-acqm3-3em.42wz.p3.openshiftapps.com\n
   \     database:\n        connection:\n          password: ${POSTGRESQL_ADMIN_PASSWORD}\n
   \         user: postgres\n---\n# Source: redhat-developer-hub/templates/dynamic-plugins-configmap.yaml\napiVersion:
   v1\nkind: ConfigMap\nmetadata:\n  name: redhat-developer-hub-helm-dynamic-plugins\ndata:\n
@@ -476,7 +489,7 @@ manifest: "---\n# Source: redhat-developer-hub/charts/upstream/charts/postgresql
   backstage\n  template:\n    metadata:\n      labels:\n        app.kubernetes.io/name:
   developer-hub\n        helm.sh/chart: upstream-2.6.0\n        app.kubernetes.io/instance:
   redhat-developer-hub-helm\n        app.kubernetes.io/managed-by: Helm\n        app.kubernetes.io/component:
-  backstage\n      annotations:\n        checksum/app-config: f549a3a86a292f669175bd1d7c508061e136c21c9a8d596791f5d4be6f2dcbf3\n
+  backstage\n      annotations:\n        checksum/app-config: 008f6f5145cbfd5a4b66c2f9ba302b675cc1204617e067623e3c73e543278882\n
   \       checksum/dynamic-plugins: 'f1f9a92f14a31362d7eb30e67ac1458faf1c685765610f93a8967194d8bc1a5f'\n
   \   spec:\n      serviceAccountName: default\n      volumes:\n        - ephemeral:\n
   \           volumeClaimTemplate:\n              spec:\n                accessModes:\n
@@ -493,7 +506,7 @@ manifest: "---\n# Source: redhat-developer-hub/charts/upstream/charts/postgresql
   \       - command:\n          - ./install-dynamic-plugins.sh\n          - /dynamic-plugins-root\n
   \         env:\n          - name: NPM_CONFIG_USERCONFIG\n            value: /opt/app-root/src/.npmrc.dynamic-plugins\n
   \         - name: MAX_ENTRY_SIZE\n            value: \"30000000\"\n          image:
-  'registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:0c76994fde2cd71471802d458b682ab652be5a0e291c3a2773cb524259ac79b2'\n
+  'registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:62f32e50727c5006766a34daa5b6472b649cd9894f3fe9543b8ecc67e6760e8e'\n
   \         imagePullPolicy: Always\n          name: install-dynamic-plugins\n          resources:\n
   \           limits:\n              cpu: 1000m\n              ephemeral-storage:
   5Gi\n              memory: 2.5Gi\n            requests:\n              cpu: 250m\n
@@ -509,7 +522,7 @@ manifest: "---\n# Source: redhat-developer-hub/charts/upstream/charts/postgresql
   dynamic-plugins-registry-auth\n            readOnly: true\n          - mountPath:
   /opt/app-root/src/.npm/_cacache\n            name: npmcacache\n          - mountPath:
   /tmp\n            name: temp\n          workingDir: /opt/app-root/src\n      containers:\n
-  \       - name: backstage-backend\n          image: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:0c76994fde2cd71471802d458b682ab652be5a0e291c3a2773cb524259ac79b2\n
+  \       - name: backstage-backend\n          image: registry.redhat.io/rhdh/rhdh-hub-rhel9@sha256:62f32e50727c5006766a34daa5b6472b649cd9894f3fe9543b8ecc67e6760e8e\n
   \         imagePullPolicy: \"Always\"\n          securityContext:\n            allowPrivilegeEscalation:
   false\n            capabilities:\n              drop:\n              - ALL\n            readOnlyRootFilesystem:
   true\n            runAsNonRoot: true\n            seccompProfile:\n              type:
@@ -562,7 +575,7 @@ manifest: "---\n# Source: redhat-developer-hub/charts/upstream/charts/postgresql
   postgresql\n                    app.kubernetes.io/component: primary\n                topologyKey:
   kubernetes.io/hostname\n              weight: 1\n        nodeAffinity:\n          \n
   \     hostNetwork: false\n      hostIPC: false\n      containers:\n        - name:
-  postgresql\n          image: registry.redhat.io/rhel9/postgresql-15@sha256:7e2529e27bdbfad42953b5bcd2f6d0036ef54f7f0031fd180ee1fa58a3790f69\n
+  postgresql\n          image: registry.redhat.io/rhel9/postgresql-15@sha256:4d707fc04f13c271b455f7b56c1fda9e232a62214ffc6213c02e41177dd4a13f\n
   \         imagePullPolicy: \"IfNotPresent\"\n          env:\n            - name:
   BITNAMI_DEBUG\n              value: \"false\"\n            - name: POSTGRESQL_PORT_NUMBER\n
   \             value: \"5432\"\n            - name: POSTGRESQL_VOLUME_DIR\n              value:
@@ -608,9 +621,9 @@ manifest: "---\n# Source: redhat-developer-hub/charts/upstream/charts/postgresql
   release name.\n---\n# Source: redhat-developer-hub/templates/route.yaml\napiVersion:
   route.openshift.io/v1\nkind: Route\nmetadata:\n  name: redhat-developer-hub-helm\n
   \ namespace: \"my-ns\"\n  labels:\n    app.kubernetes.io/name: developer-hub\n    helm.sh/chart:
-  redhat-developer-hub-1.7.0\n    app.kubernetes.io/instance: redhat-developer-hub-helm\n
-  \   app.kubernetes.io/managed-by: Helm\n    app.kubernetes.io/version: \"1.7.0\"\n
-  \   app.kubernetes.io/component: backstage\nspec:\n  host: redhat-developer-hub-helm-my-ns.apps.rosa.uavnn-6zmwg-wn7.om9c.p3.openshiftapps.com\n
+  redhat-developer-hub-1.7.1\n    app.kubernetes.io/instance: redhat-developer-hub-helm\n
+  \   app.kubernetes.io/managed-by: Helm\n    app.kubernetes.io/version: \"1.7.1\"\n
+  \   app.kubernetes.io/component: backstage\nspec:\n  host: redhat-developer-hub-helm-my-ns.apps.rosa.pdgba-acqm3-3em.42wz.p3.openshiftapps.com\n
   \ path: /\n  port:\n    targetPort: http-backend\n  tls:\n    insecureEdgeTerminationPolicy:
   Redirect\n    termination: edge\n  to:\n    kind: Service\n    name: redhat-developer-hub-helm\n
   \   weight: 100\n  wildcardPolicy: None\n"

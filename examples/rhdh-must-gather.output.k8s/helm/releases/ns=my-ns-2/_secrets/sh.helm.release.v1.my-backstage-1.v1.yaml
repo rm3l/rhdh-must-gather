@@ -3,15 +3,15 @@ data:
   release: [REDACTED]
 kind: Secret
 metadata:
-  creationTimestamp: "2025-09-11T21:31:37Z"
+  creationTimestamp: "2025-10-23T09:49:06Z"
   labels:
-    modifiedAt: "1757626297"
+    modifiedAt: "1761212946"
     name: my-backstage-1
     owner: helm
     status: superseded
     version: "1"
   name: sh.helm.release.v1.my-backstage-1.v1
   namespace: my-ns-2
-  resourceVersion: "29879"
-  uid: 0c8aa35f-fd1a-4372-9265-55c0b3ffd55e
+  resourceVersion: "2100"
+  uid: 498d4443-fb6e-46cb-81da-c8a23de4bb89
 type: helm.sh/release.v1

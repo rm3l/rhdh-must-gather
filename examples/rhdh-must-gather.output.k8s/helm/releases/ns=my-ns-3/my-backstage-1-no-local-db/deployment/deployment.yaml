@@ -5,7 +5,7 @@ metadata:
     deployment.kubernetes.io/revision: "1"
     meta.helm.sh/release-name: my-backstage-1-no-local-db
     meta.helm.sh/release-namespace: my-ns-3
-  creationTimestamp: "2025-09-11T21:23:13Z"
+  creationTimestamp: "2025-10-23T09:47:31Z"
   generation: 1
   labels:
     app.kubernetes.io/component: backstage
@@ -15,8 +15,8 @@ metadata:
     helm.sh/chart: upstream-2.6.1
   name: my-backstage-1-no-local-db-developer-hub
   namespace: my-ns-3
-  resourceVersion: "29860"
-  uid: 5e94df26-234f-4ec3-aff5-2b514528527e
+  resourceVersion: "2983"
+  uid: 5f522342-cc6b-4ea2-8003-1079fd881c39
 spec:
   progressDeadlineSeconds: 600
   replicas: 1
@@ -64,7 +64,7 @@ spec:
               key: postgres-password
               name: my-backstage-1-no-local-db-postgresql
         image: quay.io/rhdh/rhdh-hub-rhel9:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
           httpGet:
@@ -136,7 +136,7 @@ spec:
         - name: MAX_ENTRY_SIZE
           value: "30000000"
         image: quay.io/rhdh/rhdh-hub-rhel9:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: install-dynamic-plugins
         resources:
           limits:
@@ -220,15 +220,15 @@ spec:
         name: backstage-app-config
 status:
   conditions:
-  - lastTransitionTime: "2025-09-11T21:23:13Z"
-    lastUpdateTime: "2025-09-11T21:23:13Z"
+  - lastTransitionTime: "2025-10-23T09:47:31Z"
+    lastUpdateTime: "2025-10-23T09:47:31Z"
     message: Deployment does not have minimum availability.
     reason: MinimumReplicasUnavailable
     status: "False"
     type: Available
-  - lastTransitionTime: "2025-09-11T21:33:14Z"
-    lastUpdateTime: "2025-09-11T21:33:14Z"
-    message: ReplicaSet "my-backstage-1-no-local-db-developer-hub-65cf86c476" has
+  - lastTransitionTime: "2025-10-23T09:57:32Z"
+    lastUpdateTime: "2025-10-23T09:57:32Z"
+    message: ReplicaSet "my-backstage-1-no-local-db-developer-hub-7d94c7ccbd" has
       timed out progressing.
     reason: ProgressDeadlineExceeded
     status: "False"

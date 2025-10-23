@@ -19,7 +19,7 @@ hooks:
       name: "my-backstage-1-no-local-db-developer-hub-test-connection"
       labels:
         app.kubernetes.io/name: developer-hub
-        helm.sh/chart: backstage-4.5.8
+        helm.sh/chart: backstage-4.6.0
         app.kubernetes.io/instance: my-backstage-1-no-local-db
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/component: backstage
@@ -46,7 +46,7 @@ hooks:
               - ls
               - /usr/bin/curl
           image: "quay.io/curl/curl:latest"
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -57,15 +57,15 @@ hooks:
 info:
   deleted: ""
   description: Install complete
-  first_deployed: "2025-09-11T23:23:13.416908664+02:00"
-  last_deployed: "2025-09-11T23:23:13.416908664+02:00"
+  first_deployed: "2025-10-23T11:47:31.237759319+02:00"
+  last_deployed: "2025-10-23T11:47:31.237759319+02:00"
   status: deployed
 manifest: "---\n# Source: backstage/templates/secrets.yaml\napiVersion: v1\nkind:
   Secret\nmetadata:\n  name: my-backstage-1-no-local-db-auth\n  namespace: \"my-ns-3\"\n
-  \ labels:\n    app.kubernetes.io/name: developer-hub\n    helm.sh/chart: backstage-4.5.8\n
+  \ labels:\n    app.kubernetes.io/name: developer-hub\n    helm.sh/chart: backstage-4.6.0\n
   \   app.kubernetes.io/instance: my-backstage-1-no-local-db\n    app.kubernetes.io/managed-by:
   Helm\n    app.kubernetes.io/component: backstage\n  annotations:\ntype: Opaque\ndata:\n
-  \ backend-secret: \"Y2w3Tml4UzlaWWo4c2FyRVdKNGpkQVd2\"\n---\n# Source: backstage/charts/upstream/templates/app-config-configmap.yaml\napiVersion:
+  \ backend-secret: \"amVIb0o5VXZnTnd6bnJmeXFka05PUEl3\"\n---\n# Source: backstage/charts/upstream/templates/app-config-configmap.yaml\napiVersion:
   v1\nkind: ConfigMap\nmetadata:\n  name: my-backstage-1-no-local-db-developer-hub-app-config\n
   \ namespace: \"my-ns-3\"\ndata:\n  app-config.yaml: |\n    app:\n      baseUrl:
   https://my-backstage-1-no-local-db-developer-hub-my-ns-3.apps.example.com\n    auth:\n
@@ -115,8 +115,8 @@ manifest: "---\n# Source: backstage/templates/secrets.yaml\napiVersion: v1\nkind
   \         - /dynamic-plugins-root\n          env:\n          - name: NPM_CONFIG_USERCONFIG\n
   \           value: /opt/app-root/src/.npmrc.dynamic-plugins\n          - name: MAX_ENTRY_SIZE\n
   \           value: \"30000000\"\n          image: 'quay.io/rhdh/rhdh-hub-rhel9:latest'\n
-  \         imagePullPolicy: Always\n          name: install-dynamic-plugins\n          resources:\n
-  \           limits:\n              cpu: 1000m\n              ephemeral-storage:
+  \         imagePullPolicy: IfNotPresent\n          name: install-dynamic-plugins\n
+  \         resources:\n            limits:\n              cpu: 1000m\n              ephemeral-storage:
   5Gi\n              memory: 2.5Gi\n            requests:\n              cpu: 250m\n
   \             memory: 256Mi\n          securityContext:\n            allowPrivilegeEscalation:
   false\n            capabilities:\n              drop:\n              - ALL\n            readOnlyRootFilesystem:
@@ -131,7 +131,7 @@ manifest: "---\n# Source: backstage/templates/secrets.yaml\napiVersion: v1\nkind
   /opt/app-root/src/.npm/_cacache\n            name: npmcacache\n          - mountPath:
   /tmp\n            name: temp\n          workingDir: /opt/app-root/src\n      containers:\n
   \       - name: backstage-backend\n          image: quay.io/rhdh/rhdh-hub-rhel9:latest\n
-  \         imagePullPolicy: \"Always\"\n          securityContext:\n            allowPrivilegeEscalation:
+  \         imagePullPolicy: \"IfNotPresent\"\n          securityContext:\n            allowPrivilegeEscalation:
   false\n            capabilities:\n              drop:\n              - ALL\n            readOnlyRootFilesystem:
   true\n            runAsNonRoot: true\n            seccompProfile:\n              type:
   RuntimeDefault\n          args:\n            - \"--config\"\n            - \"dynamic-plugins-root/app-config.dynamic-plugins.yaml\"\n

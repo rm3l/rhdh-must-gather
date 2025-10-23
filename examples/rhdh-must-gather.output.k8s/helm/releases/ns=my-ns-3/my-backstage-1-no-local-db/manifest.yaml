@@ -7,7 +7,7 @@ metadata:
   namespace: "my-ns-3"
   labels:
     app.kubernetes.io/name: developer-hub
-    helm.sh/chart: backstage-4.5.8
+    helm.sh/chart: backstage-4.6.0
     app.kubernetes.io/instance: my-backstage-1-no-local-db
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: backstage
@@ -160,7 +160,7 @@ spec:
           - name: MAX_ENTRY_SIZE
             value: "30000000"
           image: 'quay.io/rhdh/rhdh-hub-rhel9:latest'
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           name: install-dynamic-plugins
           resources:
             limits:
@@ -201,7 +201,7 @@ spec:
       containers:
         - name: backstage-backend
           image: quay.io/rhdh/rhdh-hub-rhel9:latest
-          imagePullPolicy: "Always"
+          imagePullPolicy: "IfNotPresent"
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:

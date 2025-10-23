@@ -9,10 +9,10 @@ metadata:
   annotations:
     meta.helm.sh/release-name: my-backstage-1
     meta.helm.sh/release-namespace: my-ns-2
-  creationTimestamp: "2025-09-11T21:31:37Z"
+  creationTimestamp: "2025-10-23T09:49:06Z"
   labels:
     app.kubernetes.io/managed-by: Helm
   name: my-backstage-1-dynamic-plugins
   namespace: my-ns-2
-  resourceVersion: "29599"
-  uid: cb035c8e-28f6-47b8-8c59-dac6a910cec4
+  resourceVersion: "1990"
+  uid: 141b9e6c-f550-453b-8a97-8c72f686541b

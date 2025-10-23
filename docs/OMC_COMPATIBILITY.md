@@ -2,13 +2,13 @@
 
 ## Overview
 
-The RHDH must-gather tool produces output that is **fully compatible** with [OMC (OpenShift Must-Gather Client)](https://github.com/gmeghnag/omc), the standard tool used by Red Hat Support teams for interactive must-gather analysis.
+The RHDH must-gather tool produces output that is **fully compatible** with [OMC (OpenShift Must-Gather Client)](https://github.com/gmeghnag/omc), the standard tool used by Support teams for interactive must-gather analysis.
 
 **Status**: ✅ Namespace inspection is now **collected by default** - all must-gather outputs are OMC-compatible without additional flags.
 
 ## What is OMC?
 
-OMC is a command-line tool that allows engineers to inspect resources from a must-gather using familiar `kubectl`/`oc` commands, **without needing cluster access**. It's the standard tool used across Red Hat Support for analyzing must-gather data.
+OMC is a command-line tool that allows engineers to inspect resources from a must-gather using familiar `kubectl`/`oc` commands, **without needing cluster access**. It's the standard tool used across Support for analyzing must-gather data.
 
 ### OMC Features
 
@@ -284,7 +284,7 @@ omc get pods -o name
 
 ## Why This Matters for Support
 
-### For Red Hat Support Engineers
+### For Red HatSupport Engineers
 
 1. **Standard Tool**: OMC is the primary tool for must-gather analysis
 2. **No Cluster Access**: Analyze customer data without connecting to their cluster
@@ -407,7 +407,7 @@ omc get pods --all-namespaces
 
 ✅ **Full Compatibility**: Namespace inspection output works seamlessly with OMC  
 ✅ **Standard Structure**: Follows OpenShift must-gather conventions  
-✅ **Support Ready**: Red Hat Support can immediately use the output  
+✅ **Support Ready**: Support can immediately use the output  
 ✅ **Interactive**: Query resources with familiar kubectl/oc commands  
 ✅ **Offline**: No cluster access needed for analysis  
 

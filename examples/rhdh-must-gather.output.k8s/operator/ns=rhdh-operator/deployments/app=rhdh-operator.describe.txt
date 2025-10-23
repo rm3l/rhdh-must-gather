@@ -1,7 +1,9 @@
 Name:                   rhdh-operator
 Namespace:              rhdh-operator
-CreationTimestamp:      Thu, 11 Sep 2025 23:22:42 +0200
+CreationTimestamp:      Thu, 23 Oct 2025 11:43:13 +0200
 Labels:                 app=rhdh-operator
+                        app.kubernetes.io/component=backstage-controller
+                        app.kubernetes.io/part-of=rhdh
                         control-plane=controller-manager
 Annotations:            deployment.kubernetes.io/revision: 1
 Selector:               app=rhdh-operator
@@ -17,7 +19,7 @@ Pod Template:
   Service Account:  rhdh-controller-manager
   Containers:
    manager:
-    Image:       quay.io/rhdh/rhdh-rhel9-operator:1.8
+    Image:       quay.io/rhdh/rhdh-rhel9-operator:1.9
     Ports:       8081/TCP, 8443/TCP
     Host Ports:  0/TCP, 0/TCP
     Command:
@@ -61,8 +63,8 @@ Conditions:
   Available      True    MinimumReplicasAvailable
   Progressing    True    NewReplicaSetAvailable
 OldReplicaSets:  <none>
-NewReplicaSet:   rhdh-operator-7c4fb58967 (1/1 replicas created)
+NewReplicaSet:   rhdh-operator-6f56b6f796 (1/1 replicas created)
 Events:
   Type    Reason             Age   From                   Message
   ----    ------             ----  ----                   -------
-  Normal  ScalingReplicaSet  13m   deployment-controller  Scaled up replica set rhdh-operator-7c4fb58967 to 1
+  Normal  ScalingReplicaSet  31m   deployment-controller  Scaled up replica set rhdh-operator-6f56b6f796 to 1

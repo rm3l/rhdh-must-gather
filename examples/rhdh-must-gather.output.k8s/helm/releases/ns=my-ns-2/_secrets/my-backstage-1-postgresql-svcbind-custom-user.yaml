@@ -12,7 +12,7 @@ metadata:
   annotations:
     meta.helm.sh/release-name: my-backstage-1
     meta.helm.sh/release-namespace: my-ns-2
-  creationTimestamp: "2025-09-11T21:31:37Z"
+  creationTimestamp: "2025-10-23T09:49:06Z"
   labels:
     app.kubernetes.io/instance: my-backstage-1
     app.kubernetes.io/managed-by: Helm
@@ -21,6 +21,6 @@ metadata:
     helm.sh/chart: postgresql-12.10.0
   name: my-backstage-1-postgresql-svcbind-custom-user
   namespace: my-ns-2
-  resourceVersion: "29597"
-  uid: aa57f72d-a264-4699-9faf-416d0fcc12e7
+  resourceVersion: "1986"
+  uid: af5a646d-c734-4036-b846-05a19abd3c0c
 type: servicebinding.io/postgresql

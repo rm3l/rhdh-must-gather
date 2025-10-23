@@ -3,13 +3,13 @@ data:
   ca.crt: |
     -----BEGIN CERTIFICATE-----
     MIIBdzCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy
-    dmVyLWNhQDE3NTc1OTYwMzcwHhcNMjUwOTExMTMwNzE3WhcNMzUwOTA5MTMwNzE3
-    WjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3NTc1OTYwMzcwWTATBgcqhkjO
-    PQIBBggqhkjOPQMBBwNCAAT5zktM0LWp57r1lYm4qp0j5oI+W9q0Cso9P+VixWaR
-    UCYUuS4bZCUzPXiOUtREVlu4s++aSNCwghduKcrBPnrVo0IwQDAOBgNVHQ8BAf8E
-    BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUA1BsGx1v/sr82bubfyuF
-    x1CtH08wCgYIKoZIzj0EAwIDSAAwRQIhAK/d3rYiJtjtu+XRoi8WTNAfSPogS3kC
-    494pEuG6n7jyAiA5gBqIGMahoHaON+OovX+0AK9XVV+NS+9QxHcCw4deEg==
+    dmVyLWNhQDE3NjEyMTI0ODgwHhcNMjUxMDIzMDk0MTI4WhcNMzUxMDIxMDk0MTI4
+    WjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3NjEyMTI0ODgwWTATBgcqhkjO
+    PQIBBggqhkjOPQMBBwNCAAS/C3Lp2Ti3uT1D8toUxjfWqYnlL+XlM3XVwh6hKBsu
+    rz/zOulFOQru61L0K9B50S66A7COZTq+0vUhjv9qhFq1o0IwQDAOBgNVHQ8BAf8E
+    BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUGX8P3XVae09GYfnLAxXL
+    YQF4qxkwCgYIKoZIzj0EAwIDSAAwRQIhAP6iRjQNjPQHDri1Zhxb6ct+P/3C01pR
+    Ty0QdNlJe6/4AiBt6u/nooOaKY9tZKn2zp62BQcbUOaO/fScIKkpiz1tEQ==
     -----END CERTIFICATE-----
 kind: ConfigMap
 metadata:
@@ -18,8 +18,8 @@ metadata:
       kube-apiserver when using internal endpoints such as the internal service IP
       or kubernetes.default.svc. No other usage is guaranteed across distributions
       of Kubernetes clusters.
-  creationTimestamp: "2025-09-11T21:23:02Z"
+  creationTimestamp: "2025-10-23T09:45:20Z"
   name: kube-root-ca.crt
   namespace: my-ns-2
-  resourceVersion: "28568"
-  uid: 73119884-5c25-45cc-a266-3b950bd33e1c
+  resourceVersion: "1543"
+  uid: e418055b-a6be-407b-a177-7b6fb97f9de8

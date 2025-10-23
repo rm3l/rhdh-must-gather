@@ -5,261 +5,6 @@ Annotations:  <none>
 
 Data
 ====
-dynamic-plugins.yaml:
-----
-#apiVersion: v1
-#kind: ConfigMap
-#metadata:
-#  name: default-dynamic-plugins #  must be the same as (deployment.yaml).spec.template.spec.volumes.name.dynamic-plugins-conf.configMap.name
-#data:
-#  "dynamic-plugins.yaml": |
-#    ###########################################################################################################
-#    # /!\ WARNING
-#    #
-#    # This is the default dynamic plugins configuration file created and managed by the Operator for your CR.
-#    # Do NOT edit this manually in the Cluster, as your changes will be overridden by the Operator upon the
-#    # next reconciliation.
-#    # If you want to customize the dynamic plugins, you should create your own dynamic-plugins ConfigMap
-#    # and reference it in your CR.
-#    # See https://docs.redhat.com/en/documentation/red_hat_developer_hub/1.4/html/installing_and_viewing_plugins_in_red_hat_developer_hub/rhdh-installing-rhdh-plugins_title-plugins-rhdh-about#proc-config-dynamic-plugins-rhdh-operator_rhdh-installing-rhdh-plugins
-#    # for more details or https://github.com/redhat-developer/rhdh-operator/blob/main/examples/rhdh-cr.yaml
-#    # for an example.
-#    ###########################################################################################################
-#    includes:
-#      - dynamic-plugins.default.yaml
-#    plugins: []
-#---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: default-dynamic-plugins
-data:
-  dynamic-plugins.yaml: |
-    includes:
-      - dynamic-plugins.default.yaml
-    plugins:
-      - disabled: true
-        package: "@redhat/backstage-plugin-orchestrator@1.6.0"
-        integrity: sha512-fOSJv2PgtD2urKwBM7p9W6gV/0UIHSf4pkZ9V/wQO0eg0Zi5Mys/CL1ba3nO9x9l84MX11UBZ2r7PPVJPrmOtw==
-        pluginConfig:
-          dynamicPlugins:
-              frontend:
-                red-hat-developer-hub.backstage-plugin-orchestrator:
-                  appIcons:
-                    - importName: OrchestratorIcon
-                      name: orchestratorIcon
-                  dynamicRoutes:
-                    - importName: OrchestratorPage
-                      menuItem:
-                        icon: orchestratorIcon
-                        text: Orchestrator
-                      path: /orchestrator
-      - disabled: true
-        package: "@redhat/backstage-plugin-orchestrator-backend-dynamic@1.6.0"
-        integrity: sha512-Kr55YbuVwEADwGef9o9wyimcgHmiwehPeAtVHa9g2RQYoSPEa6BeOlaPzB6W5Ke3M2bN/0j0XXtpLuvrlXQogA==
-        pluginConfig:
-          orchestrator:
-            dataIndexService:
-              url: http://sonataflow-platform-data-index-service
-        dependencies:
-          - ref: sonataflow
-      - disabled: true
-        package: "@redhat/backstage-plugin-scaffolder-backend-module-orchestrator-dynamic@1.6.0"
-        integrity: sha512-Bueeix4661fXEnfJ9y31Yw91LXJgw6hJUG7lPVdESCi9VwBCjDB9Rm8u2yPqP8sriwr0OMtKtqD+Odn3LOPyVw==
-        pluginConfig:
-          orchestrator:
-            dataIndexService:
-              url: http://sonataflow-platform-data-index-service               
-      - disabled: true
-        package: "@redhat/backstage-plugin-orchestrator-form-widgets@1.6.0"
-        integrity: sha512-Tqn6HO21Q1TQ7TFUoRhwBVCtSBzbQYz+OaanzzIB0R24O6YtVx3wR7Chtr5TzC05Vz5GkBO1+FZid8BKpqljgA==
-        pluginConfig:
-          dynamicPlugins:
-            frontend:
-              red-hat-developer-hub.backstage-plugin-orchestrator-form-widgets: { }
-
-route.yaml:
-----
-apiVersion: route.openshift.io/v1
-kind: Route
-metadata:
-  name: route # placeholder for 'backstage-<cr-name>'
-spec:
-  port:
-    targetPort: http-backend
-  path: /
-  tls:
-    insecureEdgeTerminationPolicy: Redirect
-    termination: edge
-  to:
-    kind: Service
-    name:  # placeholder for 'backstage-<cr-name>'
-
-service.yaml:
-----
-apiVersion: v1
-kind: Service
-metadata:
-  name: backstage # placeholder for 'backstage-<cr-name>'
-spec:
-  type: ClusterIP
-  selector:
-    rhdh.redhat.com/app:  # placeholder for 'backstage-<cr-name>'
-  ports:
-    - name: http-backend
-      port: 80
-      targetPort: backend
-    - name: http-metrics
-      protocol: TCP
-      port: 9464
-      targetPort: 9464
-
-service.yaml.k8s:
-----
-spec:
-  type: NodePort
-
-
-db-secret.yaml:
-----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: postgres-secrets # will be replaced
-type: Opaque
-#stringData:
-#  POSTGRES_PASSWORD:
-#  POSTGRES_PORT: "5432"
-#  POSTGRES_USER: postgres
-#  POSTGRESQL_ADMIN_PASSWORD: admin123
-#  POSTGRES_HOST: bs1-db-service    #placeholder <crname>-db-service
-
-db-statefulset.yaml:
-----
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: backstage-psql-cr1 # placeholder for 'backstage-psql-<cr-name>'
-spec:
-  podManagementPolicy: OrderedReady
-  # replicas: 1 # Intentionally omitted to allow HPA or custom scaling control.
-  selector:
-    matchLabels:
-      rhdh.redhat.com/app: backstage-psql-cr1 # placeholder for 'backstage-psql-<cr-name>'
-  serviceName: backstage-psql-cr1-hl # placeholder for 'backstage-psql-<cr-name>-hl'
-  template:
-    metadata:
-      labels:
-        rhdh.redhat.com/app: backstage-psql-cr1 # placeholder for 'backstage-psql-<cr-name>'
-    spec:
-      # fsGroup does not work for Openshift
-      # AKS/EKS does not work w/o it
-      #securityContext:
-      #  fsGroup: 26
-      automountServiceAccountToken: false
-      ## https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/
-      ## The optional .spec.persistentVolumeClaimRetentionPolicy field controls if and how PVCs are deleted during the lifecycle of a StatefulSet.
-      ## You must enable the StatefulSetAutoDeletePVC feature gate on the API server and the controller manager to use this field.
-#      persistentVolumeClaimRetentionPolicy:
-#        whenDeleted: Retain
-#        whenScaled: Retain
-      containers:
-        - env:
-            - name: POSTGRESQL_PORT_NUMBER
-              value: "5432"
-            - name: POSTGRESQL_VOLUME_DIR
-              value: /var/lib/pgsql/data
-            - name: PGDATA
-              value: /var/lib/pgsql/data/userdata
-          image: quay.io/fedora/postgresql-15:latest # will be replaced with the actual image
-          imagePullPolicy: IfNotPresent
-          securityContext:
-            # runAsUser:26 does not work for Openshift but looks work for AKS/EKS
-            # runAsUser: 26
-            runAsGroup: 0
-            runAsNonRoot: true
-            allowPrivilegeEscalation: false
-            seccompProfile:
-              type: RuntimeDefault
-            capabilities:
-              drop:
-                - ALL
-          livenessProbe:
-            exec:
-              command:
-                - /bin/sh
-                - -c
-                - exec pg_isready -U ${POSTGRES_USER} -h 127.0.0.1 -p 5432
-            failureThreshold: 6
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            successThreshold: 1
-            timeoutSeconds: 5
-          name: postgresql
-          ports:
-            - containerPort: 5432
-              name: tcp-postgresql
-              protocol: TCP
-          readinessProbe:
-            exec:
-              command:
-                - /bin/sh
-                - -c
-                - -e
-                - |
-                  exec pg_isready -U ${POSTGRES_USER} -h 127.0.0.1 -p 5432
-            failureThreshold: 6
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            successThreshold: 1
-            timeoutSeconds: 5
-          resources:
-            requests:
-              cpu: 250m
-              memory: 256Mi
-            limits:
-              cpu: 250m
-              memory: 1024Mi
-              ephemeral-storage: 20Mi
-          volumeMounts:
-            - mountPath: /dev/shm
-              name: dshm
-            - mountPath: /var/lib/pgsql/data
-              name: data
-      restartPolicy: Always
-      serviceAccountName: default
-      volumes:
-        - emptyDir:
-            medium: Memory
-          name: dshm
-  updateStrategy:
-    rollingUpdate:
-      partition: 0
-    type: RollingUpdate
-  volumeClaimTemplates:
-    - apiVersion: v1
-      kind: PersistentVolumeClaim
-      metadata:
-        name: data
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        resources:
-          requests:
-            storage: 1Gi
-
-deployment.yaml.k8s:
-----
-# if securityContext not present in AKS/EKS, the error is like this:
-# Error: EACCES: permission denied, open '/dynamic-plugins-root/backstage-plugin-scaffolder-backend-module-github-dynamic-0.2.2.tgz'
-# fsGroup doesn not work for Openshift
-spec:
-  template:
-    spec:
-      securityContext:
-        # any group id
-        fsGroup: 1001
-
 deployment.yaml:
 ----
 apiVersion: apps/v1
@@ -423,32 +168,270 @@ spec:
           workingDir: /opt/app-root/src
 
 
-secret-files.yaml:
+dynamic-plugins.yaml:
+----
+#apiVersion: v1
+#kind: ConfigMap
+#metadata:
+#  name: default-dynamic-plugins #  must be the same as (deployment.yaml).spec.template.spec.volumes.name.dynamic-plugins-conf.configMap.name
+#data:
+#  "dynamic-plugins.yaml": |
+#    ###########################################################################################################
+#    # /!\ WARNING
+#    #
+#    # This is the default dynamic plugins configuration file created and managed by the Operator for your CR.
+#    # Do NOT edit this manually in the Cluster, as your changes will be overridden by the Operator upon the
+#    # next reconciliation.
+#    # If you want to customize the dynamic plugins, you should create your own dynamic-plugins ConfigMap
+#    # and reference it in your CR.
+#    # See https://docs.redhat.com/en/documentation/red_hat_developer_hub/1.4/html/installing_and_viewing_plugins_in_red_hat_developer_hub/rhdh-installing-rhdh-plugins_title-plugins-rhdh-about#proc-config-dynamic-plugins-rhdh-operator_rhdh-installing-rhdh-plugins
+#    # for more details or https://github.com/redhat-developer/rhdh-operator/blob/main/examples/rhdh-cr.yaml
+#    # for an example.
+#    ###########################################################################################################
+#    includes:
+#      - dynamic-plugins.default.yaml
+#    plugins: []
+#---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: default-dynamic-plugins
+data:
+  dynamic-plugins.yaml: |
+    includes:
+      - dynamic-plugins.default.yaml
+    plugins:
+      - disabled: true
+        package: "@redhat/backstage-plugin-orchestrator@1.7.1"
+        integrity: sha512-Cqu9EQwVQ4mpdgWTUA0MW89Gul0IklhvkkqVoO3CloQ1dnAj1XyXikCphzH5TmNDDd9K66dOpaKKCaW9KeJ4WA==
+        pluginConfig:
+          dynamicPlugins:
+              frontend:
+                red-hat-developer-hub.backstage-plugin-orchestrator:
+                  appIcons:
+                    - importName: OrchestratorIcon
+                      name: orchestratorIcon
+                  dynamicRoutes:
+                    - importName: OrchestratorPage
+                      menuItem:
+                        icon: orchestratorIcon
+                        text: Orchestrator
+                      path: /orchestrator
+                  entityTabs:
+                    - path: /workflows
+                      title: Workflows
+                      mountPoint: entity.page.workflows
+                  mountPoints:
+                    - mountPoint: entity.page.workflows/cards
+                      importName: OrchestratorCatalogTab
+                      config:
+                        layout:
+                          gridColumn: '1 / -1'
+                          if:
+                            anyOf:
+                              - IsOrchestratorCatalogTabAvailable
+      - disabled: true
+        package: "@redhat/backstage-plugin-orchestrator-backend-dynamic@1.7.1"
+        integrity: sha512-9cXbedr0lC7ns7SNqARrWSQI4JGcZFw5xpfpUzA1tJaMMUjzAdPHTXqljf62/fs4hYBK8TJsWJ2KJkGVMzbrHQ==
+        pluginConfig:
+          orchestrator:
+            dataIndexService:
+              url: http://sonataflow-platform-data-index-service
+        dependencies:
+          - ref: sonataflow
+      - disabled: true
+        package: "@redhat/backstage-plugin-scaffolder-backend-module-orchestrator-dynamic@1.7.1"
+        integrity: sha512-J1sTjA5kj6DphG8D65go9KlpIfKyLN/wq+XlY5Cb5djEo8mvF3wn3Haf60OGFo5cP4OfRSWqFwT7LM5/dNVwAg==
+        pluginConfig:
+          orchestrator:
+            dataIndexService:
+              url: http://sonataflow-platform-data-index-service               
+      - disabled: true
+        package: "@redhat/backstage-plugin-orchestrator-form-widgets@1.7.1"
+        integrity: sha512-0KIXrZoJ+O4xNNzN/zB4+VMuaRPuiUviAmM+fIhTo/P9aLA36F9aIlyMbUbki49uaJ0zd8KXMBvmJSHZNrYkGQ==
+        pluginConfig:
+          dynamicPlugins:
+            frontend:
+              red-hat-developer-hub.backstage-plugin-orchestrator-form-widgets: { }
+
+service.yaml:
+----
+apiVersion: v1
+kind: Service
+metadata:
+  name: backstage # placeholder for 'backstage-<cr-name>'
+spec:
+  type: ClusterIP
+  selector:
+    rhdh.redhat.com/app:  # placeholder for 'backstage-<cr-name>'
+  ports:
+    - name: http-backend
+      port: 80
+      targetPort: backend
+    - name: http-metrics
+      protocol: TCP
+      port: 9464
+      targetPort: 9464
+
+service.yaml.k8s:
+----
+spec:
+  type: NodePort
+
+
+db-secret.yaml:
 ----
 apiVersion: v1
 kind: Secret
 metadata:
-  name: dynamic-plugins-npmrc
-  annotations:
-    rhdh.redhat.com/mount-path: /opt/app-root/src/.npmrc.dynamic-plugins
-    rhdh.redhat.com/containers: install-dynamic-plugins
+  name: postgres-secrets # will be replaced
 type: Opaque
-stringData:
-  .npmrc: |
-    @redhat:registry=https://npm.registry.redhat.com
-#---
-# Placeholder for image registry ayth configuration for OCI dynamic plugins
-#apiVersion: v1
-#kind: Secret
-#metadata:
-#  name: dynamic-plugins-registry-auth
-#  annotations:
-#    rhdh.redhat.com/mount-path: /opt/app-root/src/.config/containers
-#    rhdh.redhat.com/containers: install-dynamic-plugins
-#type: Opaque
+#stringData:
+#  POSTGRES_PASSWORD:
+#  POSTGRES_PORT: "5432"
+#  POSTGRES_USER: postgres
+#  POSTGRESQL_ADMIN_PASSWORD: admin123
+#  POSTGRES_HOST: bs1-db-service    #placeholder <crname>-db-service
+
+db-service.yaml:
+----
+apiVersion: v1
+kind: Service
+metadata:
+  name: backstage-psql # placeholder for 'backstage-psql-<cr-name>' .NOTE: For the time it is static and linked to Secret-> postgres-secrets -> OSTGRES_HOST
+spec:
+  selector:
+    rhdh.redhat.com/app:  backstage-psql-cr1 # placeholder for 'backstage-psql-<cr-name>'
+  clusterIP: None
+  ports:
+    - port: 5432
 
 
+db-statefulset.yaml:
+----
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: backstage-psql-cr1 # placeholder for 'backstage-psql-<cr-name>'
+spec:
+  podManagementPolicy: OrderedReady
+  # replicas: 1 # Intentionally omitted to allow HPA or custom scaling control.
+  selector:
+    matchLabels:
+      rhdh.redhat.com/app: backstage-psql-cr1 # placeholder for 'backstage-psql-<cr-name>'
+  serviceName: backstage-psql-cr1-hl # placeholder for 'backstage-psql-<cr-name>-hl'
+  template:
+    metadata:
+      labels:
+        rhdh.redhat.com/app: backstage-psql-cr1 # placeholder for 'backstage-psql-<cr-name>'
+    spec:
+      # fsGroup does not work for Openshift
+      # AKS/EKS does not work w/o it
+      #securityContext:
+      #  fsGroup: 26
+      automountServiceAccountToken: false
+      ## https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/
+      ## The optional .spec.persistentVolumeClaimRetentionPolicy field controls if and how PVCs are deleted during the lifecycle of a StatefulSet.
+      ## You must enable the StatefulSetAutoDeletePVC feature gate on the API server and the controller manager to use this field.
+#      persistentVolumeClaimRetentionPolicy:
+#        whenDeleted: Retain
+#        whenScaled: Retain
+      containers:
+        - env:
+            - name: POSTGRESQL_PORT_NUMBER
+              value: "5432"
+            - name: POSTGRESQL_VOLUME_DIR
+              value: /var/lib/pgsql/data
+            - name: PGDATA
+              value: /var/lib/pgsql/data/userdata
+          image: quay.io/fedora/postgresql-15:latest # will be replaced with the actual image
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            # runAsUser:26 does not work for Openshift but looks work for AKS/EKS
+            # runAsUser: 26
+            runAsGroup: 0
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - exec pg_isready -U ${POSTGRES_USER} -h 127.0.0.1 -p 5432
+            failureThreshold: 6
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          name: postgresql
+          ports:
+            - containerPort: 5432
+              name: tcp-postgresql
+              protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - -e
+                - |
+                  exec pg_isready -U ${POSTGRES_USER} -h 127.0.0.1 -p 5432
+            failureThreshold: 6
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 250m
+              memory: 1024Mi
+              ephemeral-storage: 20Mi
+          volumeMounts:
+            - mountPath: /dev/shm
+              name: dshm
+            - mountPath: /var/lib/pgsql/data
+              name: data
+      restartPolicy: Always
+      serviceAccountName: default
+      volumes:
+        - emptyDir:
+            medium: Memory
+          name: dshm
+  updateStrategy:
+    rollingUpdate:
+      partition: 0
+    type: RollingUpdate
+  volumeClaimTemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
 
+db-statefulset.yaml.k8s:
+----
+# if securityContext not present in AKS/EKS, the error is like this:
+# Error: EACCES: permission denied, open '/dynamic-plugins-root/backstage-plugin-scaffolder-backend-module-github-dynamic-0.2.2.tgz'
+# fsGroup doesn not work for Openshift
+spec:
+  template:
+    spec:
+      securityContext:
+        # any group id
+        fsGroup: 1001
 
 app-config.yaml:
 ----
@@ -481,21 +464,7 @@ data:
       providers: {}
 
 
-db-service.yaml:
-----
-apiVersion: v1
-kind: Service
-metadata:
-  name: backstage-psql # placeholder for 'backstage-psql-<cr-name>' .NOTE: For the time it is static and linked to Secret-> postgres-secrets -> OSTGRES_HOST
-spec:
-  selector:
-    rhdh.redhat.com/app:  backstage-psql-cr1 # placeholder for 'backstage-psql-<cr-name>'
-  clusterIP: None
-  ports:
-    - port: 5432
-
-
-db-statefulset.yaml.k8s:
+deployment.yaml.k8s:
 ----
 # if securityContext not present in AKS/EKS, the error is like this:
 # Error: EACCES: permission denied, open '/dynamic-plugins-root/backstage-plugin-scaffolder-backend-module-github-dynamic-0.2.2.tgz'
@@ -506,6 +475,50 @@ spec:
       securityContext:
         # any group id
         fsGroup: 1001
+
+route.yaml:
+----
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: route # placeholder for 'backstage-<cr-name>'
+spec:
+  port:
+    targetPort: http-backend
+  path: /
+  tls:
+    insecureEdgeTerminationPolicy: Redirect
+    termination: edge
+  to:
+    kind: Service
+    name:  # placeholder for 'backstage-<cr-name>'
+
+secret-files.yaml:
+----
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dynamic-plugins-npmrc
+  annotations:
+    rhdh.redhat.com/mount-path: /opt/app-root/src/.npmrc.dynamic-plugins
+    rhdh.redhat.com/containers: install-dynamic-plugins
+type: Opaque
+stringData:
+  .npmrc: |
+    @redhat:registry=https://npm.registry.redhat.com
+#---
+# Placeholder for image registry ayth configuration for OCI dynamic plugins
+#apiVersion: v1
+#kind: Secret
+#metadata:
+#  name: dynamic-plugins-registry-auth
+#  annotations:
+#    rhdh.redhat.com/mount-path: /opt/app-root/src/.config/containers
+#    rhdh.redhat.com/containers: install-dynamic-plugins
+#type: Opaque
+
+
+
 
 
 BinaryData

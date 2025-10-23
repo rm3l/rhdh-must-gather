@@ -5,7 +5,7 @@ metadata:
     deployment.kubernetes.io/revision: "1"
     meta.helm.sh/release-name: my-backstage-1
     meta.helm.sh/release-namespace: my-ns-2
-  creationTimestamp: "2025-09-11T21:31:37Z"
+  creationTimestamp: "2025-10-23T09:49:06Z"
   generation: 1
   labels:
     app.kubernetes.io/component: backstage
@@ -15,8 +15,8 @@ metadata:
     helm.sh/chart: upstream-2.6.1
   name: my-backstage-1-developer-hub
   namespace: my-ns-2
-  resourceVersion: "29935"
-  uid: f5a2f3dd-9c01-4e50-8836-a80e62aa3609
+  resourceVersion: "2500"
+  uid: 24caa643-2ee4-44d7-afaa-23ef5115f238
 spec:
   progressDeadlineSeconds: 600
   replicas: 1
@@ -75,7 +75,7 @@ spec:
               key: postgres-password
               name: my-backstage-1-postgresql
         image: quay.io/rhdh/rhdh-hub-rhel9:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
           httpGet:
@@ -147,7 +147,7 @@ spec:
         - name: MAX_ENTRY_SIZE
           value: "30000000"
         image: quay.io/rhdh/rhdh-hub-rhel9:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: install-dynamic-plugins
         resources:
           limits:
@@ -232,15 +232,15 @@ spec:
 status:
   availableReplicas: 1
   conditions:
-  - lastTransitionTime: "2025-09-11T21:33:52Z"
-    lastUpdateTime: "2025-09-11T21:33:52Z"
+  - lastTransitionTime: "2025-10-23T09:52:43Z"
+    lastUpdateTime: "2025-10-23T09:52:43Z"
     message: Deployment has minimum availability.
     reason: MinimumReplicasAvailable
     status: "True"
     type: Available
-  - lastTransitionTime: "2025-09-11T21:31:37Z"
-    lastUpdateTime: "2025-09-11T21:33:52Z"
-    message: ReplicaSet "my-backstage-1-developer-hub-5f945d48fb" has successfully
+  - lastTransitionTime: "2025-10-23T09:49:06Z"
+    lastUpdateTime: "2025-10-23T09:52:43Z"
+    message: ReplicaSet "my-backstage-1-developer-hub-5687c46b88" has successfully
       progressed.
     reason: NewReplicaSetAvailable
     status: "True"

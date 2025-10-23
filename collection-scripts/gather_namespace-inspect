@@ -120,7 +120,6 @@ log_debug "Executing: $inspect_cmd"
 
 if ! timeout "${multi_ns_timeout}" bash -c "$inspect_cmd" >> "$inspect_dir/inspect.log" 2>&1; then
     log_warn "Namespace inspection timed out or failed (timeout: ${multi_ns_timeout}s)"
-    log_warn "Consider increasing CMD_TIMEOUT (current: ${CMD_TIMEOUT}s per namespace)"
     echo "Inspection failed or timed out (${multi_ns_timeout}s for ${#namespaces_to_inspect[@]} namespaces)" >> "$inspect_dir/inspect.log"
     echo "Timestamp: $(date)" >> "$inspect_dir/inspect.log"
     exit 1

@@ -29,8 +29,14 @@ sanitize_structured_file() {
     if grep -q "kind:\s*Secret" "$file" 2>/dev/null; then
         log_debug "Sanitizing Secret data in: $file"
         # Use sed for direct in-place sanitization of Secret data values
-        # This approach has been tested and works reliably
+        # This handles both root-level secrets and indented secrets (from lists/oc adm inspect)
+        # Pattern 1: Root-level data fields (^data:) - data items at exactly 2 spaces
         sed -i '/^data:/,/^[a-zA-Z]/ { /^  [a-zA-Z0-9_.-]\+: / s/: .*/: [REDACTED]/ }' "$file"
+        # Pattern 2: Indented data fields - for list items where data: is at 2 spaces, items at 4+ spaces
+        # Match from "  data:" to next field at same or less indentation, but only replace lines with 4+ spaces
+        sed -i '/^  data:/,/^  [a-zA-Z]/ { /^    [a-zA-Z0-9_.-]\+: / s/: .*/: [REDACTED]/ }' "$file"
+        # Pattern 3: Even more deeply nested (e.g., 4 space base indent) - data items at 8+ spaces
+        sed -i '/^    data:/,/^    [a-zA-Z]/ { /^        [a-zA-Z0-9_.-]\+: / s/: .*/: [REDACTED]/ }' "$file"
         sanitized=true
         items_sanitized=$((items_sanitized + 1))
         log_debug "SANITIZED: $file"

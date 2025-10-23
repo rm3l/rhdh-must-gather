@@ -320,14 +320,19 @@ collect_namespace_data() {
     done
   fi
 
-  sec_dir="$ns_dir/_secrets"
-  ensure_directory "$sec_dir"
-  sec_list=$(oc get secrets -n "$ns" -o jsonpath="{.items[*].metadata.name}" 2>/dev/null || true)
-  if [[ -n "$sec_list" ]]; then
-    for sec in $sec_list; do
-      safe_exec "kubectl -n '$ns' get secret '$sec' -o yaml" "$sec_dir/$sec.yaml" "Secret $sec"
-      safe_exec "kubectl -n '$ns' describe secret '$sec'" "$sec_dir/$sec.describe.txt" "Details of Secret $sec"
-    done
+  # Only collect secrets if explicitly requested
+  if [[ "${RHDH_WITH_SECRETS:-false}" == "true" ]]; then
+    sec_dir="$ns_dir/_secrets"
+    ensure_directory "$sec_dir"
+    sec_list=$(oc get secrets -n "$ns" -o jsonpath="{.items[*].metadata.name}" 2>/dev/null || true)
+    if [[ -n "$sec_list" ]]; then
+      for sec in $sec_list; do
+        safe_exec "kubectl -n '$ns' get secret '$sec' -o yaml" "$sec_dir/$sec.yaml" "Secret $sec"
+        safe_exec "kubectl -n '$ns' describe secret '$sec'" "$sec_dir/$sec.describe.txt" "Details of Secret $sec"
+      done
+    fi
+  else
+    log_debug "Skipping secret collection for namespace $ns (use --with-secrets to collect)"
   fi
 }
 

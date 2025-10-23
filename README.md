@@ -322,11 +322,34 @@ namespace-inspect/            # ← Point OMC here: omc use namespace-inspect
 
 **Tip**: Single OMC context for all namespaces - no need to switch contexts when analyzing multiple environments.
 
-## Privacy and Security (WIP)
+## Privacy and Security
+
+### Secret Collection (Opt-In by Default)
+
+**By default, Kubernetes Secrets are NOT collected** to enhance privacy and security. To collect secrets (which will be automatically sanitized), use the `--with-secrets` flag:
+
+```bash
+# Default: secrets excluded
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather
+
+# Opt-in: include secrets (will be sanitized)
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --with-secrets
+```
+
+When secrets are excluded (default behavior):
+- Secret resources are removed from namespace inspection data
+- Secret resources are filtered from Helm manifests
+- Secret collection is skipped in helm/operator data gathering
+- ConfigMaps and other resources are still collected normally
+
+When secrets are included (`--with-secrets`):
+- Secrets are collected from all sources
+- All secret data values are automatically sanitized (see below)
+- Secret metadata (names, labels, annotations) is preserved for diagnostic purposes
 
 ### Automatic Data Sanitization
 
-The tool includes automatic sanitization of sensitive information to make the collected data safe for sharing. **All collected data is sanitized**, including:
+When secrets are collected (`--with-secrets`), the tool includes automatic sanitization of sensitive information to make the collected data safe for sharing. **All collected data is sanitized**, including:
 
 **Data Sources Sanitized:**
 - **Helm release data** - ConfigMaps, Secrets, and deployed manifests

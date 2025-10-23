@@ -6,26 +6,26 @@ items:
     annotations:
       checksum/app-config: e3d7ceb079990dfd907dc90a3cc8dcc4413a84127e67d09d99497ae255e82b01
       checksum/dynamic-plugins: f1f9a92f14a31362d7eb30e67ac1458faf1c685765610f93a8967194d8bc1a5f
-    creationTimestamp: "2025-09-11T21:31:37Z"
-    generateName: my-backstage-1-developer-hub-5f945d48fb-
+    creationTimestamp: "2025-10-23T09:49:06Z"
+    generateName: my-backstage-1-developer-hub-5687c46b88-
     labels:
       app.kubernetes.io/component: backstage
       app.kubernetes.io/instance: my-backstage-1
       app.kubernetes.io/managed-by: Helm
       app.kubernetes.io/name: developer-hub
       helm.sh/chart: upstream-2.6.1
-      pod-template-hash: 5f945d48fb
-    name: my-backstage-1-developer-hub-5f945d48fb-fprph
+      pod-template-hash: 5687c46b88
+    name: my-backstage-1-developer-hub-5687c46b88-z4jt9
     namespace: my-ns-2
     ownerReferences:
     - apiVersion: apps/v1
       blockOwnerDeletion: true
       controller: true
       kind: ReplicaSet
-      name: my-backstage-1-developer-hub-5f945d48fb
-      uid: 13066aec-c8ff-4f32-a1f6-ef7e6f5e59a5
-    resourceVersion: "29931"
-    uid: c150eb49-f6b2-428a-b816-73f54ea90721
+      name: my-backstage-1-developer-hub-5687c46b88
+      uid: fe8c9190-4e81-4098-9962-5e937b9df499
+    resourceVersion: "2496"
+    uid: 5a6d9115-becb-4ba5-bf0b-561d3a6952ba
   spec:
     containers:
     - args:
@@ -58,7 +58,7 @@ items:
             key: postgres-password
             name: my-backstage-1-postgresql
       image: quay.io/rhdh/rhdh-hub-rhel9:latest
-      imagePullPolicy: Always
+      imagePullPolicy: IfNotPresent
       livenessProbe:
         failureThreshold: 3
         httpGet:
@@ -121,7 +121,7 @@ items:
       - mountPath: /tmp
         name: temp
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-4mzgl
+        name: kube-api-access-wdpfx
         readOnly: true
     dnsPolicy: ClusterFirst
     enableServiceLinks: true
@@ -135,7 +135,7 @@ items:
       - name: MAX_ENTRY_SIZE
         value: "30000000"
       image: quay.io/rhdh/rhdh-hub-rhel9:latest
-      imagePullPolicy: Always
+      imagePullPolicy: IfNotPresent
       name: install-dynamic-plugins
       resources:
         limits:
@@ -176,10 +176,10 @@ items:
       - mountPath: /tmp
         name: temp
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-4mzgl
+        name: kube-api-access-wdpfx
         readOnly: true
       workingDir: /opt/app-root/src
-    nodeName: k3d-local-1-agent-0
+    nodeName: k3d-local-1-agent-2
     preemptionPolicy: PreemptLowerPriority
     priority: 0
     restartPolicy: Always
@@ -233,7 +233,7 @@ items:
         defaultMode: 420
         name: my-backstage-1-developer-hub-app-config
       name: backstage-app-config
-    - name: kube-api-access-4mzgl
+    - name: kube-api-access-wdpfx
       projected:
         defaultMode: 420
         sources:
@@ -254,29 +254,29 @@ items:
   status:
     conditions:
     - lastProbeTime: null
-      lastTransitionTime: "2025-09-11T21:31:43Z"
+      lastTransitionTime: "2025-10-23T09:50:51Z"
       status: "True"
       type: PodReadyToStartContainers
     - lastProbeTime: null
-      lastTransitionTime: "2025-09-11T21:32:56Z"
+      lastTransitionTime: "2025-10-23T09:51:58Z"
       status: "True"
       type: Initialized
     - lastProbeTime: null
-      lastTransitionTime: "2025-09-11T21:33:52Z"
+      lastTransitionTime: "2025-10-23T09:52:43Z"
       status: "True"
       type: Ready
     - lastProbeTime: null
-      lastTransitionTime: "2025-09-11T21:33:52Z"
+      lastTransitionTime: "2025-10-23T09:52:43Z"
       status: "True"
       type: ContainersReady
     - lastProbeTime: null
-      lastTransitionTime: "2025-09-11T21:31:42Z"
+      lastTransitionTime: "2025-10-23T09:49:13Z"
       status: "True"
       type: PodScheduled
     containerStatuses:
-    - containerID: containerd://6fe58904b12313007559189c966ba18784577502e26620b0f3c622bdfce851f3
+    - containerID: containerd://14a1bf3653da8f82fcf65425dfdf1fdfc9cba576f4bc39982fa3049ca0852186
       image: quay.io/rhdh/rhdh-hub-rhel9:latest
-      imageID: quay.io/rhdh/rhdh-hub-rhel9@sha256:1833cd22478ed53a99e08596b97c892559120b602a7cadcfe4be2a3ecf74a91a
+      imageID: quay.io/rhdh/rhdh-hub-rhel9@sha256:42281e7004d43443b7147e5a699c42cb3368ba7cd11d83c5219cbc9d87860ad6
       lastState: {}
       name: backstage-backend
       ready: true
@@ -284,7 +284,7 @@ items:
       started: true
       state:
         running:
-          startedAt: "2025-09-11T21:32:57Z"
+          startedAt: "2025-10-23T09:51:58Z"
       volumeMounts:
       - mountPath: /opt/app-root/src/app-config-from-configmap.yaml
         name: backstage-app-config
@@ -293,16 +293,16 @@ items:
       - mountPath: /tmp
         name: temp
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-4mzgl
+        name: kube-api-access-wdpfx
         readOnly: true
         recursiveReadOnly: Disabled
-    hostIP: 172.18.0.4
+    hostIP: 172.18.0.5
     hostIPs:
-    - ip: 172.18.0.4
+    - ip: 172.18.0.5
     initContainerStatuses:
-    - containerID: containerd://fcde7a62b28e4a10e320cc9bc9f51773fee6d22ad144663b41db65f787a7df97
+    - containerID: containerd://931e111c5d5fc5c3a11f79afd3171f9e1d79af86d53557d832f6b772fd264ac6
       image: quay.io/rhdh/rhdh-hub-rhel9:latest
-      imageID: quay.io/rhdh/rhdh-hub-rhel9@sha256:1833cd22478ed53a99e08596b97c892559120b602a7cadcfe4be2a3ecf74a91a
+      imageID: quay.io/rhdh/rhdh-hub-rhel9@sha256:42281e7004d43443b7147e5a699c42cb3368ba7cd11d83c5219cbc9d87860ad6
       lastState: {}
       name: install-dynamic-plugins
       ready: true
@@ -310,11 +310,11 @@ items:
       started: false
       state:
         terminated:
-          containerID: containerd://fcde7a62b28e4a10e320cc9bc9f51773fee6d22ad144663b41db65f787a7df97
+          containerID: containerd://931e111c5d5fc5c3a11f79afd3171f9e1d79af86d53557d832f6b772fd264ac6
           exitCode: 0
-          finishedAt: "2025-09-11T21:32:56Z"
+          finishedAt: "2025-10-23T09:51:57Z"
           reason: Completed
-          startedAt: "2025-09-11T21:31:43Z"
+          startedAt: "2025-10-23T09:50:51Z"
       volumeMounts:
       - mountPath: /dynamic-plugins-root
         name: dynamic-plugins-root
@@ -335,15 +335,15 @@ items:
       - mountPath: /tmp
         name: temp
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-4mzgl
+        name: kube-api-access-wdpfx
         readOnly: true
         recursiveReadOnly: Disabled
     phase: Running
-    podIP: 10.42.0.12
+    podIP: 10.42.2.12
     podIPs:
-    - ip: 10.42.0.12
+    - ip: 10.42.2.12
     qosClass: Burstable
-    startTime: "2025-09-11T21:31:42Z"
+    startTime: "2025-10-23T09:49:13Z"
 kind: List
 metadata:
   resourceVersion: ""

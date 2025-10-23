@@ -1,6 +1,6 @@
 Name:                   my-backstage-1-no-local-db-developer-hub
 Namespace:              my-ns-3
-CreationTimestamp:      Thu, 11 Sep 2025 23:23:13 +0200
+CreationTimestamp:      Thu, 23 Oct 2025 11:47:31 +0200
 Labels:                 app.kubernetes.io/component=backstage
                         app.kubernetes.io/instance=my-backstage-1-no-local-db
                         app.kubernetes.io/managed-by=Helm
@@ -120,8 +120,8 @@ Conditions:
   Available      False   MinimumReplicasUnavailable
   Progressing    False   ProgressDeadlineExceeded
 OldReplicaSets:  <none>
-NewReplicaSet:   my-backstage-1-no-local-db-developer-hub-65cf86c476 (1/1 replicas created)
+NewReplicaSet:   my-backstage-1-no-local-db-developer-hub-7d94c7ccbd (1/1 replicas created)
 Events:
   Type    Reason             Age   From                   Message
   ----    ------             ----  ----                   -------
-  Normal  ScalingReplicaSet  12m   deployment-controller  Scaled up replica set my-backstage-1-no-local-db-developer-hub-65cf86c476 to 1
+  Normal  ScalingReplicaSet  27m   deployment-controller  Scaled up replica set my-backstage-1-no-local-db-developer-hub-7d94c7ccbd to 1

@@ -1,6 +1,6 @@
 Name:                   my-backstage-1-developer-hub
 Namespace:              my-ns-2
-CreationTimestamp:      Thu, 11 Sep 2025 23:31:37 +0200
+CreationTimestamp:      Thu, 23 Oct 2025 11:49:06 +0200
 Labels:                 app.kubernetes.io/component=backstage
                         app.kubernetes.io/instance=my-backstage-1
                         app.kubernetes.io/managed-by=Helm
@@ -124,8 +124,8 @@ Conditions:
   Available      True    MinimumReplicasAvailable
   Progressing    True    NewReplicaSetAvailable
 OldReplicaSets:  <none>
-NewReplicaSet:   my-backstage-1-developer-hub-5f945d48fb (1/1 replicas created)
+NewReplicaSet:   my-backstage-1-developer-hub-5687c46b88 (1/1 replicas created)
 Events:
   Type    Reason             Age   From                   Message
   ----    ------             ----  ----                   -------
-  Normal  ScalingReplicaSet  4m    deployment-controller  Scaled up replica set my-backstage-1-developer-hub-5f945d48fb to 1
+  Normal  ScalingReplicaSet  25m   deployment-controller  Scaled up replica set my-backstage-1-developer-hub-5687c46b88 to 1

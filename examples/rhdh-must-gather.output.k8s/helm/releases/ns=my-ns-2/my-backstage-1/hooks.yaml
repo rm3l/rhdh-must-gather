@@ -6,7 +6,7 @@ metadata:
   name: "my-backstage-1-developer-hub-test-connection"
   labels:
     app.kubernetes.io/name: developer-hub
-    helm.sh/chart: backstage-4.5.8
+    helm.sh/chart: backstage-4.6.0
     app.kubernetes.io/instance: my-backstage-1
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: backstage
@@ -33,7 +33,7 @@ spec:
           - ls
           - /usr/bin/curl
       image: "quay.io/curl/curl:latest"
-      imagePullPolicy: Always
+      imagePullPolicy: IfNotPresent
       command: ["/bin/sh", "-c"]
       args:
         - |

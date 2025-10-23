@@ -1,2 +1,2 @@
 NAMESPACE   NAME                    DISPLAY               TYPE   PUBLISHER        AGE
-olm         operatorhubio-catalog   Community Operators   grpc   OperatorHub.io   8h
+olm         operatorhubio-catalog   Community Operators   grpc   OperatorHub.io   32m

@@ -4,7 +4,7 @@ metadata:
   annotations:
     meta.helm.sh/release-name: my-backstage-1
     meta.helm.sh/release-namespace: my-ns-2
-  creationTimestamp: "2025-09-11T21:31:37Z"
+  creationTimestamp: "2025-10-23T09:49:06Z"
   generation: 1
   labels:
     app.kubernetes.io/component: primary
@@ -15,8 +15,8 @@ metadata:
     helm.sh/chart: postgresql-12.10.0
   name: my-backstage-1-postgresql
   namespace: my-ns-2
-  resourceVersion: "29723"
-  uid: 9b3d45a0-0a24-4211-9862-e1477d61c082
+  resourceVersion: "2165"
+  uid: 0ab14e5c-fc31-4121-aea4-e3e0dced7ae8
 spec:
   persistentVolumeClaimRetentionPolicy:
     whenDeleted: Retain

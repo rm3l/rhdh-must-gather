@@ -1,2 +1,0 @@
-NAME                             READY   STATUS    RESTARTS   AGE
-backstage-bs1-795679f5b9-gmcnl   1/1     Running   0          12m

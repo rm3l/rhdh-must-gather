@@ -1,5 +1,5 @@
 RHDH Must-Gather Data Sanitization Report
-Generated: Thu Sep 11 11:35:48 PM CEST 2025
+Generated: Thu Oct 23 12:14:43 PM CEST 2025
 Target Directory: ./test-output
 
 This report details what sensitive information was sanitized from the collected data.
@@ -15,8 +15,8 @@ SANITIZATION RULES APPLIED:
 - OAuth tokens and client secrets
 
 SANITIZATION SUMMARY:
-- Files processed: 136
-- Items sanitized: 16
+- Files processed: 247
+- Items sanitized: 23
 
 IMPORTANT: Please review the sanitized files before sharing externally to ensure
 all sensitive information has been properly redacted.

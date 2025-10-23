@@ -1,6 +1,6 @@
 Name:               my-backstage-1-postgresql
 Namespace:          my-ns-2
-CreationTimestamp:  Thu, 11 Sep 2025 23:31:37 +0200
+CreationTimestamp:  Thu, 23 Oct 2025 11:49:06 +0200
 Selector:           app.kubernetes.io/component=primary,app.kubernetes.io/instance=my-backstage-1,app.kubernetes.io/name=postgresql
 Labels:             app.kubernetes.io/component=primary
                     app.kubernetes.io/instance=my-backstage-1
@@ -74,5 +74,5 @@ Volume Claims:
 Events:
   Type    Reason            Age   From                    Message
   ----    ------            ----  ----                    -------
-  Normal  SuccessfulCreate  4m2s  statefulset-controller  create Claim data-my-backstage-1-postgresql-0 Pod my-backstage-1-postgresql-0 in StatefulSet my-backstage-1-postgresql success
-  Normal  SuccessfulCreate  4m2s  statefulset-controller  create Pod my-backstage-1-postgresql-0 in StatefulSet my-backstage-1-postgresql successful
+  Normal  SuccessfulCreate  25m   statefulset-controller  create Claim data-my-backstage-1-postgresql-0 Pod my-backstage-1-postgresql-0 in StatefulSet my-backstage-1-postgresql success
+  Normal  SuccessfulCreate  25m   statefulset-controller  create Pod my-backstage-1-postgresql-0 in StatefulSet my-backstage-1-postgresql successful

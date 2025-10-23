@@ -12,10 +12,10 @@ Type:  servicebinding.io/postgresql
 
 Data
 ====
+uri:       68 bytes
+username:  12 bytes
 host:      25 bytes
 password:  10 bytes
 port:      4 bytes
 provider:  7 bytes
 type:      10 bytes
-uri:       68 bytes
-username:  12 bytes

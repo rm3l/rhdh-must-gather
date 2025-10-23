@@ -1,27 +1,27 @@
-Name:             my-backstage-1-developer-hub-5f945d48fb-fprph
+Name:             my-backstage-1-developer-hub-5687c46b88-z4jt9
 Namespace:        my-ns-2
 Priority:         0
 Service Account:  default
-Node:             k3d-local-1-agent-0/172.18.0.4
-Start Time:       Thu, 11 Sep 2025 23:31:42 +0200
+Node:             k3d-local-1-agent-2/172.18.0.5
+Start Time:       Thu, 23 Oct 2025 11:49:13 +0200
 Labels:           app.kubernetes.io/component=backstage
                   app.kubernetes.io/instance=my-backstage-1
                   app.kubernetes.io/managed-by=Helm
                   app.kubernetes.io/name=developer-hub
                   helm.sh/chart=upstream-2.6.1
-                  pod-template-hash=5f945d48fb
+                  pod-template-hash=5687c46b88
 Annotations:      checksum/app-config: e3d7ceb079990dfd907dc90a3cc8dcc4413a84127e67d09d99497ae255e82b01
                   checksum/dynamic-plugins: f1f9a92f14a31362d7eb30e67ac1458faf1c685765610f93a8967194d8bc1a5f
 Status:           Running
-IP:               10.42.0.12
+IP:               10.42.2.12
 IPs:
-  IP:           10.42.0.12
-Controlled By:  ReplicaSet/my-backstage-1-developer-hub-5f945d48fb
+  IP:           10.42.2.12
+Controlled By:  ReplicaSet/my-backstage-1-developer-hub-5687c46b88
 Init Containers:
   install-dynamic-plugins:
-    Container ID:    containerd://fcde7a62b28e4a10e320cc9bc9f51773fee6d22ad144663b41db65f787a7df97
+    Container ID:    containerd://931e111c5d5fc5c3a11f79afd3171f9e1d79af86d53557d832f6b772fd264ac6
     Image:           quay.io/rhdh/rhdh-hub-rhel9:latest
-    Image ID:        quay.io/rhdh/rhdh-hub-rhel9@sha256:1833cd22478ed53a99e08596b97c892559120b602a7cadcfe4be2a3ecf74a91a
+    Image ID:        quay.io/rhdh/rhdh-hub-rhel9@sha256:42281e7004d43443b7147e5a699c42cb3368ba7cd11d83c5219cbc9d87860ad6
     Port:            <none>
     Host Port:       <none>
     SeccompProfile:  RuntimeDefault
@@ -31,8 +31,8 @@ Init Containers:
     State:          Terminated
       Reason:       Completed
       Exit Code:    0
-      Started:      Thu, 11 Sep 2025 23:31:43 +0200
-      Finished:     Thu, 11 Sep 2025 23:32:56 +0200
+      Started:      Thu, 23 Oct 2025 11:50:51 +0200
+      Finished:     Thu, 23 Oct 2025 11:51:57 +0200
     Ready:          True
     Restart Count:  0
     Limits:
@@ -53,12 +53,12 @@ Init Containers:
       /opt/app-root/src/.npmrc.dynamic-plugins from dynamic-plugins-npmrc (ro,path=".npmrc")
       /opt/app-root/src/dynamic-plugins.yaml from dynamic-plugins (ro,path="dynamic-plugins.yaml")
       /tmp from temp (rw)
-      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-4mzgl (ro)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-wdpfx (ro)
 Containers:
   backstage-backend:
-    Container ID:    containerd://6fe58904b12313007559189c966ba18784577502e26620b0f3c622bdfce851f3
+    Container ID:    containerd://14a1bf3653da8f82fcf65425dfdf1fdfc9cba576f4bc39982fa3049ca0852186
     Image:           quay.io/rhdh/rhdh-hub-rhel9:latest
-    Image ID:        quay.io/rhdh/rhdh-hub-rhel9@sha256:1833cd22478ed53a99e08596b97c892559120b602a7cadcfe4be2a3ecf74a91a
+    Image ID:        quay.io/rhdh/rhdh-hub-rhel9@sha256:42281e7004d43443b7147e5a699c42cb3368ba7cd11d83c5219cbc9d87860ad6
     Port:            7007/TCP
     Host Port:       0/TCP
     SeccompProfile:  RuntimeDefault
@@ -68,7 +68,7 @@ Containers:
       --config
       /opt/app-root/src/app-config-from-configmap.yaml
     State:          Running
-      Started:      Thu, 11 Sep 2025 23:32:57 +0200
+      Started:      Thu, 23 Oct 2025 11:51:58 +0200
     Ready:          True
     Restart Count:  0
     Limits:
@@ -94,7 +94,7 @@ Containers:
       /opt/app-root/src/app-config-from-configmap.yaml from backstage-app-config (rw,path="app-config.yaml")
       /opt/app-root/src/dynamic-plugins-root from dynamic-plugins-root (rw)
       /tmp from temp (rw)
-      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-4mzgl (ro)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-wdpfx (ro)
 Conditions:
   Type                        Status
   PodReadyToStartContainers   True 
@@ -136,7 +136,7 @@ Volumes:
     Type:      ConfigMap (a volume populated by a ConfigMap)
     Name:      my-backstage-1-developer-hub-app-config
     Optional:  false
-  kube-api-access-4mzgl:
+  kube-api-access-wdpfx:
     Type:                    Projected (a volume that contains injected data from multiple sources)
     TokenExpirationSeconds:  3607
     ConfigMapName:           kube-root-ca.crt
@@ -147,15 +147,14 @@ Node-Selectors:              <none>
 Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
                              node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
 Events:
-  Type     Reason            Age    From               Message
-  ----     ------            ----   ----               -------
-  Warning  FailedScheduling  4m2s   default-scheduler  0/4 nodes are available: waiting for ephemeral volume controller to create the persistentvolumeclaim "my-backstage-1-developer-hub-5f945d48fb-fprph-dynamic-plugins-root". preemption: 0/4 nodes are available: 4 Preemption is not helpful for scheduling.
-  Normal   Scheduled         3m57s  default-scheduler  Successfully assigned my-ns-2/my-backstage-1-developer-hub-5f945d48fb-fprph to k3d-local-1-agent-0
-  Normal   Pulling           3m57s  kubelet            Pulling image "quay.io/rhdh/rhdh-hub-rhel9:latest"
-  Normal   Pulled            3m56s  kubelet            Successfully pulled image "quay.io/rhdh/rhdh-hub-rhel9:latest" in 493ms (493ms including waiting). Image size: 1268569345 bytes.
-  Normal   Created           3m56s  kubelet            Created container install-dynamic-plugins
-  Normal   Started           3m56s  kubelet            Started container install-dynamic-plugins
-  Normal   Pulling           2m43s  kubelet            Pulling image "quay.io/rhdh/rhdh-hub-rhel9:latest"
-  Normal   Pulled            2m42s  kubelet            Successfully pulled image "quay.io/rhdh/rhdh-hub-rhel9:latest" in 416ms (416ms including waiting). Image size: 1268569345 bytes.
-  Normal   Created           2m42s  kubelet            Created container backstage-backend
-  Normal   Started           2m42s  kubelet            Started container backstage-backend
+  Type     Reason            Age   From               Message
+  ----     ------            ----  ----               -------
+  Warning  FailedScheduling  25m   default-scheduler  0/4 nodes are available: waiting for ephemeral volume controller to create the persistentvolumeclaim "my-backstage-1-developer-hub-5687c46b88-z4jt9-dynamic-plugins-root". preemption: 0/4 nodes are available: 4 Preemption is not helpful for scheduling.
+  Normal   Scheduled         25m   default-scheduler  Successfully assigned my-ns-2/my-backstage-1-developer-hub-5687c46b88-z4jt9 to k3d-local-1-agent-2
+  Normal   Pulling           25m   kubelet            Pulling image "quay.io/rhdh/rhdh-hub-rhel9:latest"
+  Normal   Pulled            23m   kubelet            Successfully pulled image "quay.io/rhdh/rhdh-hub-rhel9:latest" in 1m37.198s (1m37.198s including waiting). Image size: 1242208591 bytes.
+  Normal   Created           23m   kubelet            Created container install-dynamic-plugins
+  Normal   Started           23m   kubelet            Started container install-dynamic-plugins
+  Normal   Pulled            22m   kubelet            Container image "quay.io/rhdh/rhdh-hub-rhel9:latest" already present on machine
+  Normal   Created           22m   kubelet            Created container backstage-backend
+  Normal   Started           22m   kubelet            Started container backstage-backend

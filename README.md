@@ -326,15 +326,23 @@ namespace-inspect/            # ← Point OMC here: omc use namespace-inspect
 
 ### Automatic Data Sanitization
 
-The tool includes automatic sanitization of sensitive information to make the collected data safe for sharing:
+The tool includes automatic sanitization of sensitive information to make the collected data safe for sharing. **All collected data is sanitized**, including:
 
-**Automatically Sanitized Data:**
-- **Kubernetes Secret data values** - All `data:` fields in Secret resources are replaced with `[REDACTED]`
-- **Base64 encoded sensitive data** - Long base64 strings (40+ characters) that likely contain sensitive information
-- **JWT tokens** - Complete JWT tokens matching the standard format
+**Data Sources Sanitized:**
+- **Helm release data** - ConfigMaps, Secrets, and deployed manifests
+- **Operator resources** - Backstage CRs, operator configs, and secrets
+- **Namespace inspection data** - All resources collected by `oc adm inspect` (Secrets, ConfigMaps, pod specs, etc.)
+- **Platform information** - System and cluster metadata
+- **Log files** - Container logs and must-gather execution logs
+
+**Automatically Sanitized Sensitive Content:**
+- **Kubernetes Secret data values** - All `data:` fields in Secret resources (including nested/indented Secrets from `oc adm inspect` output) are replaced with `[REDACTED]`
+- **Base64 encoded sensitive data** - Long base64 strings (40+ characters) that likely contain tokens, passwords, or certificates
+- **JWT tokens** - Complete JWT tokens matching the standard format (`eyXXX.eyXXX.XXX`)
 - **Bearer tokens** - Authorization headers with bearer tokens
-- **SSH private keys** - Complete SSH key blocks from BEGIN to END
-- **Database connection strings** - URLs containing embedded credentials
+- **SSH private keys and TLS certificates** - Complete key blocks from BEGIN to END
+- **Database connection strings** - PostgreSQL and other DB URLs containing embedded credentials
+- **OAuth tokens and API keys** - Authentication tokens and client secrets
 - **URLs with credentials** - HTTP/HTTPS URLs with username:password@ format
 
 **Sanitization Features:**

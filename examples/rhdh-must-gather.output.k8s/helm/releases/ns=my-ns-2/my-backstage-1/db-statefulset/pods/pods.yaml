@@ -3,7 +3,7 @@ items:
 - apiVersion: v1
   kind: Pod
   metadata:
-    creationTimestamp: "2025-09-11T21:31:37Z"
+    creationTimestamp: "2025-10-23T09:49:06Z"
     generateName: my-backstage-1-postgresql-
     labels:
       app.kubernetes.io/component: primary
@@ -23,9 +23,9 @@ items:
       controller: true
       kind: StatefulSet
       name: my-backstage-1-postgresql
-      uid: 9b3d45a0-0a24-4211-9862-e1477d61c082
-    resourceVersion: "29719"
-    uid: 82db3493-6aff-48c7-b3bc-025d4b18b8d6
+      uid: 0ab14e5c-fc31-4121-aea4-e3e0dced7ae8
+    resourceVersion: "2161"
+    uid: 9b135f55-eee5-4883-b9d5-c4a313f835f0
   spec:
     affinity:
       podAntiAffinity:
@@ -129,12 +129,12 @@ items:
       - mountPath: /var/lib/pgsql/data
         name: data
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-jwvqp
+        name: kube-api-access-hwsq8
         readOnly: true
     dnsPolicy: ClusterFirst
     enableServiceLinks: true
     hostname: my-backstage-1-postgresql-0
-    nodeName: k3d-local-1-server-0
+    nodeName: k3d-local-1-agent-0
     preemptionPolicy: PreemptLowerPriority
     priority: 0
     restartPolicy: Always
@@ -160,7 +160,7 @@ items:
     - emptyDir:
         medium: Memory
       name: dshm
-    - name: kube-api-access-jwvqp
+    - name: kube-api-access-hwsq8
       projected:
         defaultMode: 420
         sources:
@@ -181,29 +181,29 @@ items:
   status:
     conditions:
     - lastProbeTime: null
-      lastTransitionTime: "2025-09-11T21:31:42Z"
+      lastTransitionTime: "2025-10-23T09:49:31Z"
       status: "True"
       type: PodReadyToStartContainers
     - lastProbeTime: null
-      lastTransitionTime: "2025-09-11T21:31:41Z"
+      lastTransitionTime: "2025-10-23T09:49:13Z"
       status: "True"
       type: Initialized
     - lastProbeTime: null
-      lastTransitionTime: "2025-09-11T21:31:51Z"
+      lastTransitionTime: "2025-10-23T09:49:44Z"
       status: "True"
       type: Ready
     - lastProbeTime: null
-      lastTransitionTime: "2025-09-11T21:31:51Z"
+      lastTransitionTime: "2025-10-23T09:49:44Z"
       status: "True"
       type: ContainersReady
     - lastProbeTime: null
-      lastTransitionTime: "2025-09-11T21:31:41Z"
+      lastTransitionTime: "2025-10-23T09:49:13Z"
       status: "True"
       type: PodScheduled
     containerStatuses:
-    - containerID: containerd://e8503f97810f10b1a3c05ed901a5ba4518818f64b4e47fa4caca4a6b0d7118bd
+    - containerID: containerd://555ecf658e587384ff44fb57118874cbddcfff5eac8d91277aba963a1ae48c62
       image: quay.io/fedora/postgresql-15:latest
-      imageID: quay.io/fedora/postgresql-15@sha256:ced2dfb39b1e2ce1e38320ce254ef4dd17e58135b5e4f1a74412b24294843b5b
+      imageID: quay.io/fedora/postgresql-15@sha256:55f43bfb492e4e08bd420074ef05747aebe1218b56f00b3a103d2f430120d0a4
       lastState: {}
       name: postgresql
       ready: true
@@ -211,25 +211,25 @@ items:
       started: true
       state:
         running:
-          startedAt: "2025-09-11T21:31:41Z"
+          startedAt: "2025-10-23T09:49:30Z"
       volumeMounts:
       - mountPath: /dev/shm
         name: dshm
       - mountPath: /var/lib/pgsql/data
         name: data
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-jwvqp
+        name: kube-api-access-hwsq8
         readOnly: true
         recursiveReadOnly: Disabled
-    hostIP: 172.18.0.2
+    hostIP: 172.18.0.4
     hostIPs:
-    - ip: 172.18.0.2
+    - ip: 172.18.0.4
     phase: Running
-    podIP: 10.42.3.10
+    podIP: 10.42.0.6
     podIPs:
-    - ip: 10.42.3.10
+    - ip: 10.42.0.6
     qosClass: Burstable
-    startTime: "2025-09-11T21:31:41Z"
+    startTime: "2025-10-23T09:49:13Z"
 kind: List
 metadata:
   resourceVersion: ""

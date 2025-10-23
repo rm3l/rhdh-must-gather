@@ -4,7 +4,6 @@ set -euo pipefail
 
 DIR_NAME=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source "${DIR_NAME}/common.sh"
-check_command
 
 NAMESPACE_FILE=/var/run/secrets/kubernetes.io/serviceaccount/namespace
 

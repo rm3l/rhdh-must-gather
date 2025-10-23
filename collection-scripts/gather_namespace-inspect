@@ -19,8 +19,6 @@ DIR_NAME=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source "${DIR_NAME}/common.sh"
 export_log_collection_args
 
-check_command
-
 log_info "Starting namespace inspection collection..."
 
 inspect_dir="$BASE_COLLECTION_PATH/namespace-inspect"

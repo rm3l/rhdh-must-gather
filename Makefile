@@ -46,7 +46,7 @@ test-local-script: test-output ## Test the specified script (set the SCRIPT var)
 		exit 1; \
 	fi
 	@echo "Running local test (requires cluster access)..."
-	BASE_COLLECTION_PATH=./test-output LOG_LEVEL=$(LOG_LEVEL) ./collection-scripts/gather_${SCRIPT}
+	BASE_COLLECTION_PATH=./test-output LOG_LEVEL=$(LOG_LEVEL) USR_BIN_GATHER=$(shell pwd)/collection-scripts/gather_${SCRIPT} ./collection-scripts/gather_${SCRIPT}
 
 .PHONY: test-container-all
 test-container-all: test-output ## Test using container (requires podman)

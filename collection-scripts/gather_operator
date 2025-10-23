@@ -121,8 +121,10 @@ function gather_backstage_crs() {
   ensure_directory "$crs_dir"
 
   namespace_args=$(get_namespace_args)
-  kubectl get backstages.rhdh.redhat.com $namespace_args > "$crs_dir/all-backstage-crs.txt"
-  kubectl get backstages.rhdh.redhat.com $namespace_args -o json | jq -r '.items[]' > "$crs_dir/all-backstage-crs.json"
+  safe_exec "kubectl get backstages.rhdh.redhat.com $namespace_args" "$crs_dir/all-backstage-crs.txt" \
+    "All Backstage CRs in $namespace_args"
+  safe_exec "kubectl get backstages.rhdh.redhat.com $namespace_args -o json | jq -r '.items[]'" "$crs_dir/all-backstage-crs.json" \
+    "All Backstage CRs in $namespace_args - JSON"
 
   crs=$(jq -r '"\(.metadata.namespace)/\(.metadata.name)"' < "$crs_dir/all-backstage-crs.json" || echo "")
   cr_namespaces=$(jq -r '"\(.metadata.namespace)"' < "$crs_dir/all-backstage-crs.json" || echo "")

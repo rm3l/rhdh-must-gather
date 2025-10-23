@@ -50,6 +50,7 @@ function main() {
   declare requested_scripts=("${mandatory_scripts[@]}")
   declare excluded_scripts=()
   declare target_namespaces=""
+  declare with_secrets="false"
 
   parse_flags "$@"
   run_scripts
@@ -86,6 +87,9 @@ function parse_flags {
         ;;
       --without-namespace-inspect)
         excluded_scripts+=("namespace-inspect")
+        ;;
+      --with-secrets)
+        with_secrets="true"
         ;;
       --namespaces)
         if [[ -n "${2:-}" ]]; then
@@ -128,6 +132,14 @@ function parse_flags {
     export RHDH_TARGET_NAMESPACES="$target_namespaces"
     log_info "Limiting collection to namespaces: $target_namespaces"
   fi
+  
+  # Export secret collection flag for use by collection scripts
+  export RHDH_WITH_SECRETS="$with_secrets"
+  if [[ "$with_secrets" == "true" ]]; then
+    log_warn "Secret collection enabled - sensitive data will be included (and sanitized)"
+  else
+    log_info "Secret collection disabled by default (use --with-secrets to enable)"
+  fi
 }
 
 function help {
@@ -161,6 +173,11 @@ Usage: oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gath
   > You can limit collection to specific namespaces:
   --namespaces ns1,ns2    Collect data only from specified comma-separated namespaces
 
+  > Security and Privacy Options:
+  --with-secrets                Include Kubernetes Secrets in collection (opt-in, disabled by default)
+                                When disabled, secret resources are excluded from all collectors
+                                When enabled, secrets are collected but automatically sanitized
+
   Examples:
   # Default collection (includes namespace inspection for OMC compatibility)
   oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather
@@ -182,6 +199,9 @@ Usage: oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gath
 
   # Combine namespace filtering with exclusions
   oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --namespaces my-rhdh-ns --without-operator
+
+  # Include secrets in collection (for detailed troubleshooting - secrets will be sanitized)
+  oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --with-secrets
 "
 }
 

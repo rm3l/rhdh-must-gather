@@ -118,7 +118,7 @@ multi_ns_timeout=$((CMD_TIMEOUT * ${#namespaces_to_inspect[@]}))
 log_debug "Using timeout: ${multi_ns_timeout}s for ${#namespaces_to_inspect[@]} namespace(s)"
 log_debug "Executing: $inspect_cmd"
 
-if ! timeout "${multi_ns_timeout}" bash -c "$inspect_cmd" >> "$inspect_dir/inspect.log" 2>&1; then
+if ! timeout "${multi_ns_timeout}" bash -c "$inspect_cmd || true" >> "$inspect_dir/inspect.log" 2>&1; then
     log_warn "Namespace inspection timed out or failed (timeout: ${multi_ns_timeout}s)"
     echo "Inspection failed or timed out (${multi_ns_timeout}s for ${#namespaces_to_inspect[@]} namespaces)" >> "$inspect_dir/inspect.log"
     echo "Timestamp: $(date)" >> "$inspect_dir/inspect.log"
@@ -126,6 +126,22 @@ if ! timeout "${multi_ns_timeout}" bash -c "$inspect_cmd" >> "$inspect_dir/inspe
 fi
 
 log_success "Completed inspection of all ${#namespaces_to_inspect[@]} namespace(s)"
+
+# Remove secrets if not explicitly included
+if [[ "${RHDH_WITH_SECRETS:-false}" != "true" ]]; then
+    log_info "Removing secret files (use --with-secrets to collect them)"
+    find "$inspect_dir" -type f -name "secrets.yaml" -delete 2>/dev/null || true
+    find "$inspect_dir" -type f -name "secrets" -delete 2>/dev/null || true
+    find "$inspect_dir" -type d -name "secrets" -exec rm -rf {} + 2>/dev/null || true
+    secret_count=$(find "$inspect_dir" -type f -path "*/core/secrets*" 2>/dev/null | wc -l || echo "0")
+    if [[ "$secret_count" -eq 0 ]]; then
+        log_success "Secret files excluded from collection"
+    else
+        log_warn "Some secret files may remain: $secret_count"
+    fi
+else
+    log_warn "Secrets included in collection - they will be sanitized automatically"
+fi
 
 # Create summary file
 summary_file="$inspect_dir/inspection-summary.txt"
@@ -151,6 +167,11 @@ summary_file="$inspect_dir/inspection-summary.txt"
     echo "  - Events"
     echo "  - Resource descriptions"
     echo "  - Network configurations"
+    if [[ "${RHDH_WITH_SECRETS:-false}" == "true" ]]; then
+        echo "  - Secrets (included and will be sanitized)"
+    else
+        echo "  - Secrets (excluded - use --with-secrets to collect)"
+    fi
     echo ""
     echo "Output directory: $inspect_dir"
 } > "$summary_file"

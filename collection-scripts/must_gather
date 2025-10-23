@@ -191,7 +191,7 @@ function run_scripts {
   do
     script_name="gather_${script}"
     log_info "running ${script_name}"
-    if ! eval USR_BIN_GATHER=1 "${DIR_NAME}/${script_name}"; then
+    if ! eval "${DIR_NAME}/${script_name}"; then
       log_error "Failed to run ${script_name}, continuing with next script..."
     fi
   done
@@ -199,7 +199,7 @@ function run_scripts {
 
 function run_logs {
   log_info "running logs"
-  if ! USR_BIN_GATHER=1 "${DIR_NAME}"/logs.sh; then
+  if ! "${DIR_NAME}"/logs.sh; then
     log_error "Failed to run logs.sh, continuing..."
   fi
 }

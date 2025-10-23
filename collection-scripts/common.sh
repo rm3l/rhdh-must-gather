@@ -102,15 +102,6 @@ function kubectl_or_oc() {
   timeout "${CMD_TIMEOUT}" kubectl "$@" 2>&1 || timeout "${CMD_TIMEOUT}" oc "$@" 2>&1
 }
 
-function check_command {
-    if [[ -z "$USR_BIN_GATHER" ]]; then
-        log_error "This script should not be directly executed." 1>&2
-        log_error "Please check \"${DIR_NAME}/gather --help\" for execution options." 1>&2
-        exit 1
-    fi
-}
-
-
 # Check if we have cluster connectivity
 check_cluster_connectivity() {
     log_debug "Checking cluster connectivity..."

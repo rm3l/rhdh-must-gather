@@ -194,7 +194,7 @@ This tool focuses exclusively on RHDH-related resources. For cluster-wide inform
 - **Secrets**: Sanitized secret resources (data fields redacted for security)
 - **Services, Routes, Ingresses**: Network configurations for RHDH access
 
-### Namespace Inspection (collected by default)
+### Namepace's inspect (collected by default)
 - **Deep namespace resource inspection** using `oc adm inspect namespace` (included by default for OMC compatibility)
 - **Auto-detects RHDH namespaces**:
   - Namespaces with Helm-based RHDH deployments
@@ -215,13 +215,13 @@ This tool focuses exclusively on RHDH-related resources. For cluster-wide inform
 
 ## Using with OMC (OpenShift Must-Gather Client)
 
-The namespace inspection output is fully compatible with [OMC (OpenShift Must-Gather Client)](https://github.com/gmeghnag/omc), a powerful tool for interactive must-gather analysis used by Support teams.
+The Namepace's inspect output is fully compatible with [OMC (OpenShift Must-Gather Client)](https://github.com/gmeghnag/omc), a powerful tool for interactive must-gather analysis used by Support teams.
 
-**Note**: Namespace inspection is now **collected by default**, so all must-gather outputs are OMC-compatible.
+**Note**: Namepace's inspect is now **collected by default**, so all must-gather outputs are OMC-compatible.
 
 ### Setup
 
-1. **Collect data** (namespace inspection included by default):
+1. **Collect data** (Namepace's inspect included by default):
    ```bash
    oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main
    ```
@@ -233,15 +233,15 @@ The namespace inspection output is fully compatible with [OMC (OpenShift Must-Ga
    sudo mv ./omc /usr/local/bin/
    ```
 
-### Using OMC with Namespace Inspection Data
+### Using OMC with Namepace's inspect Data
 
-Point OMC to the namespace inspection directory:
+Point OMC to the Namepace's inspect directory:
 
 ```bash
 # Navigate to your must-gather output
 cd must-gather.local.*/
 
-# Use OMC with the namespace inspection directory
+# Use OMC with the Namepace's inspect directory
 omc use namespace-inspect
 
 # Now query resources interactively (OMC will see all inspected namespaces)
@@ -303,7 +303,7 @@ omc get namespaces
 
 ### Directory Structure for OMC
 
-The namespace inspection creates OMC-compatible directory structures:
+The Namepace's inspect creates OMC-compatible directory structures:
 
 ```
 namespace-inspect/            # ← Point OMC here: omc use namespace-inspect
@@ -337,7 +337,7 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --wi
 ```
 
 When secrets are excluded (default behavior):
-- Secret resources are removed from namespace inspection data
+- Secret resources are removed from Namepace's inspect data
 - Secret resources are filtered from Helm manifests
 - Secret collection is skipped in helm/operator data gathering
 - ConfigMaps and other resources are still collected normally
@@ -354,7 +354,7 @@ When secrets are collected (`--with-secrets`), the tool includes automatic sanit
 **Data Sources Sanitized:**
 - **Helm release data** - ConfigMaps, Secrets, and deployed manifests
 - **Operator resources** - Backstage CRs, operator configs, and secrets
-- **Namespace inspection data** - All resources collected by `oc adm inspect` (Secrets, ConfigMaps, pod specs, etc.)
+- **Namepace's inspect data** - All resources collected by `oc adm inspect` (Secrets, ConfigMaps, pod specs, etc.)
 - **Platform information** - System and cluster metadata
 - **Log files** - Container logs and must-gather execution logs
 
@@ -408,16 +408,16 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --wi
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-operator  # Helm only
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-helm      # Operator only
 
-# Minimal collection (platform info only, no namespace inspection)
+# Minimal collection (platform info only, no Namepace's inspect)
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-operator --without-helm --without-route --without-ingress --without-namespace-inspect
 
-# With cluster-wide information (namespace inspection included by default)
+# With cluster-wide information (Namepace's inspect included by default)
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --cluster-info
 
 # Combine exclusion flags with other options
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-operator --cluster-info
 
-# Combine namespace filtering (namespace inspection included by default)
+# Combine namespace filtering (Namepace's inspect included by default)
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --namespaces rhdh-prod
 
 # Collect from specific namespaces only
@@ -447,7 +447,7 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --he
 | `--without-platform` | Skip platform detection and information | For minimal collections when platform info is not needed |
 | `--without-route` | Skip OpenShift route collection | For non-OpenShift clusters or when routes are not relevant |
 | `--without-ingress` | Skip Kubernetes ingress collection | When ingresses are not used for RHDH access |
-| `--without-namespace-inspect` | Skip deep namespace inspection | **Not recommended** - removes OMC compatibility. Use only for minimal/quick collections |
+| `--without-namespace-inspect` | Skip deep Namepace's inspect | **Not recommended** - removes OMC compatibility. Use only for minimal/quick collections |
 
 #### Namespace Filtering
 
@@ -472,7 +472,7 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --he
 ├── must-gather.log                 # Must-gather container logs (if running in pod)
 ├── cluster-info/                   # Cluster-wide information (if --cluster-info used)
 │   └── [cluster-info dump output]
-├── namespace-inspect/              # Deep namespace inspection (collected by default)
+├── namespace-inspect/              # Deep Namepace's inspect (collected by default)
 │   ├── inspect.log                 # Inspection command logs
 │   ├── inspection-summary.txt      # Summary of inspected namespaces and data collected
 │   ├── namespaces/                 # All inspected namespaces (OMC-compatible structure)

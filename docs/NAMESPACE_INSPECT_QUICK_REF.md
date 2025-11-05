@@ -1,21 +1,21 @@
-# Namespace Inspection - Quick Reference
+# Namepace's inspect - Quick Reference
 
 ## What It Does
 
-Deep namespace inspection for RHDH must-gather using `oc adm inspect namespace`.
+Deep Namepace's inspect for RHDH must-gather using `oc adm inspect namespace`.
 
 **Status**: ✅ **Collected by default** - all must-gather outputs are now OMC-compatible for Support analysis.
 
 ## Quick Start
 
 ```bash
-# Namespace inspection included by default
+# Namepace's inspect included by default
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main
 ```
 
 ## Common Use Cases
 
-### 1. Standard Collection (includes namespace inspection)
+### 1. Standard Collection (includes Namepace's inspect)
 ```bash
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main
 ```
@@ -37,7 +37,7 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main -- \
   /usr/bin/gather --cluster-info
 ```
 
-### 5. Without Namespace Inspection (not recommended)
+### 5. Without Namepace's inspect (not recommended)
 ```bash
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main -- \
   /usr/bin/gather --without-namespace-inspect
@@ -107,7 +107,7 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main -- \
 
 ## OMC Integration
 
-The namespace inspection output is **fully compatible** with [OMC (OpenShift Must-Gather Client)](https://github.com/gmeghnag/omc), used by Support teams.
+The Namepace's inspect output is **fully compatible** with [OMC (OpenShift Must-Gather Client)](https://github.com/gmeghnag/omc), used by Support teams.
 
 ### Using OMC with Inspection Data
 
@@ -115,7 +115,7 @@ The namespace inspection output is **fully compatible** with [OMC (OpenShift Mus
 # Navigate to must-gather output
 cd must-gather.local.*/
 
-# Point OMC to namespace inspection (one command for all namespaces)
+# Point OMC to Namepace's inspect (one command for all namespaces)
 omc use namespace-inspect
 
 # Query interactively across all namespaces
@@ -169,7 +169,7 @@ omc get events --all-namespaces --sort-by='.lastTimestamp'
 ## Testing Locally
 
 ```bash
-# Quick test (namespace inspection included by default)
+# Quick test (Namepace's inspect included by default)
 make test-local-all
 
 # Test with specific namespaces

@@ -165,7 +165,7 @@ Usage: oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gath
   --without-platform            Skip platform detection and information
   --without-route               Skip OpenShift route collection
   --without-ingress             Skip Kubernetes ingress collection
-  --without-namespace-inspect   Skip deep namespace inspection (OMC-compatible)
+  --without-namespace-inspect   Skip deep Namepace's inspect (OMC-compatible)
 
   > You can also choose to enable optional collectors:
   --cluster-info                Collect cluster-wide diagnostic information
@@ -179,7 +179,7 @@ Usage: oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gath
                                 When enabled, secrets are collected but automatically sanitized
 
   Examples:
-  # Default collection (includes namespace inspection for OMC compatibility)
+  # Default collection (includes Namepace's inspect for OMC compatibility)
   oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather
 
   # Collect only Helm data (skip operator data)
@@ -188,10 +188,10 @@ Usage: oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gath
   # Collect only operator data (skip Helm data)  
   oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-helm
 
-  # Skip namespace inspection (not recommended - removes OMC compatibility)
+  # Skip Namepace's inspect (not recommended - removes OMC compatibility)
   oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-namespace-inspect
 
-  # Minimal collection (only platform info, no namespace inspection)
+  # Minimal collection (only platform info, no Namepace's inspect)
   oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-operator --without-helm --without-route --without-ingress --without-namespace-inspect
 
   # Collect from specific namespaces only

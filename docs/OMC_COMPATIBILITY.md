@@ -4,7 +4,7 @@
 
 The RHDH must-gather tool produces output that is **fully compatible** with [OMC (OpenShift Must-Gather Client)](https://github.com/gmeghnag/omc), the standard tool used by Support teams for interactive must-gather analysis.
 
-**Status**: ✅ Namespace inspection is now **collected by default** - all must-gather outputs are OMC-compatible without additional flags.
+**Status**: ✅ Namepace's inspect is now **collected by default** - all must-gather outputs are OMC-compatible without additional flags.
 
 ## What is OMC?
 
@@ -21,7 +21,7 @@ OMC is a command-line tool that allows engineers to inspect resources from a mus
 
 ## Directory Structure Compatibility
 
-OMC requires a specific directory structure, which the namespace inspection provides:
+OMC requires a specific directory structure, which the Namepace's inspect provides:
 
 ### Expected Structure (OMC)
 
@@ -69,7 +69,7 @@ namespace-inspect/                  ← OMC root (use this path)
 
 ## Usage Guide
 
-### Step 1: Collect Must-Gather Data (namespace inspection included by default)
+### Step 1: Collect Must-Gather Data (Namepace's inspect included by default)
 
 ```bash
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main
@@ -89,13 +89,13 @@ sudo mv ./omc /usr/local/bin/
 omc version
 ```
 
-### Step 3: Point OMC to Namespace Inspection
+### Step 3: Point OMC to Namepace's inspect
 
 ```bash
 # Navigate to must-gather output
 cd must-gather.local.*/
 
-# Point OMC to the namespace inspection directory (one command for all namespaces)
+# Point OMC to the Namepace's inspect directory (one command for all namespaces)
 omc use namespace-inspect
 
 # Verify OMC can see all namespaces
@@ -195,10 +195,10 @@ omc get secrets -n rhdh-prod -o name | grep cert
 
 ## Multi-Namespace Analysis
 
-When you collect multiple namespaces, they're all in one OMC-compatible directory (namespace inspection is included by default):
+When you collect multiple namespaces, they're all in one OMC-compatible directory (Namepace's inspect is included by default):
 
 ```bash
-# Collect multiple namespaces (namespace inspection included by default)
+# Collect multiple namespaces (Namepace's inspect included by default)
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main -- \
   /usr/bin/gather --namespaces rhdh-prod,rhdh-staging
 
@@ -311,7 +311,7 @@ omc get pods -o name
 To verify OMC compatibility:
 
 ```bash
-# Collect test data (namespace inspection included by default)
+# Collect test data (Namepace's inspect included by default)
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main -- \
   /usr/bin/gather --namespaces my-test-ns
 
@@ -405,11 +405,11 @@ omc get pods --all-namespaces
 
 ## Summary
 
-✅ **Full Compatibility**: Namespace inspection output works seamlessly with OMC  
+✅ **Full Compatibility**: Namepace's inspect output works seamlessly with OMC  
 ✅ **Standard Structure**: Follows OpenShift must-gather conventions  
 ✅ **Support Ready**: Support can immediately use the output  
 ✅ **Interactive**: Query resources with familiar kubectl/oc commands  
 ✅ **Offline**: No cluster access needed for analysis  
 
-The namespace inspection feature produces OMC-compatible output by design, ensuring that Support teams can use their standard tools and workflows.
+The Namepace's inspect feature produces OMC-compatible output by design, ensuring that Support teams can use their standard tools and workflows.
 

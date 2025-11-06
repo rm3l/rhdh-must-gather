@@ -51,6 +51,7 @@ function main() {
   declare excluded_scripts=()
   declare target_namespaces=""
   declare with_secrets="false"
+  declare with_heap_dumps="false"
 
   parse_flags "$@"
   run_scripts
@@ -90,6 +91,9 @@ function parse_flags {
         ;;
       --with-secrets)
         with_secrets="true"
+        ;;
+      --with-heap-dumps)
+        with_heap_dumps="true"
         ;;
       --namespaces)
         if [[ -n "${2:-}" ]]; then
@@ -140,6 +144,12 @@ function parse_flags {
   else
     log_info "Secret collection disabled by default (use --with-secrets to enable)"
   fi
+  
+  # Export heap dump collection flag
+  export RHDH_WITH_HEAP_DUMPS="$with_heap_dumps"
+  if [[ "$with_heap_dumps" == "true" ]]; then
+    log_warn "Heap dump collection enabled - this may take several minutes and generate large files"
+  fi
 }
 
 function help {
@@ -178,6 +188,24 @@ Usage: oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gath
                                 When disabled, secret resources are excluded from all collectors
                                 When enabled, secrets are collected but automatically sanitized
 
+  > Diagnostic and Troubleshooting Options:
+  --with-heap-dumps             Collect heap dumps from running backstage-backend processes (opt-in, disabled by default)
+                                Heap dumps are collected immediately after pod logs for each deployment/CR
+                                Useful for troubleshooting memory leaks and performance issues
+                                
+                                IMPORTANT: Requires NODE_OPTIONS environment variable:
+                                  NODE_OPTIONS="--heapsnapshot-signal=SIGUSR2 --diagnostic-dir=/tmp"
+                                
+                                Why these flags?
+                                  • --heapsnapshot-signal=SIGUSR2: Built into Node.js v12.0.0+, enables heap dumps
+                                  • --diagnostic-dir=/tmp: REQUIRED for read-only root filesystems
+                                
+                                No image rebuild or source code changes needed!
+                                
+                                Collection method: SIGUSR2 signal sent directly via kubectl exec
+                                Works with any Kubernetes version, no special RBAC permissions needed
+                                Warning: May take several minutes and generate large files (100MB-1GB+ per pod)
+
   Examples:
   # Default collection (includes Namepace's inspect for OMC compatibility)
   oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather
@@ -202,6 +230,13 @@ Usage: oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gath
 
   # Include secrets in collection (for detailed troubleshooting - secrets will be sanitized)
   oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --with-secrets
+
+  # Collect heap dumps for memory troubleshooting (requires app configured with NODE_OPTIONS)
+  # Prerequisites: Add NODE_OPTIONS="--heapsnapshot-signal=SIGUSR2 --diagnostic-dir=/tmp" to your deployment
+  oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --with-heap-dumps
+
+  # Full diagnostic collection (secrets + heap dumps - generates large output)
+  oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --with-secrets --with-heap-dumps
 "
 }
 

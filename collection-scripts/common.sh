@@ -246,6 +246,272 @@ collect_rhdh_info_from_running_pods() {
   safe_exec "kubectl -n '$ns' exec '$running_pod' -- cat /opt/app-root/src/dynamic-plugins-root/app-config.dynamic-plugins.yaml 2>/dev/null" "$output_dir/app-config.dynamic-plugins.yaml" "app-config.dynamic-plugins.yaml file"
 }
 
+collect_heap_dumps_for_pods() {
+  local ns="$1"
+  local labels="$2"
+  local output_dir="$3"
+  
+  # Only collect heap dumps if explicitly enabled
+  if [[ "${RHDH_WITH_HEAP_DUMPS:-false}" != "true" ]]; then
+    log_debug "Heap dump collection disabled (use --with-heap-dumps to enable)"
+    return 0
+  fi
+  
+  log_info "Collecting heap dumps for pods with labels: $labels in namespace: $ns"
+  
+  local heap_dump_dir="$output_dir/heap-dumps"
+  ensure_directory "$heap_dump_dir"
+  
+  # Timeout for heap dump generation (per pod)
+  local HEAP_DUMP_TIMEOUT="${HEAP_DUMP_TIMEOUT:-120}"
+  
+  # Get list of running pods matching the labels
+  local pods=$(kubectl get pods -n "$ns" -l "$labels" --field-selector=status.phase=Running -o jsonpath='{.items[*].metadata.name}' 2>/dev/null || true)
+  
+  if [[ -z "$pods" ]]; then
+    log_warn "No running pods found with labels: $labels in namespace: $ns"
+    echo "No running pods found" > "$heap_dump_dir/no-pods.txt"
+    return 0
+  fi
+  
+  for pod in $pods; do
+    log_info "Processing pod: $pod for heap dump collection"
+    
+    local pod_dir="$heap_dump_dir/pod=$pod"
+    ensure_directory "$pod_dir"
+    
+    # Get pod spec
+    kubectl get pod -n "$ns" "$pod" -o yaml > "$pod_dir/pod-spec.yaml" 2>&1 || true
+    
+    # Find backstage-backend container
+    local containers=$(kubectl get pod -n "$ns" "$pod" -o jsonpath='{.spec.containers[*].name}' 2>/dev/null || true)
+    
+    for container in $containers; do
+      # Only process the backstage-backend container
+      if [[ "$container" != "backstage-backend" ]]; then
+        log_debug "Skipping container $container (only collecting from backstage-backend)"
+        continue
+      fi
+      
+      log_info "Processing backstage-backend container in pod: $pod"
+      
+      # Find the Node.js process PID in the backstage-backend container
+      # Using /proc filesystem as it's always available in Linux containers
+      # (unlike ps, pidof, or pgrep which require additional packages)
+      log_debug "Looking for Node.js process using /proc filesystem..."
+      local node_pid=$(kubectl exec -n "$ns" "$pod" -c "$container" -- sh -c "
+        for pid_dir in /proc/[0-9]*; do
+          pid=\$(basename \$pid_dir)
+          # Check process name in comm file
+          if [ -f \$pid_dir/comm ] && grep -qi node \$pid_dir/comm 2>/dev/null; then
+            echo \$pid
+            break
+          fi
+          # Check command line if comm didn't match
+          if [ -f \$pid_dir/cmdline ] && grep -qi node \$pid_dir/cmdline 2>/dev/null; then
+            echo \$pid
+            break
+          fi
+        done
+      " 2>/dev/null || true)
+      
+      if [[ -z "$node_pid" ]]; then
+        log_warn "No Node.js process found in backstage-backend container"
+        local container_dir="$pod_dir/container=$container"
+        ensure_directory "$container_dir"
+        echo "No Node.js process found in backstage-backend container" > "$container_dir/no-node-process.txt"
+        echo "Searched /proc filesystem for node process" >> "$container_dir/no-node-process.txt"
+        echo "This usually means the container is not running a Node.js application" >> "$container_dir/no-node-process.txt"
+        continue
+      fi
+      
+      log_info "Found Node.js process (PID: $node_pid) in backstage-backend container"
+      
+      local container_dir="$pod_dir/container=$container"
+      ensure_directory "$container_dir"
+      
+      local timestamp=$(date +%Y%m%d-%H%M%S)
+      local heap_file="heapdump-${timestamp}.heapsnapshot"
+      local remote_path="/tmp/${heap_file}"
+      
+      # Log the Node.js PID
+      log_info "Node.js process PID: $node_pid"
+      echo "Node.js PID: $node_pid" >> "$container_dir/heap-dump.log"
+      
+      # Collect process metadata
+      {
+        echo "=== Process Information ==="
+        echo "PID: $node_pid"
+        echo ""
+        echo "Process Status (/proc/$node_pid/status):"
+        kubectl exec -n "$ns" "$pod" -c "$container" -- sh -c "cat /proc/$node_pid/status 2>/dev/null || echo 'Could not read process status'"
+        echo ""
+        echo "Command Line (/proc/$node_pid/cmdline):"
+        kubectl exec -n "$ns" "$pod" -c "$container" -- sh -c "cat /proc/$node_pid/cmdline 2>/dev/null | tr '\0' ' ' || echo 'Could not read command line'"
+        echo ""
+        echo "Environment (/proc/$node_pid/environ):"
+        kubectl exec -n "$ns" "$pod" -c "$container" -- sh -c "cat /proc/$node_pid/environ 2>/dev/null | tr '\0' '\n' | grep -E '^(NODE_|PATH=)' || echo 'Could not read environment'"
+        echo ""
+        echo "=== Memory Usage ==="
+        kubectl exec -n "$ns" "$pod" -c "$container" -- sh -c "cat /proc/meminfo 2>/dev/null || echo 'Could not get memory info'"
+        echo ""
+        echo "=== Node.js Version ==="
+        kubectl exec -n "$ns" "$pod" -c "$container" -- node --version 2>/dev/null || echo "Could not get Node.js version"
+        echo ""
+        echo "=== Available Disk Space ==="
+        kubectl exec -n "$ns" "$pod" -c "$container" -- df -h 2>/dev/null || echo "Could not get disk space"
+      } > "$container_dir/process-info.txt"
+      
+      # Send SIGUSR2 signal directly to the Node.js process
+      # This works if Node.js was started with --heapsnapshot-signal=SIGUSR2 (recommended)
+      # or if the app has heapdump module or custom SIGUSR2 handler
+      log_info "Sending SIGUSR2 signal to trigger heap dump..."
+      
+      {
+        echo "Sending SIGUSR2 signal to Node.js process (PID: $node_pid)..."
+        if kubectl exec -n "$ns" "$pod" -c "$container" -- kill -USR2 "$node_pid" 2>&1; then
+          echo "✓ SIGUSR2 sent successfully to PID $node_pid"
+        else
+          echo "✗ Failed to send SIGUSR2 signal"
+        fi
+        
+        # Wait for heap dump file to be created
+        echo ""
+        echo "Waiting ${HEAP_DUMP_TIMEOUT}s for heap dump to be generated..."
+        sleep "${HEAP_DUMP_TIMEOUT}"
+        
+        # Look for heap dump files in common locations
+        echo "Searching for heap dump files..."
+        local found_dumps=$(kubectl exec -n "$ns" "$pod" -c "$container" -- sh -c \
+          "find /tmp /app /opt/app-root/src . -maxdepth 2 \( -name '*.heapsnapshot' -o -name 'Heap.*.heapsnapshot' -o -name 'heapdump-*.heapsnapshot' \) 2>/dev/null | head -5" 2>/dev/null || true)
+        
+        if [[ -n "$found_dumps" ]]; then
+          echo "✓ Found heap dump file(s):"
+          echo "$found_dumps"
+        else
+          echo "✗ No heap dump files found in /tmp, /app, /opt/app-root/src, or current directory"
+        fi
+      } >> "$container_dir/heap-dump.log" 2>&1
+      
+      # Try to copy any heap dump file we can find
+      local copied=false
+      local search_paths="/tmp /app /opt/app-root/src"
+      
+      for search_path in $search_paths; do
+        local heap_files=$(kubectl exec -n "$ns" "$pod" -c "$container" -- sh -c \
+          "find $search_path -maxdepth 2 -name '*.heapsnapshot' 2>/dev/null | head -1" 2>/dev/null || true)
+        
+        if [[ -n "$heap_files" ]]; then
+          log_info "Found heap dump file: $heap_files"
+          
+          local local_path="$container_dir/${heap_file}"
+          if kubectl cp -n "$ns" "${pod}:${heap_files}" "$local_path" -c "$container" >> "$container_dir/heap-dump.log" 2>&1; then
+            local file_size=$(du -h "$local_path" 2>/dev/null | cut -f1)
+            log_success "Heap dump copied to $local_path (${file_size})"
+            echo "Heap dump collected: ${heap_file} (${file_size})" >> "$container_dir/heap-dump.log"
+            
+            # Clean up remote file
+            kubectl exec -n "$ns" "$pod" -c "$container" -- rm -f "$heap_files" 2>/dev/null || true
+            
+            copied=true
+            break
+          fi
+        fi
+      done
+      
+      if [[ "$copied" != "true" ]]; then
+        log_warn "Failed to collect heap dump for $pod/$container"
+        log_info "The application is not instrumented to generate heap dumps on SIGUSR2"
+        {
+          echo "==================================================================="
+          echo "Heap Dump Collection Failed"
+          echo "==================================================================="
+          echo ""
+          echo "All collection methods were attempted, but no heap dump was generated."
+          echo ""
+          echo "Node.js Process Information:"
+          echo "  PID: $node_pid"
+          echo "  Container: $container"
+          echo "  Pod: $pod"
+          echo "  Namespace: $ns"
+          echo ""
+          echo "Method Attempted:"
+          echo "  ✓ SIGUSR2 signal sent directly to backstage-backend container (PID: $node_pid)"
+          echo ""
+          echo "Result: No heap dump files were created in /tmp, /app, /opt/app-root/src, or current directory"
+          echo ""
+          echo "==================================================================="
+          echo "Why This Happened"
+          echo "==================================================================="
+          echo ""
+          echo "The Backstage application is not currently instrumented to handle"
+          echo "SIGUSR2 signals for heap dump generation. This is the default state"
+          echo "for most Node.js applications."
+          echo ""
+          echo "==================================================================="
+          echo "How to Enable Heap Dumps"
+          echo "==================================================================="
+          echo ""
+          echo "⭐ Node.js Built-in Flag (RECOMMENDED)"
+          echo "---------------------------------------------------------"
+          echo "Built into Node.js v12.0.0+, no image rebuild or dependencies required!"
+          echo ""
+          echo "Add to your Deployment or Backstage CR:"
+          echo "  spec:"
+          echo "    template:"
+          echo "      spec:"
+          echo "        containers:"
+          echo "        - name: backstage-backend"
+          echo "          env:"
+          echo "          - name: NODE_OPTIONS"
+          echo "            value: \"--heapsnapshot-signal=SIGUSR2 --diagnostic-dir=/tmp\""
+          echo ""
+          echo "⚠️  IMPORTANT:"
+          echo "   • --heapsnapshot-signal=SIGUSR2 enables automatic heap dump on signal"
+          echo "   • --diagnostic-dir=/tmp is REQUIRED for read-only root filesystems"
+          echo "     (common security best practice). Without it, heap dumps will fail!"
+          echo ""
+          echo "Advantages:"
+          echo "  ✅ Built into Node.js - zero dependencies!"
+          echo "  ✅ No image rebuild required"
+          echo "  ✅ No source code changes needed"
+          echo "  ✅ Works immediately after pod restart"
+          echo ""
+          echo "Collection method: SIGUSR2 signal sent via kubectl exec"
+          echo "Works with any Kubernetes version, no special RBAC permissions needed"
+          echo ""
+          echo "Reference: https://nodejs.org/docs/latest/api/cli.html#--heapsnapshot-signalsignal"
+          echo ""
+          echo "==================================================================="
+          echo "Next Steps"
+          echo "==================================================================="
+          echo ""
+          echo "1. Update your Deployment/CR with NODE_OPTIONS as shown above"
+          echo "2. Redeploy and wait for the pod to restart"
+          echo "3. Run must-gather again with --with-heap-dumps:"
+          echo ""
+          echo "   oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- \\"
+          echo "     /usr/bin/gather --with-heap-dumps"
+          echo ""
+          echo "The heap dump will be automatically collected and included in the output."
+          echo ""
+          echo "==================================================================="
+          echo "Diagnostic Logs"
+          echo "==================================================================="
+          echo ""
+          echo "For detailed logs: heap-dump.log"
+          echo "For process info: process-info.txt"
+          echo ""
+        } > "$container_dir/collection-failed.txt"
+        
+        log_info "Created guidance file: $container_dir/collection-failed.txt"
+      fi
+    done
+  done
+  
+  log_success "Heap dump collection completed for namespace: $ns"
+}
+
 collect_rhdh_data() {
   local ns="$1"
   local deploy="$2"
@@ -270,6 +536,9 @@ collect_rhdh_data() {
     if [[ -n "$labels" ]]; then
       # Retrieve some information from the running pods
       collect_rhdh_info_from_running_pods "$ns" "$labels" "$deploy_dir"
+
+      # Collect heap dumps right after collecting logs (if enabled)
+      collect_heap_dumps_for_pods "$ns" "$labels" "$deploy_dir"
 
       pods_dir="$deploy_dir/pods"
       ensure_directory "$pods_dir"

@@ -210,6 +210,31 @@ This tool focuses exclusively on RHDH-related resources. For cluster-wide inform
   - Standard must-gather directory structure
 - **Can be disabled** with `--without-namespace-inspect` flag (not recommended - removes OMC compatibility)
 
+### Heap Dumps (opt-in, disabled by default)
+- **Memory diagnostics** from running backstage-backend containers using `--with-heap-dumps`
+- **Integrated collection**: Heap dumps are collected automatically **right after pod logs** for each Helm release and Backstage CR
+- **Per-deployment context**: Each heap dump is stored within its deployment/CR directory for easy correlation with logs
+- **Automatic detection**: 
+  - Finds all running backstage-backend pods for each deployment
+  - Targets only the `backstage-backend` container (skips all sidecars automatically)
+  - Detects Node.js process PID using portable methods (`ps` command or `/proc` filesystem)
+  - Works with minimal container images without `pidof` or `pgrep` utilities
+- **Collection method**:
+  - **SIGUSR2 signal** sent directly to the backstage-backend container via `kubectl exec`
+  - Works if Node.js is started with `--heapsnapshot-signal=SIGUSR2` (recommended) or if application has heapdump module/custom SIGUSR2 handler
+  - Simple, reliable, and works with any Kubernetes version
+- **Process metadata**: Memory usage, Node.js version, disk space, and process information collected alongside dumps
+- **Use cases**: Memory leak troubleshooting, performance analysis, and OOM investigations
+- **File format**: `.heapsnapshot` files compatible with Chrome DevTools and other heap analysis tools
+- **Important limitations**:
+  - Requires application to handle SIGUSR2 signal. Choose ONE of:
+    - ⭐ `NODE_OPTIONS="--heapsnapshot-signal=SIGUSR2 --diagnostic-dir=/tmp"` (built-in Node.js, recommended - no image rebuild!)
+    - `NODE_OPTIONS="--require heapdump"` with heapdump module in image
+    - Custom SIGUSR2 signal handler in application code
+  - **Note**: `--diagnostic-dir=/tmp` is required for containers with read-only root filesystems
+  - Heap dumps can be very large (100MB-1GB+ per pod) and take several minutes per deployment
+  - Success rate depends on application instrumentation
+
 ### Cluster Information (optional)
 - **Cluster-wide diagnostic dump** using `oc cluster-info dump` (enabled with `--cluster-info` flag)
 
@@ -322,6 +347,241 @@ namespace-inspect/            # ← Point OMC here: omc use namespace-inspect
 
 **Tip**: Single OMC context for all namespaces - no need to switch contexts when analyzing multiple environments.
 
+## Analyzing Heap Dumps
+
+When heap dumps are collected using `--with-heap-dumps`, they can be analyzed using various tools to investigate memory leaks, high memory usage, and performance issues.
+
+### Prerequisites for Heap Dump Collection
+
+**Important**: Heap dump collection from running Node.js processes requires either:
+
+1. **Node.js Built-in Signal Handler** (⭐ Recommended - Simplest!):
+   
+   Use Node.js's built-in `--heapsnapshot-signal` flag (available since Node.js v12.0.0):
+   
+   ```yaml
+   # In your Deployment or Backstage CR
+   spec:
+     template:
+       spec:
+         containers:
+         - name: backstage-backend
+           env:
+           - name: NODE_OPTIONS
+             value: "--heapsnapshot-signal=SIGUSR2 --diagnostic-dir=/tmp"
+   ```
+   
+   Or modify the command directly:
+   ```yaml
+           command: ["node", "--heapsnapshot-signal=SIGUSR2", "--diagnostic-dir=/tmp", "dist/index.js"]
+   ```
+   
+   **Important**: The `--diagnostic-dir=/tmp` flag is required for containers with read-only root filesystems. Without it, heap snapshots cannot be written to the default current working directory.
+   
+   **Advantages:**
+   - ✅ Built into Node.js - no external dependencies or modules!
+   - ✅ No image rebuild required
+   - ✅ No source code changes needed
+   - ✅ Works immediately with must-gather `--with-heap-dumps`
+   - ✅ Heap snapshots written to `/tmp/Heap.<timestamp>.heapsnapshot` automatically
+   - ✅ Works with read-only root filesystems (common security best practice)
+   
+   **How it works:** When Node.js receives SIGUSR2 signal, it automatically writes a heap snapshot to `Heap.<timestamp>.heapsnapshot` in the directory specified by `--diagnostic-dir` (or current working directory if not specified).
+   
+   **Reference:** [Node.js CLI Documentation](https://nodejs.org/docs/latest-v22.x/api/cli.html#--heapsnapshot-signalsignal)
+
+2. **Application Instrumentation** (Alternative if you need custom behavior):
+   
+   **With source code access:**
+   ```javascript
+   // In your backend/src/index.ts or similar
+   require('heapdump');  // Enables SIGUSR2 signal handler for heap dumps
+   ```
+   
+   Or add a custom signal handler:
+   ```javascript
+   process.on('SIGUSR2', () => {
+     const v8 = require('v8');
+     const path = require('path');
+     const filename = path.join('/tmp', `heapdump-${Date.now()}.heapsnapshot`);
+     v8.writeHeapSnapshot(filename);
+     console.log(`Heap dump written to ${filename}`);
+   });
+   ```
+   
+   **Without source code access** (requires image rebuild):
+   
+   1. Add heapdump to your `package.json`:
+      ```json
+      {
+        "dependencies": {
+          "heapdump": "^1.3.0"
+        }
+      }
+      ```
+   
+   2. Rebuild and push your container image:
+      ```bash
+      docker build -t your-registry/rhdh:custom .
+      docker push your-registry/rhdh:custom
+      ```
+   
+   3. Update your Deployment or Backstage CR:
+      ```yaml
+      spec:
+        template:
+          spec:
+            containers:
+            - name: backstage-backend
+              image: your-registry/rhdh:custom  # Use your custom image
+              env:
+              - name: NODE_OPTIONS
+                value: "--require heapdump"
+      ```
+   
+   4. Redeploy and the application will automatically handle SIGUSR2 for heap dumps
+   
+   **Note**: If you see "Cannot find module 'heapdump'" error, the module is not in your container image. You must rebuild the image with heapdump included.
+
+**Without instrumentation**, heap dump collection will fail with an informative message explaining how to enable it for future troubleshooting.
+
+### ⚠️ Important: No "Quick Fix" Without Instrumentation
+
+**There is no way to extract a heap dump from a running Node.js process without prior instrumentation.**
+
+Common misconceptions:
+- ❌ `kubectl exec ... node --eval 'v8.writeHeapSnapshot(...)'` - This spawns a **new** Node.js process, not the running one
+- ❌ Sending signals without handlers - Only works if the app has SIGUSR2 handlers configured
+- ❌ Attaching debuggers after the fact - Requires `--inspect` to be enabled at startup
+
+**The reality:** You must plan ahead by:
+1. ⭐ **Starting Node.js with `--heapsnapshot-signal=SIGUSR2 --diagnostic-dir=/tmp`** (built into Node.js, no modules needed!), **OR**
+2. Adding `heapdump` module to your container image, **OR**
+3. Modifying source code to add custom SIGUSR2 signal handlers
+
+**Recommended**: Use Node.js's built-in `--heapsnapshot-signal=SIGUSR2 --diagnostic-dir=/tmp` flags - it's the simplest and most reliable method with zero dependencies and no image rebuild required! The `--diagnostic-dir=/tmp` is essential for containers with read-only root filesystems.
+
+### Heap Dump Files
+
+Heap dumps are saved as `.heapsnapshot` files within each deployment/CR directory, right alongside the logs:
+
+```
+# For Helm deployments:
+helm/releases/ns=my-ns/my-release/deployment/heap-dumps/
+└── pod=backstage-xyz/
+    └── container=backstage-backend/
+        ├── heapdump-20250105-143022.heapsnapshot  (500MB)
+        ├── process-info.txt
+        ├── heap-dump.log
+        └── pod-spec.yaml
+
+# For Operator deployments:
+operator/backstage-crs/ns=my-ns/my-backstage-cr/deployment/heap-dumps/
+└── pod=backstage-my-backstage-cr-xyz/
+    └── container=backstage-backend/
+        ├── heapdump-20250105-143022.heapsnapshot  (500MB)
+        ├── process-info.txt
+        ├── heap-dump.log
+        └── pod-spec.yaml
+```
+
+This structure makes it easy to correlate heap dumps with the corresponding logs and deployment information.
+
+### Analysis Tools
+
+#### 1. Chrome DevTools (Recommended)
+
+Chrome DevTools provides a powerful, visual interface for analyzing heap snapshots:
+
+```bash
+# Open Chrome and navigate to DevTools
+# 1. Open Chrome browser
+# 2. Press F12 or Ctrl+Shift+I to open DevTools
+# 3. Go to the "Memory" tab
+# 4. Click "Load" button
+# 5. Select the .heapsnapshot file from must-gather output
+
+# Or use Chrome DevTools from command line
+google-chrome --auto-open-devtools-for-tabs
+```
+
+**Chrome DevTools Features:**
+- **Summary view**: Object types, counts, and sizes
+- **Comparison view**: Compare multiple snapshots to find memory leaks
+- **Containment view**: Object references and retention paths
+- **Statistics**: Memory distribution by type
+
+#### 2. Node.js CLI Analysis
+
+```bash
+# Install heap snapshot utilities
+npm install -g heapsnapshot-parser
+
+# Parse and analyze heap dump
+heapsnapshot-parser heapdump-20250105-143022.heapsnapshot
+```
+
+#### 3. MemLab (Facebook's Memory Leak Detector)
+
+```bash
+# Install MemLab
+npm install -g @memlab/cli
+
+# Analyze heap snapshot
+memlab analyze heapdump-20250105-143022.heapsnapshot
+```
+
+### Common Analysis Workflows
+
+#### Finding Memory Leaks
+
+1. **Collect multiple snapshots over time** (optional, not done automatically):
+   ```bash
+   # Collect initial snapshot
+   oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --with-heap-dumps
+   
+   # Wait 30 minutes for memory to grow
+   # Collect second snapshot
+   oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --with-heap-dumps
+   ```
+
+2. **Compare snapshots in Chrome DevTools**:
+   - Load first snapshot
+   - Take note of baseline memory usage
+   - Load second snapshot
+   - Use "Comparison" view to see what grew
+
+3. **Look for growing object counts**:
+   - Arrays that keep growing
+   - Event listeners not being removed
+   - Cached data not being cleaned up
+
+#### Investigating High Memory Usage
+
+1. **Load snapshot in Chrome DevTools**
+2. **Sort by "Retained Size"** to find largest objects
+3. **Check "Distance" column** to see how far objects are from GC roots
+4. **Inspect retention paths** to understand why objects aren't being freed
+
+### Heap Dump Metadata
+
+Each heap dump collection includes metadata files:
+
+- **`process-info.txt`**: Node.js version, process details, memory usage at collection time
+- **`heap-dump.log`**: Collection logs, any errors or warnings
+- **`pod-spec.yaml`**: Complete pod specification for context
+
+### Tips and Best Practices
+
+- **Application instrumentation**: For reliable heap dump collection, instrument your Backstage application with `heapdump` module or signal handlers (see Prerequisites above)
+- **Large files**: Heap dumps can be 100MB-1GB+. Ensure sufficient disk space and bandwidth for analysis.
+- **Privacy**: Heap dumps may contain sensitive data from memory. Handle them securely and apply sanitization if sharing.
+- **Timing**: Collect heap dumps when memory usage is high or after OOM events for best results.
+- **Comparison**: Multiple snapshots over time help identify memory leaks vs. normal memory growth.
+- **Node.js version**: Ensure your analysis tools support the Node.js version used by the application.
+- **Collection methods**: The tool tries multiple approaches (kubectl debug, inspector, signals) but success depends on cluster permissions and application setup.
+- **Troubleshooting failures**: If collection fails, check `heap-dump.log` and `collection-failed.txt` for specific guidance on enabling heap dumps.
+
 ## Privacy and Security
 
 ### Secret Collection (Opt-In by Default)
@@ -431,6 +691,12 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --na
 # With time constraints (last 2 hours)
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather --since=2h
 
+# Collect heap dumps for memory troubleshooting (opt-in, generates large files)
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --with-heap-dumps
+
+# Full diagnostic collection (secrets + heap dumps)
+oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --with-secrets --with-heap-dumps
+
 # With debug logging
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- LOG_LEVEL=debug /usr/bin/gather
 
@@ -460,6 +726,26 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --he
 - `--namespaces rhdh-prod,rhdh-staging` - Collect only from production and staging namespaces
 - `--namespaces=my-rhdh-ns` - Collect only from a single namespace
 - Combine with exclusions: `--namespaces prod-ns --without-helm` - Only operator data from prod-ns
+
+#### Optional Feature Flags
+
+| Flag | Description | Use Case |
+|------|-------------|----------|
+| `--cluster-info` | Collect cluster-wide diagnostic information | For comprehensive cluster analysis |
+| `--with-secrets` | Include Kubernetes Secrets (sanitized) | For detailed troubleshooting requiring secret metadata |
+| `--with-heap-dumps` | Collect heap dumps from backstage-backend containers | For memory leak investigation and performance analysis |
+
+**Heap Dump Details:**
+- **Collection time**: 2-5 minutes per pod (depends on heap size)
+- **File size**: 100MB-1GB+ per pod (varies with memory usage)
+- **Analysis tools**: Chrome DevTools, MemLab, heap-snapshot utilities
+- **Use cases**: Memory leaks, OOM crashes, high memory usage troubleshooting
+- **Limitations**: Requires Node.js runtime in containers, sufficient disk space
+
+**Examples:**
+- `--with-heap-dumps` - Collect heap dumps for all backstage-backend pods
+- `--with-secrets --with-heap-dumps` - Full diagnostic collection
+- `--namespaces prod-ns --with-heap-dumps` - Heap dumps from specific namespace only
 
 ## Output Structure
 
@@ -532,6 +818,13 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --he
 │               │   ├── logs-app.txt                # All container logs (2MB+ files)
 │               │   ├── logs-app--backstage-backend.txt # Backend logs (2MB+ files)
 │               │   ├── logs-app--install-dynamic-plugins.txt # Init container logs (17KB files)
+│               │   ├── heap-dumps/     # Memory heap dumps (if --with-heap-dumps used)
+│               │   │   └── pod=[pod-name]/         # Per-pod directory
+│               │   │       └── container=[container-name]/
+│               │   │           ├── heapdump-[timestamp].heapsnapshot  # Heap dump (100MB-1GB+)
+│               │   │           ├── process-info.txt        # Process and memory info
+│               │   │           ├── heap-dump.log           # Collection logs
+│               │   │           └── pod-spec.yaml           # Pod specification
 │               │   └── pods/           # Pod details and logs
 │               │       ├── pods.txt
 │               │       ├── pods.yaml
@@ -591,6 +884,13 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --he
                 │   ├── logs-app.txt                # All container logs (2MB+ files)
                 │   ├── logs-app--backstage-backend.txt # Backend logs (2MB+ files)
                 │   ├── logs-app--install-dynamic-plugins.txt # Init container logs (17KB files)
+                │   ├── heap-dumps/     # Memory heap dumps (if --with-heap-dumps used)
+                │   │   └── pod=[pod-name]/         # Per-pod directory
+                │   │       └── container=[container-name]/
+                │   │           ├── heapdump-[timestamp].heapsnapshot  # Heap dump (100MB-1GB+)
+                │   │           ├── process-info.txt        # Process and memory info
+                │   │           ├── heap-dump.log           # Collection logs
+                │   │           └── pod-spec.yaml           # Pod specification
                 │   └── pods/           # Application pods
                 │       ├── pods.txt
                 │       ├── pods.yaml

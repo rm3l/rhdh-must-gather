@@ -36,7 +36,7 @@ test-local-all: test-output ## Test the script locally (requires kubectl)
 		exit 1; \
 	fi
 	@echo "Running local test (requires cluster access)..."
-	BASE_COLLECTION_PATH=./test-output LOG_LEVEL=$(LOG_LEVEL) ./collection-scripts/must_gather
+	BASE_COLLECTION_PATH=./test-output LOG_LEVEL=$(LOG_LEVEL) ./collection-scripts/must_gather  --with-heap-dumps
 
 .PHONY: test-local-script
 test-local-script: test-output ## Test the specified script (set the SCRIPT var)

@@ -369,7 +369,7 @@ collect_heap_dumps_for_pods() {
       
       {
         echo "Sending SIGUSR2 signal to Node.js process (PID: $node_pid)..."
-        if kubectl exec -n "$ns" "$pod" -c "$container" -- kill -USR2 "$node_pid" 2>&1; then
+        if kubectl exec -n "$ns" "$pod" -c "$container" -- sh -c "kill -USR2 $node_pid" 2>&1; then
           echo "✓ SIGUSR2 sent successfully to PID $node_pid"
         else
           echo "✗ Failed to send SIGUSR2 signal"

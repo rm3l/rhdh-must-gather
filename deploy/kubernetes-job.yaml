@@ -64,6 +64,7 @@ spec:
       containers:
       - name: gather
         image: ${FULL_IMAGE_NAME}
+        args: ${ARGS}
         env:
         - name: POD_NAME
           valueFrom:

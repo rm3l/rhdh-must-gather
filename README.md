@@ -353,113 +353,56 @@ When heap dumps are collected using `--with-heap-dumps`, they can be analyzed us
 
 ### Prerequisites for Heap Dump Collection
 
-**Important**: Heap dump collection from running Node.js processes requires either:
+**Important**: Heap dump collection from running Node.js processes requires configuring the application with Node.js's built-in signal handler.
 
-1. **Node.js Built-in Signal Handler** (⭐ Recommended - Simplest!):
-   
-   Use Node.js's built-in `--heapsnapshot-signal` flag (available since Node.js v12.0.0):
-   
-   ```yaml
-   # In your Deployment or Backstage CR
-   spec:
-     template:
-       spec:
-         containers:
-         - name: backstage-backend
-           env:
-           - name: NODE_OPTIONS
-             value: "--heapsnapshot-signal=SIGUSR2 --diagnostic-dir=/tmp"
-   ```
-   
-   Or modify the command directly:
-   ```yaml
-           command: ["node", "--heapsnapshot-signal=SIGUSR2", "--diagnostic-dir=/tmp", "dist/index.js"]
-   ```
-   
-   **Important**: The `--diagnostic-dir=/tmp` flag is required for containers with read-only root filesystems. Without it, heap snapshots cannot be written to the default current working directory.
-   
-   **Advantages:**
-   - ✅ Built into Node.js - no external dependencies or modules!
-   - ✅ No image rebuild required
-   - ✅ No source code changes needed
-   - ✅ Works immediately with must-gather `--with-heap-dumps`
-   - ✅ Heap snapshots written to `/tmp/Heap.<timestamp>.heapsnapshot` automatically
-   - ✅ Works with read-only root filesystems (common security best practice)
-   
-   **How it works:** When Node.js receives SIGUSR2 signal, it automatically writes a heap snapshot to `Heap.<timestamp>.heapsnapshot` in the directory specified by `--diagnostic-dir` (or current working directory if not specified).
-   
-   **Reference:** [Node.js CLI Documentation](https://nodejs.org/docs/latest-v22.x/api/cli.html#--heapsnapshot-signalsignal)
+#### Node.js Built-in Signal Handler
 
-2. **Application Instrumentation** (Alternative if you need custom behavior):
-   
-   **With source code access:**
-   ```javascript
-   // In your backend/src/index.ts or similar
-   require('heapdump');  // Enables SIGUSR2 signal handler for heap dumps
-   ```
-   
-   Or add a custom signal handler:
-   ```javascript
-   process.on('SIGUSR2', () => {
-     const v8 = require('v8');
-     const path = require('path');
-     const filename = path.join('/tmp', `heapdump-${Date.now()}.heapsnapshot`);
-     v8.writeHeapSnapshot(filename);
-     console.log(`Heap dump written to ${filename}`);
-   });
-   ```
-   
-   **Without source code access** (requires image rebuild):
-   
-   1. Add heapdump to your `package.json`:
-      ```json
-      {
-        "dependencies": {
-          "heapdump": "^1.3.0"
-        }
-      }
-      ```
-   
-   2. Rebuild and push your container image:
-      ```bash
-      docker build -t your-registry/rhdh:custom .
-      docker push your-registry/rhdh:custom
-      ```
-   
-   3. Update your Deployment or Backstage CR:
-      ```yaml
-      spec:
-        template:
-          spec:
-            containers:
-            - name: backstage-backend
-              image: your-registry/rhdh:custom  # Use your custom image
-              env:
-              - name: NODE_OPTIONS
-                value: "--require heapdump"
-      ```
-   
-   4. Redeploy and the application will automatically handle SIGUSR2 for heap dumps
-   
-   **Note**: If you see "Cannot find module 'heapdump'" error, the module is not in your container image. You must rebuild the image with heapdump included.
+Use Node.js's built-in `--heapsnapshot-signal` flag (available since Node.js v12.0.0):
 
-**Without instrumentation**, heap dump collection will fail with an informative message explaining how to enable it for future troubleshooting.
+```yaml
+# In your Deployment or Backstage CR
+spec:
+  template:
+    spec:
+      containers:
+      - name: backstage-backend
+        env:
+        - name: NODE_OPTIONS
+          value: "--heapsnapshot-signal=SIGUSR2 --diagnostic-dir=/tmp"
+```
 
-### ⚠️ Important: No "Quick Fix" Without Instrumentation
+Or modify the command directly:
 
-**There is no way to extract a heap dump from a running Node.js process without prior instrumentation.**
+```yaml
+        command: ["node", "--heapsnapshot-signal=SIGUSR2", "--diagnostic-dir=/tmp", "dist/index.js"]
+```
+
+**Important**: The `--diagnostic-dir=/tmp` flag is required for containers with read-only root filesystems. Without it, heap snapshots cannot be written to the default current working directory.
+
+**Advantages:**
+- ✅ Built into Node.js - no external dependencies or modules!
+- ✅ No image rebuild required
+- ✅ No source code changes needed
+- ✅ Works immediately with must-gather `--with-heap-dumps`
+- ✅ Heap snapshots written to `/tmp/Heap.<timestamp>.heapsnapshot` automatically
+- ✅ Works with read-only root filesystems (common security best practice)
+
+**How it works:** When Node.js receives SIGUSR2 signal, it automatically writes a heap snapshot to `Heap.<timestamp>.heapsnapshot` in the directory specified by `--diagnostic-dir` (or current working directory if not specified).
+
+**Reference:** [Node.js CLI Documentation](https://nodejs.org/docs/latest-v22.x/api/cli.html#--heapsnapshot-signalsignal)
+
+**Without this configuration**, heap dump collection will fail with an informative message explaining how to enable it for future troubleshooting.
+
+### ⚠️ Important: No "Quick Fix" Without Configuration
+
+**There is no way to extract a heap dump from a running Node.js process without prior configuration.**
 
 Common misconceptions:
 - ❌ `kubectl exec ... node --eval 'v8.writeHeapSnapshot(...)'` - This spawns a **new** Node.js process, not the running one
 - ❌ Sending signals without handlers - Only works if the app has SIGUSR2 handlers configured
 - ❌ Attaching debuggers after the fact - Requires `--inspect` to be enabled at startup
 
-**The reality:** You must plan ahead by:
-1. ⭐ **Starting Node.js with `--heapsnapshot-signal=SIGUSR2 --diagnostic-dir=/tmp`** (built into Node.js, no modules needed!), **OR**
-2. Adding `heapdump` module to your container image, **OR**
-3. Modifying source code to add custom SIGUSR2 signal handlers
-
-**Recommended**: Use Node.js's built-in `--heapsnapshot-signal=SIGUSR2 --diagnostic-dir=/tmp` flags - it's the simplest and most reliable method with zero dependencies and no image rebuild required! The `--diagnostic-dir=/tmp` is essential for containers with read-only root filesystems.
+**The solution:** Configure your Node.js application at startup with `--heapsnapshot-signal=SIGUSR2 --diagnostic-dir=/tmp`. This is the simplest and most reliable method with zero dependencies and no image rebuild required! The `--diagnostic-dir=/tmp` is essential for containers with read-only root filesystems.
 
 ### Heap Dump Files
 

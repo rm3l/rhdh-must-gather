@@ -6,10 +6,9 @@ A specialized diagnostic data collection tool for Red Hat Developer Hub (RHDH) d
 
 This tool helps support teams and engineers collect essential RHDH-specific information to troubleshoot issues effectively. It focuses exclusively on RHDH resources and can be combined with generic cluster information collection. It supports:
 
-- **Multi-platform**: OpenShift and standard Kubernetes (AKS, GKE, EKS)
+- **Multi-platform**: OpenShift and standard Kubernetes
 - **Multi-deployment**: Helm-based and Operator-based RHDH instances
 - **RHDH-focused collection**: Only RHDH-specific logs, configurations, and resources
-- **Privacy-aware**: Automatic sanitization of secrets, tokens, and sensitive data (WIP)
 
 > **Note**: This tool collects only RHDH-specific data. For cluster-wide general information, use the generic OpenShift must-gather: `oc adm must-gather`
 
@@ -21,104 +20,30 @@ This tool helps support teams and engineers collect essential RHDH-specific info
 # Use the published image
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main
 
-# Collect only logs and events from last 2 hours
+# Collect relevant RHDH data and logs and events from last 2 hours
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main --since=2h
 
-# Collect logs and events since specific time
+# Collect relevant RHDH data and logs and events since specific time
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main --since-time=2025-08-21T20:00:00Z
 ```
 
 ### Using with Kubernetes (WIP)
 
-#### Option 1: Using PersistentVolume (Recommended)
-
 ```bash
-# Create PVC for persistent storage
-cat <<EOF | kubectl apply -f -
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: rhdh-must-gather-pvc
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: rhdh-must-gather
-spec:
-  template:
-    spec:
-      containers:
-      - name: must-gather
-        image: ghcr.io/rm3l/rhdh-must-gather:main
-        volumeMounts:
-        - name: output
-          mountPath: /must-gather
-      volumes:
-      - name: output
-        persistentVolumeClaim:
-          claimName: rhdh-must-gather-pvc
-      restartPolicy: Never
-EOF
+# Create must-gather Job and other resources
+kubectl apply -f deploy/kubernetes-job.yaml
 
 # Wait for job completion
-kubectl wait --for=condition=complete job/rhdh-must-gather --timeout=600s
+kubectl -n rhdh-must-gather wait --for=condition=complete job/rhdh-must-gather --timeout=600s
 
-# Create a temporary pod to access the data
-kubectl run data-retriever --image=busybox --rm -i --tty \
-  --overrides='{"spec":{"volumes":[{"name":"data","persistentVolumeClaim":{"claimName":"rhdh-must-gather-pvc"}}],"containers":[{"name":"data-retriever","image":"busybox","volumeMounts":[{"name":"data","mountPath":"/data"}],"stdin":true,"tty":true}]}}' \
-  -- tar -czf - -C /data . > must-gather-output.tar.gz
+# Wait for the data retriever pod to be ready
+kubectl -n rhdh-must-gather wait --for=condition=ready pod/rhdh-must-gather-data-retriever --timeout=60s
 
-# Clean up
-kubectl delete job rhdh-must-gather
-kubectl delete pvc rhdh-must-gather-pvc
-```
-
-#### Option 2: Using initContainer with Shared Volume
-
-```bash
-# Use an init container pattern with a long-running sidecar
-cat <<EOF | kubectl apply -f -
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: rhdh-must-gather
-spec:
-  template:
-    spec:
-      initContainers:
-      - name: must-gather
-        image: ghcr.io/rm3l/rhdh-must-gather:main
-        volumeMounts:
-        - name: output
-          mountPath: /must-gather
-      containers:
-      - name: data-holder
-        image: busybox
-        command: ["sleep", "3600"]  # Sleep for 1 hour
-        volumeMounts:
-        - name: output
-          mountPath: /must-gather
-      volumes:
-      - name: output
-        emptyDir: {}
-      restartPolicy: Never
-EOF
-
-# Wait for init container to complete
-kubectl wait --for=condition=initialized pod -l job-name=rhdh-must-gather --timeout=600s
-
-# Copy the results
-POD_NAME=$(kubectl get pods -l job-name=rhdh-must-gather -o jsonpath='{.items[0].metadata.name}')
-kubectl cp $POD_NAME:/must-gather ./must-gather-output
+# Stream the tar archive from the pod
+kubectl -n rhdh-must-gather exec rhdh-must-gather-data-retriever -- tar czf - -C /data . > rhdh-must-gather-output.k8s.tar.gz
 
 # Clean up
-kubectl delete job rhdh-must-gather
+kubectl delete -f deploy/kubernetes-job.yaml
 ```
 
 ### Local Development/Testing
@@ -128,7 +53,7 @@ kubectl delete job rhdh-must-gather
 git clone <repository-url>
 cd rhdh-must-gather
 
-# Run locally (requires kubectl access)
+# Run locally (requires access to a cluster)
 make test-local-all
 
 # Build and test in container

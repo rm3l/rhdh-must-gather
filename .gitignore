@@ -31,4 +31,5 @@ sample-output/
 inspect.local*
 
 *.local.*
+rhdh-must-gather-output.k8s.tar.gz
 

@@ -100,7 +100,12 @@ k8s-test: ## Test on a non-OCP K8s cluster
 	else \
 		ARGS_YAML=$$(echo "$(OPTS)" | awk 'BEGIN{printf "["} {for(i=1;i<=NF;i++) printf "\"%s\"%s", $$i, (i<NF?", ":"")} END{print "]"}'); \
 	fi; \
-	JOB_ID=$(shell date +%s) FULL_IMAGE_NAME=$(FULL_IMAGE_NAME) NS=rhdh-must-gather ARGS="$$ARGS_YAML" envsubst < deploy/kubernetes-job.yaml \
+	JOB_ID=$(shell date +%s) \
+	FULL_IMAGE_NAME=$(FULL_IMAGE_NAME) \
+	NS=rhdh-must-gather \
+	ARGS="$$ARGS_YAML" \
+	envsubst < deploy/kubernetes-job.yaml \
+		| sed "s%ghcr.io/rm3l/rhdh-must-gather:main%$$FULL_IMAGE_NAME%g" \
 		| kubectl apply -f -
 
 .PHONY: help

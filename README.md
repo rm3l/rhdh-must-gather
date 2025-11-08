@@ -25,12 +25,17 @@ oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather:main --sinc
 
 # Collect relevant RHDH data and logs and events since specific time
 oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather:main --since-time=2025-08-21T20:00:00Z
+
+# To pass specific options to the gather script
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather [options...]
 ```
 
 ### Using with Kubernetes
 
 ```bash
 # Create must-gather Job and other resources (switch to the appropriate branch or tag)
+# If you want to pass specific options to the gather script,
+# download the manifest file and add 'args' to the 'gather' Job container.
 kubectl apply -f https://raw.githubusercontent.com/redhat-developer/rhdh-must-gather/refs/heads/main/deploy/kubernetes-job.yaml
 
 # Wait for job completion
@@ -118,58 +123,92 @@ See [secret-collection-and-sanitization.md](./docs/secret-collection-and-sanitiz
 
 ### Command Line Options
 
-The gather script accepts the following options:
-
 ```bash
-# Default collection (all RHDH data: platform, helm, operator, routes, ingresses, namespace-inspect)
-oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather
+Usage: ./must_gather [params...]
 
-# Exclude specific data collection types
-oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --without-operator
-oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --without-helm
-oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --without-platform
-oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --without-route
-oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --without-ingress
-oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --without-namespace-inspect  # Not recommended
+  A client tool for gathering RHDH information from Helm and Operator installations in an OpenShift or Kubernetes cluster
 
-# Collect only specific deployment types
-oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --without-operator  # Helm only
-oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --without-helm      # Operator only
+  Available options:
 
-# Minimal collection (platform info only, no Namepace's inspect)
-oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --without-operator --without-helm --without-route --without-ingress --without-namespace-inspect
+  > To see this help menu and exit, use:
+  --help
 
-# With cluster-wide information (Namepace's inspect included by default)
-oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --cluster-info
+  > By default, the tool collects RHDH-specific information including:
+  > - platform
+  > - helm
+  > - operator
+  > - route
+  > - ingress
+  > - namespace-inspect
 
-# Combine exclusion flags with other options
-oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --without-operator --cluster-info
+  > You can exclude specific data collection types:
+  --without-operator            Skip operator-based RHDH deployment data collection
+  --without-helm                Skip Helm-based RHDH deployment data collection  
+  --without-platform            Skip platform detection and information
+  --without-route               Skip OpenShift route collection
+  --without-ingress             Skip Kubernetes ingress collection
+  --without-namespace-inspect   Skip deep Namepace's inspect
 
-# Combine namespace filtering (Namepace's inspect included by default)
-oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --namespaces rhdh-prod
+  > You can also choose to enable optional collectors:
+  --cluster-info                Collect cluster-wide diagnostic information
 
-# Collect from specific namespaces only
-oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --namespaces rhdh-prod,rhdh-staging
-oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --namespaces=my-rhdh-namespace
+  > You can limit collection to specific namespaces:
+  --namespaces ns1,ns2    Collect data only from specified comma-separated namespaces
 
-# Combine namespace filtering with component exclusions
-oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --namespaces rhdh-ns --without-operator
-oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --namespaces prod-ns,staging-ns --without-helm
+  > Security and Privacy Options:
+  --with-secrets                Include Kubernetes Secrets in collection (opt-in, disabled by default)
+                                When disabled, secret resources are excluded from all collectors
+                                When enabled, secrets are collected but automatically sanitized
 
-# With time constraints (last 2 hours)
-oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather --since=2h
+  > Diagnostic and Troubleshooting Options:
+  --with-heap-dumps             Collect heap dumps from running backstage-backend processes (opt-in, disabled by default)
+                                Heap dumps are collected immediately after pod logs for each deployment/CR
+                                Useful for troubleshooting memory leaks and performance issues
+                                
+                                IMPORTANT: Requires NODE_OPTIONS environment variable:
+                                  NODE_OPTIONS=--heapsnapshot-signal=SIGUSR2 --diagnostic-dir=/tmp
+                                
+                                Why these flags?
+                                  • --heapsnapshot-signal=SIGUSR2: Built into Node.js v12.0.0+, enables heap dumps
+                                  • --diagnostic-dir=/tmp: REQUIRED for read-only root filesystems
+                                
+                                No image rebuild or source code changes needed!
+                                
+                                Collection method: SIGUSR2 signal sent directly via kubectl exec
+                                Works with any Kubernetes version, no special RBAC permissions needed
+                                Warning: May take several minutes and generate large files (100MB-1GB+ per pod)
 
-# Collect heap dumps for memory troubleshooting (opt-in, generates large files)
-oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --with-heap-dumps
+  Examples:
+  # Default collection (includes Namepace's inspect for OMC compatibility)
+  ./must_gather
 
-# Full diagnostic collection (secrets + heap dumps)
-oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --with-secrets --with-heap-dumps
+  # Collect only Helm data (skip operator data)
+  ./must_gather --without-operator
 
-# With debug logging
-oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- LOG_LEVEL=debug /usr/bin/gather
+  # Collect only operator data (skip Helm data)
+  ./must_gather --without-helm
 
-# Help information
-oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --help
+  # Skip Namepace's inspect (not recommended - removes OMC compatibility)
+  ./must_gather --without-namespace-inspect
+
+  # Minimal collection (only platform info, no Namepace's inspect)
+  ./must_gather --without-operator --without-helm --without-route --without-ingress --without-namespace-inspect
+
+  # Collect from specific namespaces only
+  ./must_gather --namespaces rhdh-prod,rhdh-staging
+
+  # Combine namespace filtering with exclusions
+  ./must_gather --namespaces my-rhdh-ns --without-operator
+
+  # Include secrets in collection (for detailed troubleshooting - secrets will be sanitized)
+  ./must_gather --with-secrets
+
+  # Collect heap dumps for memory troubleshooting (requires app configured with NODE_OPTIONS)
+  # Prerequisites: Add NODE_OPTIONS=--heapsnapshot-signal=SIGUSR2 --diagnostic-dir=/tmp to the backsetage-backend container
+  ./must_gather --with-heap-dumps
+
+  # Full diagnostic collection (secrets + heap dumps - generates large output)
+  ./must_gather --with-secrets --with-heap-dumps
 ```
 
 #### Available Exclusion Flags

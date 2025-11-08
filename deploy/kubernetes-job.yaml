@@ -84,7 +84,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: gather
-        image: ghcr.io/rm3l/rhdh-must-gather:main
+        image: ghcr.io/redhat-developer/rhdh-must-gather:main
         env:
         - name: POD_NAME
           valueFrom:

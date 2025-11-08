@@ -18,20 +18,20 @@ This tool helps support teams and engineers collect essential RHDH-specific info
 
 ```bash
 # Use the published image
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather:main
 
 # Collect relevant RHDH data and logs and events from last 2 hours
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main --since=2h
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather:main --since=2h
 
 # Collect relevant RHDH data and logs and events since specific time
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main --since-time=2025-08-21T20:00:00Z
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather:main --since-time=2025-08-21T20:00:00Z
 ```
 
 ### Using with Kubernetes
 
 ```bash
 # Create must-gather Job and other resources (switch to the appropriate branch or tag)
-kubectl apply -f https://raw.githubusercontent.com/rm3l/rhdh-must-gather/refs/heads/main/deploy/kubernetes-job.yaml/deploy/kubernetes-job.yaml
+kubectl apply -f https://raw.githubusercontent.com/redhat-developer/rhdh-must-gather/refs/heads/main/deploy/kubernetes-job.yaml/deploy/kubernetes-job.yaml
 
 # Wait for job completion
 kubectl -n rhdh-must-gather wait --for=condition=complete job/rhdh-must-gather --timeout=600s
@@ -192,7 +192,7 @@ The Namepace's inspect output is fully compatible with [OMC (OpenShift Must-Gath
 
 1. **Collect data** (Namepace's inspect included by default):
    ```bash
-   oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main
+   oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather:main
    ```
 
 2. **Install OMC** (if not already installed):
@@ -349,11 +349,11 @@ npx @memlab/cli analyze --help
 1. **Collect multiple snapshots over time** (optional, not done automatically):
    ```bash
    # Collect initial snapshot
-   oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --with-heap-dumps
+   oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --with-heap-dumps
    
    # Wait 30 minutes for memory to grow
    # Collect second snapshot
-   oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --with-heap-dumps
+   oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --with-heap-dumps
    ```
 
 2. **Compare snapshots in Chrome DevTools**:
@@ -401,10 +401,10 @@ Each heap dump collection includes metadata files:
 
 ```bash
 # Default: secrets excluded
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather
 
 # Opt-in: include secrets (will be sanitized)
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --with-secrets
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --with-secrets
 ```
 
 When secrets are excluded (default behavior):
@@ -465,54 +465,54 @@ The gather script accepts the following options:
 
 ```bash
 # Default collection (all RHDH data: platform, helm, operator, routes, ingresses, namespace-inspect)
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather
 
 # Exclude specific data collection types
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-operator
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-helm
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-platform
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-route
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-ingress
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-namespace-inspect  # Not recommended
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --without-operator
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --without-helm
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --without-platform
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --without-route
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --without-ingress
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --without-namespace-inspect  # Not recommended
 
 # Collect only specific deployment types
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-operator  # Helm only
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-helm      # Operator only
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --without-operator  # Helm only
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --without-helm      # Operator only
 
 # Minimal collection (platform info only, no Namepace's inspect)
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-operator --without-helm --without-route --without-ingress --without-namespace-inspect
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --without-operator --without-helm --without-route --without-ingress --without-namespace-inspect
 
 # With cluster-wide information (Namepace's inspect included by default)
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --cluster-info
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --cluster-info
 
 # Combine exclusion flags with other options
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --without-operator --cluster-info
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --without-operator --cluster-info
 
 # Combine namespace filtering (Namepace's inspect included by default)
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --namespaces rhdh-prod
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --namespaces rhdh-prod
 
 # Collect from specific namespaces only
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --namespaces rhdh-prod,rhdh-staging
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --namespaces=my-rhdh-namespace
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --namespaces rhdh-prod,rhdh-staging
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --namespaces=my-rhdh-namespace
 
 # Combine namespace filtering with component exclusions
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --namespaces rhdh-ns --without-operator
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --namespaces prod-ns,staging-ns --without-helm
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --namespaces rhdh-ns --without-operator
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --namespaces prod-ns,staging-ns --without-helm
 
 # With time constraints (last 2 hours)
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather --since=2h
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather --since=2h
 
 # Collect heap dumps for memory troubleshooting (opt-in, generates large files)
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --with-heap-dumps
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --with-heap-dumps
 
 # Full diagnostic collection (secrets + heap dumps)
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --with-secrets --with-heap-dumps
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --with-secrets --with-heap-dumps
 
 # With debug logging
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- LOG_LEVEL=debug /usr/bin/gather
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- LOG_LEVEL=debug /usr/bin/gather
 
 # Help information
-oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --help
+oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --help
 ```
 
 #### Available Exclusion Flags

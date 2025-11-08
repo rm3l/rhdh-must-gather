@@ -10,7 +10,7 @@ This tool helps support teams and engineers collect essential RHDH-specific info
 - **Multi-deployment**: Helm-based and Operator-based RHDH instances
 - **RHDH-focused collection**: Only RHDH-specific logs, configurations, and resources
 
-> **Note**: This tool collects only RHDH-specific data. For cluster-wide general information, use the generic OpenShift must-gather: `oc adm must-gather`
+> **Note**: For more general cluster-wide information, combine this with the generic OpenShift must-gather: `oc adm must-gather`
 
 ## Quick Start
 

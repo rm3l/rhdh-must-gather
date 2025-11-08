@@ -2,8 +2,11 @@
 
 set -euo pipefail
 
-DIR_NAME=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+trap 'log "An unexpected error occurred. See logs above."' ERR
+
 export BASE_COLLECTION_PATH="${BASE_COLLECTION_PATH:-/must-gather}"
+mkdir -p "${BASE_COLLECTION_PATH}"
+
 export PROS=${PROS:-5}
 
 # Command timeout (seconds) for kubectl/helm calls
@@ -180,7 +183,7 @@ init_must_gather() {
     # Create base directories
     ensure_directory "$BASE_COLLECTION_PATH"
 
-    log_success "Must-gather environment initialized"
+    log_info "Must-gather environment initialized"
     return 0
 }
 
@@ -639,3 +642,5 @@ export_log_collection_args() {
 	export log_collection_args
 	export node_log_collection_args
 }
+
+export_log_collection_args

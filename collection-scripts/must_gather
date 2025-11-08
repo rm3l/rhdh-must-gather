@@ -7,28 +7,38 @@
 
 set -euo pipefail
 
-export BASE_COLLECTION_PATH="${BASE_COLLECTION_PATH:-/must-gather}"
-#export PROS=${PROS:-5}
-
 # Get script directory for calling other scripts
 DIR_NAME=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-
 source "${DIR_NAME}/common.sh"
 
-export_log_collection_args
-
-# generate /version file
-source "${DIR_NAME}/version"
-echo "rhdh/must-gather" > "${BASE_COLLECTION_PATH}/version"
-version >> "${BASE_COLLECTION_PATH}/version"
-
-trap "echo 'done with data collection. Now sanitizing data...' && '${DIR_NAME}'/sanitize '${BASE_COLLECTION_PATH}' || true" EXIT
-trap 'log "An unexpected error occurred. See logs above."' ERR
+mandatory_scripts=(
+  "platform"
+  "helm"
+  "operator"
+  "route"
+  "ingress"
+  "namespace-inspect"
+)
+requested_scripts=("${mandatory_scripts[@]}")
+excluded_scripts=()
+target_namespaces=""
+with_secrets="false"
+with_heap_dumps="false"
 
 function main() {
+
+  parse_flags "$@"
+
+  trap "echo 'done with data collection. Now sanitizing data...' && '${DIR_NAME}'/sanitize '${BASE_COLLECTION_PATH}' || true" EXIT
+
   log_info "Starting RHDH must-gather collection..."
   log_info "Output directory: $BASE_COLLECTION_PATH"
   log_info "Log level: $LOG_LEVEL"
+
+  # generate /version file
+  source "${DIR_NAME}/version"
+  echo "rhdh/must-gather" > "${BASE_COLLECTION_PATH}/version"
+  version >> "${BASE_COLLECTION_PATH}/version"
 
   # Initialize must-gather environment
   if ! init_must_gather; then
@@ -36,24 +46,6 @@ function main() {
       exit 1
   fi
 
-  declare mandatory_scripts=(
-    "platform"
-    "helm"
-    "operator"
-    "route"
-    "ingress"
-    "namespace-inspect"
-  )
-  declare optional_scripts=(
-    "cluster-info"
-  )
-  declare requested_scripts=("${mandatory_scripts[@]}")
-  declare excluded_scripts=()
-  declare target_namespaces=""
-  declare with_secrets="false"
-  declare with_heap_dumps="false"
-
-  parse_flags "$@"
   run_scripts
   run_logs
 
@@ -119,42 +111,11 @@ function parse_flags {
     esac
     shift
   done
-
-  # Remove excluded scripts from the requested scripts
-  for excluded in "${excluded_scripts[@]}"; do
-    for i in "${!requested_scripts[@]}"; do
-      if [[ "${requested_scripts[i]}" == "$excluded" ]]; then
-        unset 'requested_scripts[i]'
-      fi
-    done
-  done
-  # Rebuild array to remove gaps
-  requested_scripts=("${requested_scripts[@]}")
-
-  # Export namespace filtering for use by collection scripts
-  if [[ -n "$target_namespaces" ]]; then
-    export RHDH_TARGET_NAMESPACES="$target_namespaces"
-    log_info "Limiting collection to namespaces: $target_namespaces"
-  fi
-  
-  # Export secret collection flag for use by collection scripts
-  export RHDH_WITH_SECRETS="$with_secrets"
-  if [[ "$with_secrets" == "true" ]]; then
-    log_warn "Secret collection enabled - sensitive data will be included (and sanitized)"
-  else
-    log_info "Secret collection disabled by default (use --with-secrets to enable)"
-  fi
-  
-  # Export heap dump collection flag
-  export RHDH_WITH_HEAP_DUMPS="$with_heap_dumps"
-  if [[ "$with_heap_dumps" == "true" ]]; then
-    log_warn "Heap dump collection enabled - this may take several minutes and generate large files"
-  fi
 }
 
 function help {
     echo "\
-Usage: oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather [params...]
+Usage: ./$(basename "$0") [params...]
 
   A client tool for gathering RHDH information from Helm and Operator installations in an OpenShift or Kubernetes cluster
 
@@ -175,7 +136,7 @@ Usage: oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /
   --without-platform            Skip platform detection and information
   --without-route               Skip OpenShift route collection
   --without-ingress             Skip Kubernetes ingress collection
-  --without-namespace-inspect   Skip deep Namepace's inspect (OMC-compatible)
+  --without-namespace-inspect   Skip deep Namepace's inspect
 
   > You can also choose to enable optional collectors:
   --cluster-info                Collect cluster-wide diagnostic information
@@ -208,40 +169,72 @@ Usage: oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /
 
   Examples:
   # Default collection (includes Namepace's inspect for OMC compatibility)
-  oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather
+  ./$(basename "$0")
 
   # Collect only Helm data (skip operator data)
-  oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --without-operator
+  ./$(basename "$0") --without-operator
 
-  # Collect only operator data (skip Helm data)  
-  oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --without-helm
+  # Collect only operator data (skip Helm data)
+  ./$(basename "$0") --without-helm
 
   # Skip Namepace's inspect (not recommended - removes OMC compatibility)
-  oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --without-namespace-inspect
+  ./$(basename "$0") --without-namespace-inspect
 
   # Minimal collection (only platform info, no Namepace's inspect)
-  oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --without-operator --without-helm --without-route --without-ingress --without-namespace-inspect
+  ./$(basename "$0") --without-operator --without-helm --without-route --without-ingress --without-namespace-inspect
 
   # Collect from specific namespaces only
-  oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --namespaces rhdh-prod,rhdh-staging
+  ./$(basename "$0") --namespaces rhdh-prod,rhdh-staging
 
   # Combine namespace filtering with exclusions
-  oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --namespaces my-rhdh-ns --without-operator
+  ./$(basename "$0") --namespaces my-rhdh-ns --without-operator
 
   # Include secrets in collection (for detailed troubleshooting - secrets will be sanitized)
-  oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --with-secrets
+  ./$(basename "$0") --with-secrets
 
   # Collect heap dumps for memory troubleshooting (requires app configured with NODE_OPTIONS)
-  # Prerequisites: Add NODE_OPTIONS="--heapsnapshot-signal=SIGUSR2 --diagnostic-dir=/tmp" to your deployment
-  oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --with-heap-dumps
+  # Prerequisites: Add NODE_OPTIONS="--heapsnapshot-signal=SIGUSR2 --diagnostic-dir=/tmp" to the backsetage-backend container
+  ./$(basename "$0") --with-heap-dumps
 
   # Full diagnostic collection (secrets + heap dumps - generates large output)
-  oc adm must-gather --image=ghcr.io/redhat-developer/rhdh-must-gather -- /usr/bin/gather --with-secrets --with-heap-dumps
+  ./$(basename "$0") --with-secrets --with-heap-dumps
 "
 }
 
 function run_scripts {
+  # Remove excluded scripts from the requested scripts
+  for excluded in "${excluded_scripts[@]}"; do
+    for i in "${!requested_scripts[@]}"; do
+      if [[ "${requested_scripts[i]}" == "$excluded" ]]; then
+        unset 'requested_scripts[i]'
+      fi
+    done
+  done
+  # Rebuild array to remove gaps
+  requested_scripts=("${requested_scripts[@]}")
+
   log_info "running the following scripts: ${requested_scripts[*]}"
+
+  # Export namespace filtering for use by collection scripts
+  if [[ -n "${target_namespaces:-}" ]]; then
+    export RHDH_TARGET_NAMESPACES="$target_namespaces"
+    log_info "Limiting collection to namespaces: $target_namespaces"
+  fi
+  
+  # Export secret collection flag for use by collection scripts
+  export RHDH_WITH_SECRETS="${with_secrets:-}"
+  if [[ "${RHDH_WITH_SECRETS}" == "true" ]]; then
+    log_warn "Secret collection enabled - sensitive data will be included (and sanitized)"
+  else
+    log_info "Secret collection disabled by default (use --with-secrets to enable)"
+  fi
+
+  # Export heap dump collection flag
+  export RHDH_WITH_HEAP_DUMPS="${with_heap_dumps:-}"
+  if [[ "${RHDH_WITH_HEAP_DUMPS}" == "true" ]]; then
+    log_warn "Heap dump collection enabled - this may take several minutes and generate large files"
+  fi
+
   for script in "${requested_scripts[@]}";
   do
     script_name="gather_${script}"
@@ -260,4 +253,3 @@ function run_logs {
 }
 
 main "$@"
-# set +x

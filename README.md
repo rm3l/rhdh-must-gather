@@ -43,7 +43,7 @@ kubectl -n rhdh-must-gather wait --for=condition=ready pod/rhdh-must-gather-data
 kubectl -n rhdh-must-gather exec rhdh-must-gather-data-retriever -- tar czf - -C /data . > rhdh-must-gather-output.k8s.tar.gz
 
 # Clean up
-kubectl delete -f deploy/kubernetes-job.yaml
+kubectl delete -f https://raw.githubusercontent.com/redhat-developer/rhdh-must-gather/refs/heads/main/deploy/kubernetes-job.yaml
 ```
 
 ### Local Development/Testing

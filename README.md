@@ -27,11 +27,11 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main --since=2h
 oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather:main --since-time=2025-08-21T20:00:00Z
 ```
 
-### Using with Kubernetes (WIP)
+### Using with Kubernetes
 
 ```bash
-# Create must-gather Job and other resources
-kubectl apply -f deploy/kubernetes-job.yaml
+# Create must-gather Job and other resources (switch to the appropriate branch or tag)
+kubectl apply -f https://raw.githubusercontent.com/rm3l/rhdh-must-gather/refs/heads/main/deploy/kubernetes-job.yaml/deploy/kubernetes-job.yaml
 
 # Wait for job completion
 kubectl -n rhdh-must-gather wait --for=condition=complete job/rhdh-must-gather --timeout=600s
@@ -48,24 +48,63 @@ kubectl delete -f deploy/kubernetes-job.yaml
 
 ### Local Development/Testing
 
-```bash
-# Clone the repository
-git clone <repository-url>
-cd rhdh-must-gather
+### Testing
 
-# Run locally (requires access to a cluster)
+```bash
+
+# View all available targets
+make help
+
+# Run locally (requires oc, kubectl, jq, yq, and access to a cluster)
 make test-local-all
 
-# Build and test in container
-make build test-container
+# Test specific script locally. Examples:
+make test-local-script SCRIPT=helm    # Test only gather_helm
+make test-local-script SCRIPT=operator # Test only gather_operator
+
+# Test in container with local cluster access
+make test-container-all
+
+# Test with OpenShift using oc adm must-gather
+make openshift-test
+
+# Test on regular Kubernetes (non-OpenShift) by creating a Job in the cluster
+make k8s-test
+
+# Clean up test artifacts and images
+make clean
 ```
+
+### Building the Image
+
+```bash
+# Build locally
+make build
+
+# Build and push to registry
+make build-push REGISTRY=your-registry.com/namespace
+
+# Build and push with custom image name and tag
+make build-push REGISTRY=your-registry.com/namespace IMAGE_NAME=my-rhdh-must-gather IMAGE_TAG=v1.0.0
+```
+
+### Available Variables
+
+```bash
+# Customize registry and image details
+make build REGISTRY=your-registry.com IMAGE_NAME=custom-name IMAGE_TAG=v1.0.0
+
+# Set log level for testing
+make test-local-all LOG_LEVEL=debug
+```
+
 
 ## What Data is Collected
 
-This tool focuses exclusively on RHDH-related resources. For cluster-wide information, combine with generic must-gather.
+This tool focuses exclusively on RHDH-related resources as well some very minimal platform about the cluster. For general cluster-wide information, combine this with the generic OCP must-gather.
 
-### Platform Information (gather_platform)
-- **Platform Detection**: Automatically identifies the Kubernetes platform type:
+### Platform Information
+- **Platform Detection**: Automatically identifies the platform type:
     - **OpenShift**: OCP, ROSA (Red Hat OpenShift Service on AWS), ARO (Azure Red Hat OpenShift), ROKS (Red Hat OpenShift on IBM Cloud)
     - **Managed Kubernetes**: EKS (AWS), GKE (Google Cloud), AKS (Azure)
     - **Vanilla Kubernetes**: Standard Kubernetes installations
@@ -74,53 +113,47 @@ This tool focuses exclusively on RHDH-related resources. For cluster-wide inform
 
 ### RHDH-Specific Data
 
-#### Helm Deployments (gather_helm)
-- **Release Information**: Helm releases, history, status (text and YAML formats)
+#### Helm Deployments
+- **Release Information**: Helm releases, history, status
 - **Configuration**: User-provided values, computed values, manifests, hooks, and notes
-- **Kubernetes Resources**: Deployments, StatefulSets with full YAML definitions and descriptions
+- **Kubernetes Manifests**: Deployments, StatefulSets with full YAML definitions and descriptions
 - **[Application Runtime Data](#application-runtime-data-extracted-from-running-containers)**
-- **Namespace Resources**: All ConfigMaps and Secrets (sanitized) with descriptions
 
-#### Operator Deployments (gather_operator)
+#### Operator Deployments
 - **OLM Information**: ClusterServiceVersions, Subscriptions, InstallPlans, OperatorGroups, CatalogSources
 - **Custom Resources**: Backstage CRDs with definitions and descriptions
 - **Backstage Custom Resources**: Full CR configurations and status
 - **Operator Infrastructure**: Deployments, logs, and configurations in operator namespaces
 - **[Application Runtime Data](#application-runtime-data-extracted-from-running-containers)**
-- **Namespace Resources**: ConfigMaps and Secrets (sanitized) for each namespace containing Backstage CRs
 
-#### Application Runtime Data (extracted from running containers)
+#### Application Runtime Data (extracted from RHDH containers, if running)
 - **RHDH version information**: `backstage.json` contains Backstage version
 - **Build metadata**: `build-metadata.json` with RHDH version, Backstage version, upstream/midstream sources, and build timestamp
 - **Node.js version**: Runtime Node.js version from `node --version`
 - **Container user ID**: Security context information from `id` command
 - **Dynamic plugins structure**: Directory listing of `dynamic-plugins-root` filesystem
-- **Generated app-config**: `app-config.dynamic-plugins.yaml` created by the dynamic plugins installer
-
-#### Dynamic Plugins and Configuration
-- **Dynamic plugins root directory** structure from filesystem (`ls -lhrta dynamic-plugins-root`)
-- **Generated app-config** from dynamic plugins installer (`app-config.dynamic-plugins.yaml`)
-- **ConfigMaps** containing app configurations and dynamic plugin definitions
-- **Plugin dependencies** and configurations including installed dynamic plugins like:
-  - Red Hat Developer Hub plugins (global-header, quickstart, dynamic-home-page, marketplace)
-  - Backstage community plugins (techdocs, scaffolder modules, analytics providers)
-  - Backend modules and frontend components
+- **Application configuration**
+  - **Generated app-config**: `app-config.dynamic-plugins.yaml` created by the dynamic plugins installer
+  - **Dynamic plugins**
+    - **Dynamic plugins root directory** structure from filesystem (`ls -lhrta dynamic-plugins-root`)
+    - **Generated app-config** from dynamic plugins installer (`app-config.dynamic-plugins.yaml`)
+    - **ConfigMaps** containing app configurations and dynamic plugin definitions
 
 #### Logs and Runtime Data
 - **Container logs** with configurable time windows (`MUST_GATHER_SINCE`, `MUST_GATHER_SINCE_TIME`)
 - **Multi-container logs**: Separate logs for `backstage-backend` and `install-dynamic-plugins` containers
-- **Database logs** from PostgreSQL StatefulSets
+- **Local Database logs** from PostgreSQL StatefulSets, unless the app is configured to connect to external databases
 - **Must-gather container logs** (when running in pod)
 
-#### RHDH Kubernetes Resources (Detailed)
+#### RHDH Manifests (Detailed)
 - **Deployments and StatefulSets**: Full YAML definitions and kubectl describe output
 - **Pods**: Complete pod specifications, status, and logs for all related pods
 - **ConfigMaps**: Application configurations, dynamic plugins, and other config data
-- **Secrets**: Sanitized secret resources (data fields redacted for security)
+- **Secrets**(opt-in with `--with-secrets`): Sanitized secret resources (data fields redacted for security)
 - **Services, Routes, Ingresses**: Network configurations for RHDH access
 
 ### Namepace's inspect (collected by default)
-- **Deep namespace resource inspection** using `oc adm inspect namespace` (included by default for OMC compatibility)
+- **Deep namespace resource inspection** using `oc adm inspect namespace` (included by default)
 - **Auto-detects RHDH namespaces**:
   - Namespaces with Helm-based RHDH deployments
   - Namespaces with Backstage Custom Resources (operator-based)
@@ -131,32 +164,18 @@ This tool focuses exclusively on RHDH-related resources. For cluster-wide inform
   - Pod logs (current and previous containers)
   - Events timeline for troubleshooting
   - Resource descriptions and status
-  - Network configurations
-  - Standard must-gather directory structure
 - **Can be disabled** with `--without-namespace-inspect` flag (not recommended - removes OMC compatibility)
 
 ### Heap Dumps (opt-in, disabled by default)
 - **Memory diagnostics** from running backstage-backend containers using `--with-heap-dumps`
 - **Integrated collection**: Heap dumps are collected automatically **right after pod logs** for each Helm release and Backstage CR
-- **Per-deployment context**: Each heap dump is stored within its deployment/CR directory for easy correlation with logs
-- **Automatic detection**: 
-  - Finds all running backstage-backend pods for each deployment
-  - Targets only the `backstage-backend` container (skips all sidecars automatically)
-  - Detects Node.js process PID using portable methods (`ps` command or `/proc` filesystem)
-  - Works with minimal container images without `pidof` or `pgrep` utilities
-- **Collection method**:
-  - **SIGUSR2 signal** sent directly to the backstage-backend container via `kubectl exec`
-  - Works if Node.js is started with `--heapsnapshot-signal=SIGUSR2` (recommended) or if application has heapdump module/custom SIGUSR2 handler
-  - Simple, reliable, and works with any Kubernetes version
 - **Process metadata**: Memory usage, Node.js version, disk space, and process information collected alongside dumps
 - **Use cases**: Memory leak troubleshooting, performance analysis, and OOM investigations
 - **File format**: `.heapsnapshot` files compatible with Chrome DevTools and other heap analysis tools
-- **Important limitations**:
+- **Important considerations**:
   - Requires application to handle SIGUSR2 signal. Choose ONE of:
-    - ⭐ `NODE_OPTIONS="--heapsnapshot-signal=SIGUSR2 --diagnostic-dir=/tmp"` (built-in Node.js, recommended - no image rebuild!)
-    - `NODE_OPTIONS="--require heapdump"` with heapdump module in image
-    - Custom SIGUSR2 signal handler in application code
-  - **Note**: `--diagnostic-dir=/tmp` is required for containers with read-only root filesystems
+    - ⭐ `NODE_OPTIONS="--heapsnapshot-signal=SIGUSR2 --diagnostic-dir=/tmp"`
+  - **Note**: `--diagnostic-dir=/tmp` because the root filesystem is read-only
   - Heap dumps can be very large (100MB-1GB+ per pod) and take several minutes per deployment
   - Success rate depends on application instrumentation
 
@@ -167,7 +186,7 @@ This tool focuses exclusively on RHDH-related resources. For cluster-wide inform
 
 The Namepace's inspect output is fully compatible with [OMC (OpenShift Must-Gather Client)](https://github.com/gmeghnag/omc), a powerful tool for interactive must-gather analysis used by Support teams.
 
-**Note**: Namepace's inspect is now **collected by default**, so all must-gather outputs are OMC-compatible.
+**Note**: Namepace's inspect is **collected by default**, so all must-gather outputs are OMC-compatible.
 
 ### Setup
 
@@ -221,35 +240,7 @@ omc get configmaps -o name
 
 # Use JSONPath queries
 omc get pods -o jsonpath="{.items[*].metadata.name}"
-
-# Check certificate details (if OMC certs command is available)
-omc certs inspect
 ```
-
-### Multi-Namespace Analysis
-
-With a single OMC context, you can query across all collected namespaces:
-
-```bash
-# Point OMC to the inspection directory once
-omc use namespace-inspect
-
-# Query different namespaces
-omc get pods -n rhdh-prod
-omc get pods -n rhdh-staging
-
-# Or view all namespaces at once
-omc get pods --all-namespaces
-omc get namespaces
-```
-
-### OMC Benefits
-
-- 🔍 **Interactive queries**: Use familiar `kubectl`/`oc` commands on offline data
-- 🚀 **Fast analysis**: Query resources without cluster access
-- 📊 **Advanced filtering**: Labels, field selectors, JSONPath
-- 🔐 **Secure**: Analyze sensitive data offline
-- 📈 **Resource comparison**: Compare resources across namespaces or time periods
 
 ### Directory Structure for OMC
 
@@ -260,7 +251,7 @@ namespace-inspect/            # ← Point OMC here: omc use namespace-inspect
 ├── namespaces/               # All inspected namespaces in one place
 │   ├── rhdh-prod/           # First namespace
 │   │   ├── apps/            # Deployments, StatefulSets, etc.
-│   │   ├── core/            # Pods, Services, ConfigMaps, Secrets
+│   │   ├── core/            # Pods, Services, ConfigMaps, etc.
 │   │   ├── batch/           # Jobs, CronJobs
 │   │   └── networking.k8s.io/
 │   ├── rhdh-staging/        # Second namespace
@@ -270,17 +261,11 @@ namespace-inspect/            # ← Point OMC here: omc use namespace-inspect
 └── aggregated-discovery-apis.yaml
 ```
 
-**Tip**: Single OMC context for all namespaces - no need to switch contexts when analyzing multiple environments.
-
 ## Analyzing Heap Dumps
 
 When heap dumps are collected using `--with-heap-dumps`, they can be analyzed using various tools to investigate memory leaks, high memory usage, and performance issues.
 
 ### Prerequisites for Heap Dump Collection
-
-**Important**: Heap dump collection from running Node.js processes requires configuring the application with Node.js's built-in signal handler.
-
-#### Node.js Built-in Signal Handler
 
 Use Node.js's built-in `--heapsnapshot-signal` flag (available since Node.js v12.0.0):
 
@@ -296,38 +281,9 @@ spec:
           value: "--heapsnapshot-signal=SIGUSR2 --diagnostic-dir=/tmp"
 ```
 
-Or modify the command directly:
-
-```yaml
-        command: ["node", "--heapsnapshot-signal=SIGUSR2", "--diagnostic-dir=/tmp", "dist/index.js"]
-```
-
-**Important**: The `--diagnostic-dir=/tmp` flag is required for containers with read-only root filesystems. Without it, heap snapshots cannot be written to the default current working directory.
-
-**Advantages:**
-- ✅ Built into Node.js - no external dependencies or modules!
-- ✅ No image rebuild required
-- ✅ No source code changes needed
-- ✅ Works immediately with must-gather `--with-heap-dumps`
-- ✅ Heap snapshots written to `/tmp/Heap.<timestamp>.heapsnapshot` automatically
-- ✅ Works with read-only root filesystems (common security best practice)
-
-**How it works:** When Node.js receives SIGUSR2 signal, it automatically writes a heap snapshot to `Heap.<timestamp>.heapsnapshot` in the directory specified by `--diagnostic-dir` (or current working directory if not specified).
+**Important**: The `--diagnostic-dir=/tmp` flag is required because the root filesystem in RHDH containers is read-only. Without it, heap snapshots cannot be written to the default current working directory.
 
 **Reference:** [Node.js CLI Documentation](https://nodejs.org/docs/latest-v22.x/api/cli.html#--heapsnapshot-signalsignal)
-
-**Without this configuration**, heap dump collection will fail with an informative message explaining how to enable it for future troubleshooting.
-
-### ⚠️ Important: No "Quick Fix" Without Configuration
-
-**There is no way to extract a heap dump from a running Node.js process without prior configuration.**
-
-Common misconceptions:
-- ❌ `kubectl exec ... node --eval 'v8.writeHeapSnapshot(...)'` - This spawns a **new** Node.js process, not the running one
-- ❌ Sending signals without handlers - Only works if the app has SIGUSR2 handlers configured
-- ❌ Attaching debuggers after the fact - Requires `--inspect` to be enabled at startup
-
-**The solution:** Configure your Node.js application at startup with `--heapsnapshot-signal=SIGUSR2 --diagnostic-dir=/tmp`. This is the simplest and most reliable method with zero dependencies and no image rebuild required! The `--diagnostic-dir=/tmp` is essential for containers with read-only root filesystems.
 
 ### Heap Dump Files
 
@@ -379,24 +335,11 @@ google-chrome --auto-open-devtools-for-tabs
 - **Containment view**: Object references and retention paths
 - **Statistics**: Memory distribution by type
 
-#### 2. Node.js CLI Analysis
+#### 2. MemLab (Facebook's Memory Leak Detector)
 
 ```bash
-# Install heap snapshot utilities
-npm install -g heapsnapshot-parser
-
-# Parse and analyze heap dump
-heapsnapshot-parser heapdump-20250105-143022.heapsnapshot
-```
-
-#### 3. MemLab (Facebook's Memory Leak Detector)
-
-```bash
-# Install MemLab
-npm install -g @memlab/cli
-
 # Analyze heap snapshot
-memlab analyze heapdump-20250105-143022.heapsnapshot
+npx @memlab/cli analyze --help
 ```
 
 ### Common Analysis Workflows
@@ -441,7 +384,7 @@ Each heap dump collection includes metadata files:
 
 ### Tips and Best Practices
 
-- **Application instrumentation**: For reliable heap dump collection, instrument your Backstage application with `heapdump` module or signal handlers (see Prerequisites above)
+- **Application instrumentation**: For reliable heap dump collection, instrument your Backstage application (see Prerequisites above)
 - **Large files**: Heap dumps can be 100MB-1GB+. Ensure sufficient disk space and bandwidth for analysis.
 - **Privacy**: Heap dumps may contain sensitive data from memory. Handle them securely and apply sanitization if sharing.
 - **Timing**: Collect heap dumps when memory usage is high or after OOM events for best results.
@@ -776,57 +719,6 @@ oc adm must-gather --image=ghcr.io/rm3l/rhdh-must-gather -- /usr/bin/gather --he
 > **Note**: The tool automatically detects and collects data for both Helm and Operator-based RHDH deployments. For cluster-wide information, use the `--cluster-info` flag or combine with standard `oc adm must-gather`.
 
 See the [examples](examples) folder for sample outputs on various platforms.
-
-## Development
-
-### Testing
-
-```bash
-# Test locally (requires kubectl access to cluster)
-make test-local-all
-
-# Test specific script locally
-make test-local-script SCRIPT=helm    # Test only gather_helm
-make test-local-script SCRIPT=operator # Test only gather_operator
-
-# Test in container with local cluster access
-make test-container-all
-
-# Test with OpenShift using oc adm must-gather
-make openshift-test
-
-# Test on regular Kubernetes (non-OpenShift) by creating a Job in the cluster
-make k8s-test
-
-# Clean up test artifacts and images
-make clean
-```
-
-### Building the Image
-
-```bash
-# Build locally
-make build
-
-# Build and push to registry
-make build-push REGISTRY=your-registry.com/namespace
-
-# Build and push with custom image name and tag
-make build-push REGISTRY=your-registry.com/namespace IMAGE_NAME=my-rhdh-must-gather IMAGE_TAG=v1.0.0
-```
-
-### Available Variables
-
-```bash
-# Customize registry and image details
-make build REGISTRY=your-registry.com IMAGE_NAME=custom-name IMAGE_TAG=v1.0.0
-
-# Set log level for testing
-make test-local-all LOG_LEVEL=debug
-
-# View all available targets
-make help
-```
 
 ## License
 

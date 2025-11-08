@@ -100,7 +100,8 @@ for release_info in $releases; do
 
     # Get status
     safe_exec "helm status '$release_name' -n '$release_ns'" "$release_dir/status.txt" "Helm status for $release_name"
-    safe_exec "helm status '$release_name' -n '$release_ns' -o yaml" "$release_dir/status.yaml" "Helm status (YAML) for $release_name"
+    # NOTE: Excluding status.yaml because it might leak some sensitive secrets data
+    #safe_exec "helm status '$release_name' -n '$release_ns' -o yaml" "$release_dir/status.yaml" "Helm status (YAML) for $release_name"
 
     # Remove secrets from manifests if not explicitly included
     if [[ "${RHDH_WITH_SECRETS:-false}" != "true" ]]; then

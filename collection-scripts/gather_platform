@@ -75,7 +75,7 @@ else
     azure)  UNDERLYING="Azure" ;;
     ibm)    UNDERLYING="IBMCloud" ;;
     vsphere)UNDERLYING="vSphere" ;;
-    *)      UNDERLYING="" ;;
+    *)      UNDERLYING="$(provider_prefix)" ;;
   esac
 
   if [[ "$UNDERLYING" == "AWS" ]] && kubectl get nodes -o jsonpath='{.items[*].metadata.labels.eks\.amazonaws\.com/nodegroup}' | grep -q .; then

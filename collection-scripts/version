@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+# Just testing PR workflow
+
 function version() {
   if [[ ! -z "${RHDH_MUST_GATHER_VERSION:-}" ]] ; then
     echo "${RHDH_MUST_GATHER_VERSION}"

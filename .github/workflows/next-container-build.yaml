@@ -1,0 +1,131 @@
+name: Next container image build
+
+on:
+  push:
+    branches:
+    - main
+    - release-1.[0-9]+
+    tags:
+    - '1.[0-9]+.[0-9]+'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: quay.io
+  IMAGE_NAME: rhdh-community/rhdh-must-gather
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      # Login to Quay.io
+      # https://github.com/docker/login-action
+      - name: Log into registry ${{ env.REGISTRY }}
+        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_TOKEN }}
+
+      # Install the cosign tool
+      # https://github.com/sigstore/cosign-installer
+      - name: Install cosign
+        uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 #v3.9.2
+        with:
+          cosign-release: 'v2.2.4'
+
+      # Generate image tags and build args based on ref type
+      - name: Prepare build variables
+        id: prep
+        run: |
+          SHORT_SHA=$(git rev-parse --short=9 HEAD)
+          
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            # Git tag: push the tag version
+            TAG_VERSION=${GITHUB_REF#refs/tags/}
+            echo "IMAGE_TAG=${TAG_VERSION}" >> "$GITHUB_OUTPUT"
+            echo "EXTRA_TAGS=" >> "$GITHUB_OUTPUT"
+            echo "VERSION=${TAG_VERSION}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            # Main branch: push next and next-${commit}
+            echo "IMAGE_TAG=next" >> "$GITHUB_OUTPUT"
+            echo "EXTRA_TAGS=next-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+            VERSION="0.0.0-$(git describe --no-match --always --abbrev=9 --dirty --broken 2>/dev/null || echo unknown)"
+            echo "VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.ref }}" == refs/heads/release-* ]]; then
+            # Release branch: extract version and push next-1.x and next-1.x-${commit}
+            BRANCH_NAME=${GITHUB_REF#refs/heads/}
+            RELEASE_VERSION=${BRANCH_NAME#release-}
+            echo "IMAGE_TAG=next-${RELEASE_VERSION}" >> "$GITHUB_OUTPUT"
+            echo "EXTRA_TAGS=next-${RELEASE_VERSION}-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+            VERSION="0.0.0-$(git describe --no-match --always --abbrev=9 --dirty --broken 2>/dev/null || echo unknown)"
+            echo "VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Build and push using Makefile
+      - name: Build and push container image
+        id: build-push
+        run: |
+          # Get the VERSION from prep step
+          VERSION="${{ steps.prep.outputs.VERSION }}"
+          
+          # Build and push main tag
+          make build-push \
+            CONTAINER_TOOL=docker \
+            REGISTRY=${{ env.REGISTRY }} \
+            IMAGE_NAME=rhdh-must-gather \
+            IMAGE_TAG=${{ steps.prep.outputs.IMAGE_TAG }} \
+            BUILD_ARGS="--build-arg RHDH_MUST_GATHER_VERSION=${VERSION}"
+          
+          # Get image digest
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ${{ env.REGISTRY }}/rhdh-must-gather:${{ steps.prep.outputs.IMAGE_TAG }} | cut -d'@' -f2)
+          echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
+          
+          # Save main tag for signing
+          echo "${{ env.REGISTRY }}/rhdh-must-gather:${{ steps.prep.outputs.IMAGE_TAG }}" > /tmp/image-tags.txt
+
+      # Push extra tag with commit SHA if specified
+      - name: Push extra tag
+        if: steps.prep.outputs.EXTRA_TAGS != ''
+        run: |
+          docker tag rhdh-must-gather:${{ steps.prep.outputs.IMAGE_TAG }} ${{ env.REGISTRY }}/rhdh-must-gather:${{ steps.prep.outputs.EXTRA_TAGS }}
+          docker push ${{ env.REGISTRY }}/rhdh-must-gather:${{ steps.prep.outputs.EXTRA_TAGS }}
+          
+          # Add extra tag for signing
+          echo "${{ env.REGISTRY }}/rhdh-must-gather:${{ steps.prep.outputs.EXTRA_TAGS }}" >> /tmp/image-tags.txt
+
+      # Sign the resulting Docker image digests
+      # https://github.com/sigstore/cosign
+      - name: Sign the published Docker images
+        env:
+          DIGEST: ${{ steps.build-push.outputs.digest }}
+        run: |
+          # Sign all tags
+          while IFS= read -r tag; do
+            echo "Signing ${tag}@${DIGEST}"
+            cosign sign --yes "${tag}@${DIGEST}"
+          done < /tmp/image-tags.txt
+
+      - name: Summary
+        run: |
+          echo "### Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.prep.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Registry**: ${{ env.REGISTRY }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Main Tag**: \`${{ steps.prep.outputs.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ steps.prep.outputs.EXTRA_TAGS }}" ]; then
+            echo "- **Extra Tag**: \`${{ steps.prep.outputs.EXTRA_TAGS }}\`" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "- **Digest**: \`${{ steps.build-push.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Signed**: ✅" >> $GITHUB_STEP_SUMMARY

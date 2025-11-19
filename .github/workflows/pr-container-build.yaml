@@ -118,8 +118,13 @@ jobs:
           docker push ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.EXTRA_TAGS }}
 
       # Set expiration on both tags via Quay.io API
+      # Note: This requires an OAuth Application token, not a robot account token
+      # Create an OAuth app in Quay.io and store the token as QUAY_OAUTH_TOKEN secret
       - name: Set expiration on PR images
         if: steps.changed-files.outputs.any_changed == 'true'
+        env:
+          # Use QUAY_OAUTH_TOKEN if available, otherwise fall back to QUAY_TOKEN
+          API_TOKEN: ${{ secrets.QUAY_OAUTH_TOKEN || secrets.QUAY_TOKEN }}
         run: |
           # Extract namespace and repo name from IMAGE_NAME
           NAMESPACE=$(echo "${{ env.IMAGE_NAME }}" | cut -d'/' -f1)
@@ -127,20 +132,39 @@ jobs:
           
           # Set expiration for main tag
           echo "Setting expiration on ${{ steps.prep.outputs.IMAGE_TAG }} to ${{ steps.prep.outputs.EXPIRATION_DATE }}"
-          curl -X PUT \
-            -H "Authorization: Bearer ${{ secrets.QUAY_TOKEN }}" \
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X PUT \
+            -H "Authorization: Bearer ${API_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d '{"expiration": "${{ steps.prep.outputs.EXPIRATION_DATE }}"}' \
-            "https://${{ vars.REGISTRY }}/api/v1/repository/${NAMESPACE}/${REPO}/tag/${{ steps.prep.outputs.IMAGE_TAG }}"
+            -d "{\"expiration\": \"${{ steps.prep.outputs.EXPIRATION_DATE }}\"}" \
+            "https://${{ vars.REGISTRY }}/api/v1/repository/${NAMESPACE}/${REPO}/tag/${{ steps.prep.outputs.IMAGE_TAG }}")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 201 ]; then
+            echo "Warning: Failed to set expiration on main tag (HTTP $HTTP_CODE): $BODY"
+            echo "This may be due to using a robot account token instead of an OAuth application token"
+          else
+            echo "✓ Expiration set successfully on main tag"
+          fi
           
           # Set expiration for extra tag
           if [ -n "${{ steps.prep.outputs.EXTRA_TAGS }}" ]; then
             echo "Setting expiration on ${{ steps.prep.outputs.EXTRA_TAGS }} to ${{ steps.prep.outputs.EXPIRATION_DATE }}"
-            curl -X PUT \
-              -H "Authorization: Bearer ${{ secrets.QUAY_TOKEN }}" \
+            RESPONSE=$(curl -s -w "\n%{http_code}" -X PUT \
+              -H "Authorization: Bearer ${API_TOKEN}" \
               -H "Content-Type: application/json" \
-              -d '{"expiration": "${{ steps.prep.outputs.EXPIRATION_DATE }}"}' \
-              "https://${{ vars.REGISTRY }}/api/v1/repository/${NAMESPACE}/${REPO}/tag/${{ steps.prep.outputs.EXTRA_TAGS }}"
+              -d "{\"expiration\": \"${{ steps.prep.outputs.EXPIRATION_DATE }}\"}" \
+              "https://${{ vars.REGISTRY }}/api/v1/repository/${NAMESPACE}/${REPO}/tag/${{ steps.prep.outputs.EXTRA_TAGS }}")
+            
+            HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+            BODY=$(echo "$RESPONSE" | sed '$d')
+            
+            if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 201 ]; then
+              echo "Warning: Failed to set expiration on extra tag (HTTP $HTTP_CODE): $BODY"
+            else
+              echo "✓ Expiration set successfully on extra tag"
+            fi
           fi
 
       # Comment with image links on the PR

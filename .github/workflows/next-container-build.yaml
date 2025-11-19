@@ -130,8 +130,13 @@ jobs:
           done
 
       # Set expiration on commit-SHA tags via Quay.io API
+      # Note: This requires an OAuth Application token, not a robot account token
+      # Create an OAuth app in Quay.io and store the token as QUAY_OAUTH_TOKEN secret
       - name: Set expiration on commit-SHA tags
         if: steps.prep.outputs.EXTRA_TAGS != ''
+        env:
+          # Use QUAY_OAUTH_TOKEN if available, otherwise fall back to QUAY_TOKEN
+          API_TOKEN: ${{ secrets.QUAY_OAUTH_TOKEN || secrets.QUAY_TOKEN }}
         run: |
           # Check if there are any commit-SHA tags to expire
           if [ ! -f /tmp/expiry-tags.txt ]; then
@@ -146,11 +151,21 @@ jobs:
           # Set expiration for each commit-SHA tag
           while IFS= read -r TAG; do
             echo "Setting expiration on ${TAG} to ${{ steps.prep.outputs.EXPIRATION_DATE }}"
-            curl -X PUT \
-              -H "Authorization: Bearer ${{ secrets.QUAY_TOKEN }}" \
+            RESPONSE=$(curl -s -w "\n%{http_code}" -X PUT \
+              -H "Authorization: Bearer ${API_TOKEN}" \
               -H "Content-Type: application/json" \
-              -d '{"expiration": "${{ steps.prep.outputs.EXPIRATION_DATE }}"}' \
-              "https://${{ vars.REGISTRY }}/api/v1/repository/${NAMESPACE}/${REPO}/tag/${TAG}"
+              -d "{\"expiration\": \"${{ steps.prep.outputs.EXPIRATION_DATE }}\"}" \
+              "https://${{ vars.REGISTRY }}/api/v1/repository/${NAMESPACE}/${REPO}/tag/${TAG}")
+            
+            HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+            BODY=$(echo "$RESPONSE" | sed '$d')
+            
+            if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 201 ]; then
+              echo "Warning: Failed to set expiration on ${TAG} (HTTP $HTTP_CODE): $BODY"
+              echo "This may be due to using a robot account token instead of an OAuth application token"
+            else
+              echo "✓ Expiration set successfully on ${TAG}"
+            fi
           done < /tmp/expiry-tags.txt
 
       # Sign the resulting Docker image digests

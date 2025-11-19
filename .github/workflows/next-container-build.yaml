@@ -51,6 +51,10 @@ jobs:
         run: |
           SHORT_SHA=$(git rev-parse --short=9 HEAD)
           
+          # Calculate expiration date (2 weeks from now in ISO 8601 format)
+          EXPIRATION_DATE=$(date -u -d "+14 days" +"%Y-%m-%dT%H:%M:%SZ")
+          echo "EXPIRATION_DATE=${EXPIRATION_DATE}" >> "$GITHUB_OUTPUT"
+          
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             # Git tag: push the tag version and derive major/minor tags
             TAG_VERSION=${GITHUB_REF#refs/tags/}
@@ -107,33 +111,47 @@ jobs:
       - name: Push extra tags
         if: steps.prep.outputs.EXTRA_TAGS != ''
         run: |
-          # Get the VERSION from prep step
-          VERSION="${{ steps.prep.outputs.VERSION }}"
-          
           # Process each extra tag (space-separated)
           for TAG in ${{ steps.prep.outputs.EXTRA_TAGS }}; do
             echo "Processing tag: ${TAG}"
             
+            # All extra tags reuse the main image to preserve digest
+            echo "Tagging and pushing: ${TAG}"
+            docker tag ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.IMAGE_TAG }} ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${TAG}
+            docker push ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${TAG}
+            
+            # Track commit-SHA tags for expiration
             if [[ ${TAG} == next-* ]]; then
-              # Commit-SHA tags need rebuild with expiry label
-              echo "Building and pushing commit-SHA tag with expiry: ${TAG}"
-              make build-push \
-                CONTAINER_TOOL=docker \
-                REGISTRY=${{ vars.REGISTRY }} \
-                IMAGE_NAME=${{ env.IMAGE_NAME}} \
-                IMAGE_TAG=${TAG} \
-                BUILD_ARGS="--build-arg RHDH_MUST_GATHER_VERSION=${VERSION}" \
-                LABELS="--label quay.expires-after=2w"
-            else
-              # Version tags (major, major.minor) reuse the main image to preserve digest
-              echo "Tagging and pushing version tag: ${TAG}"
-              docker tag ${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.IMAGE_TAG }} ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${TAG}
-              docker push ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${TAG}
+              echo "${TAG}" >> /tmp/expiry-tags.txt
             fi
             
             # Add tag for signing
             echo "${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${TAG}" >> /tmp/image-tags.txt
           done
+
+      # Set expiration on commit-SHA tags via Quay.io API
+      - name: Set expiration on commit-SHA tags
+        if: steps.prep.outputs.EXTRA_TAGS != ''
+        run: |
+          # Check if there are any commit-SHA tags to expire
+          if [ ! -f /tmp/expiry-tags.txt ]; then
+            echo "No commit-SHA tags to set expiration on"
+            exit 0
+          fi
+          
+          # Extract namespace and repo name from IMAGE_NAME
+          NAMESPACE=$(echo "${{ env.IMAGE_NAME }}" | cut -d'/' -f1)
+          REPO=$(echo "${{ env.IMAGE_NAME }}" | cut -d'/' -f2)
+          
+          # Set expiration for each commit-SHA tag
+          while IFS= read -r TAG; do
+            echo "Setting expiration on ${TAG} to ${{ steps.prep.outputs.EXPIRATION_DATE }}"
+            curl -X PUT \
+              -H "Authorization: Bearer ${{ secrets.QUAY_TOKEN }}" \
+              -H "Content-Type: application/json" \
+              -d '{"expiration": "${{ steps.prep.outputs.EXPIRATION_DATE }}"}' \
+              "https://${{ vars.REGISTRY }}/api/v1/repository/${NAMESPACE}/${REPO}/tag/${TAG}"
+          done < /tmp/expiry-tags.txt
 
       # Sign the resulting Docker image digests
       # https://github.com/sigstore/cosign

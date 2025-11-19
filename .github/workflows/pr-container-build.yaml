@@ -90,11 +90,14 @@ jobs:
           SHORT_SHA=$(git rev-parse --short=9 HEAD)
           VERSION="0.0.0-$(git describe --no-match --always --abbrev=9 --dirty --broken 2>/dev/null || echo unknown)"
           
+          # Calculate expiration date (2 weeks from now in ISO 8601 format)
+          EXPIRATION_DATE=$(date -u -d "+14 days" +"%Y-%m-%dT%H:%M:%SZ")
+          
           echo "IMAGE_TAG=pr-${PR_NUMBER}" >> "$GITHUB_OUTPUT"
           echo "EXTRA_TAGS=pr-${PR_NUMBER}-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
-          echo "LABELS=--label quay.expires-after=2w" >> "$GITHUB_OUTPUT"
           echo "BUILD_ARGS=--build-arg RHDH_MUST_GATHER_VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "EXPIRATION_DATE=${EXPIRATION_DATE}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push main tag
         if: steps.changed-files.outputs.any_changed == 'true'
@@ -104,20 +107,41 @@ jobs:
             REGISTRY=${{ vars.REGISTRY }} \
             IMAGE_NAME=${{ env.IMAGE_NAME}} \
             IMAGE_TAG=${{ steps.prep.outputs.IMAGE_TAG }} \
-            BUILD_ARGS="${{ steps.prep.outputs.BUILD_ARGS }}" \
-            LABELS="${{ steps.prep.outputs.LABELS }}"
+            BUILD_ARGS="${{ steps.prep.outputs.BUILD_ARGS }}"
 
-      # Build and push extra tag with commit SHA
-      - name: Build and push extra tag with commit SHA
+      # Tag and push extra tag with commit SHA (reuses same digest)
+      - name: Tag and push extra tag with commit SHA
         if: steps.changed-files.outputs.any_changed == 'true' && steps.prep.outputs.EXTRA_TAGS != ''
         run: |
-          make build-push \
-            CONTAINER_TOOL=docker \
-            REGISTRY=${{ vars.REGISTRY }} \
-            IMAGE_NAME=${{ env.IMAGE_NAME}} \
-            IMAGE_TAG=${{ steps.prep.outputs.EXTRA_TAGS }} \
-            BUILD_ARGS="${{ steps.prep.outputs.BUILD_ARGS }}" \
-            LABELS="${{ steps.prep.outputs.LABELS }}"
+          docker tag ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.IMAGE_TAG }} \
+            ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.EXTRA_TAGS }}
+          docker push ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.EXTRA_TAGS }}
+
+      # Set expiration on both tags via Quay.io API
+      - name: Set expiration on PR images
+        if: steps.changed-files.outputs.any_changed == 'true'
+        run: |
+          # Extract namespace and repo name from IMAGE_NAME
+          NAMESPACE=$(echo "${{ env.IMAGE_NAME }}" | cut -d'/' -f1)
+          REPO=$(echo "${{ env.IMAGE_NAME }}" | cut -d'/' -f2)
+          
+          # Set expiration for main tag
+          echo "Setting expiration on ${{ steps.prep.outputs.IMAGE_TAG }} to ${{ steps.prep.outputs.EXPIRATION_DATE }}"
+          curl -X PUT \
+            -H "Authorization: Bearer ${{ secrets.QUAY_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"expiration": "${{ steps.prep.outputs.EXPIRATION_DATE }}"}' \
+            "https://${{ vars.REGISTRY }}/api/v1/repository/${NAMESPACE}/${REPO}/tag/${{ steps.prep.outputs.IMAGE_TAG }}"
+          
+          # Set expiration for extra tag
+          if [ -n "${{ steps.prep.outputs.EXTRA_TAGS }}" ]; then
+            echo "Setting expiration on ${{ steps.prep.outputs.EXTRA_TAGS }} to ${{ steps.prep.outputs.EXPIRATION_DATE }}"
+            curl -X PUT \
+              -H "Authorization: Bearer ${{ secrets.QUAY_TOKEN }}" \
+              -H "Content-Type: application/json" \
+              -d '{"expiration": "${{ steps.prep.outputs.EXPIRATION_DATE }}"}' \
+              "https://${{ vars.REGISTRY }}/api/v1/repository/${NAMESPACE}/${REPO}/tag/${{ steps.prep.outputs.EXTRA_TAGS }}"
+          fi
 
       # Comment with image links on the PR
       - name: Comment image links in PR

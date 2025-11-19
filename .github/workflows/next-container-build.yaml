@@ -29,35 +29,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      # check changes in this commit for regex include and exclude matches
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@24d32ffd492484c1d75e0c0b894501ddb9d30d62 # v47.0.0
-        with:
-          files: |
-            .github/workflows/pr-container-build.yaml
-            Makefile
-            Dockerfile
-            .containerignore
-            collection-scripts/**
-            LICENSE
-          files_ignore: |
-            **/*.md
-            **/*.adoc
-            examples/**
-
-      - name: List all changed files (for troubleshooting)
-        env:
-          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
-        run: |
-          for file in ${ALL_CHANGED_FILES}; do
-            echo "$file was changed"
-          done
-
       # Login to Quay.io
       # https://github.com/docker/login-action
       - name: Log into registry ${{ vars.REGISTRY }}
-        if: steps.changed-files.outputs.any_changed == 'true'
         uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
         with:
           registry: ${{ vars.REGISTRY }}
@@ -67,14 +41,12 @@ jobs:
       # Install the cosign tool
       # https://github.com/sigstore/cosign-installer
       - name: Install cosign
-        if: steps.changed-files.outputs.any_changed == 'true'
         uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 #v3.9.2
         with:
           cosign-release: 'v2.2.4'
 
       # Generate image tags and build args based on ref type
       - name: Prepare build variables
-        if: steps.changed-files.outputs.any_changed == 'true'
         id: prep
         run: |
           SHORT_SHA=$(git rev-parse --short=9 HEAD)
@@ -103,7 +75,6 @@ jobs:
 
       # Build and push using Makefile
       - name: Build and push container image
-        if: steps.changed-files.outputs.any_changed == 'true'
         id: build-push
         run: |
           # Get the VERSION from prep step
@@ -126,7 +97,7 @@ jobs:
 
       # Push extra tag with commit SHA if specified
       - name: Push extra tag
-        if: ${{ steps.changed-files.outputs.any_changed == 'true' &&steps.prep.outputs.EXTRA_TAGS != '' }}
+        if: steps.prep.outputs.EXTRA_TAGS != ''
         run: |
           docker tag ${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.IMAGE_TAG }} ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.EXTRA_TAGS }}
           docker push ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.EXTRA_TAGS }}
@@ -137,7 +108,6 @@ jobs:
       # Sign the resulting Docker image digests
       # https://github.com/sigstore/cosign
       - name: Sign the published Docker images
-        if: steps.changed-files.outputs.any_changed == 'true'
         env:
           DIGEST: ${{ steps.build-push.outputs.digest }}
         run: |
@@ -148,7 +118,6 @@ jobs:
           done < /tmp/image-tags.txt
 
       - name: Summary
-        if: steps.changed-files.outputs.any_changed == 'true'
         run: |
           echo "### Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

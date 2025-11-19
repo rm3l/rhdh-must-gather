@@ -81,14 +81,6 @@ jobs:
           username: ${{ vars.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_TOKEN }}
 
-      # Install the cosign tool
-      # https://github.com/sigstore/cosign-installer
-      - name: Install cosign
-        if: steps.changed-files.outputs.any_changed == 'true'
-        uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 #v3.9.2
-        with:
-          cosign-release: 'v2.2.4'
-
       # Generate image tags and build args
       - name: Prepare build variables
         if: steps.changed-files.outputs.any_changed == 'true'
@@ -126,24 +118,6 @@ jobs:
             IMAGE_TAG=${{ steps.prep.outputs.EXTRA_TAGS }} \
             BUILD_ARGS="${{ steps.prep.outputs.BUILD_ARGS }}" \
             LABELS="${{ steps.prep.outputs.LABELS }}"
-
-      # Sign the published Docker images (only for same-repo PRs)
-      # https://github.com/sigstore/cosign
-      - name: Sign the published Docker images
-        if: steps.changed-files.outputs.any_changed == 'true'
-        run: |
-          # Get digest for signing
-          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.IMAGE_TAG }} | cut -d'@' -f2)
-          
-          # Sign the main tag
-          echo "Signing ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.IMAGE_TAG }}@${DIGEST}"
-          cosign sign --yes "${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.IMAGE_TAG }}@${DIGEST}"
-          
-          # Sign the extra tag if it exists
-          if [ -n "${{ steps.prep.outputs.EXTRA_TAGS }}" ]; then
-            echo "Signing ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.EXTRA_TAGS }}@${DIGEST}"
-            cosign sign --yes "${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.EXTRA_TAGS }}@${DIGEST}"
-          fi
 
       # Comment with image links on the PR
       - name: Comment image links in PR

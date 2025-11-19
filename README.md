@@ -51,48 +51,6 @@ kubectl -n rhdh-must-gather exec rhdh-must-gather-data-retriever -- tar czf - -C
 kubectl delete -f https://raw.githubusercontent.com/redhat-developer/rhdh-must-gather/refs/heads/main/deploy/kubernetes-job.yaml
 ```
 
-### Local Development/Testing
-
-### Testing
-
-```bash
-
-# View all available targets
-make help
-
-# Run locally (requires oc, kubectl, jq, yq, and access to a cluster)
-make test-local-all
-
-# Test specific script locally. Examples:
-make test-local-script SCRIPT=helm    # Test only gather_helm
-make test-local-script SCRIPT=operator # Test only gather_operator
-
-# Test in container with local cluster access
-make test-container-all
-
-# Test with OpenShift using oc adm must-gather
-make openshift-test
-
-# Test on regular Kubernetes (non-OpenShift) by creating a Job in the cluster
-make k8s-test
-
-# Clean up test artifacts and images
-make clean
-```
-
-### Building the Image
-
-```bash
-# Build locally
-make build
-
-# Build and push to registry
-make build-push REGISTRY=your-registry.com/namespace
-
-# Build and push with custom image name and tag
-make build-push REGISTRY=your-registry.com/namespace IMAGE_NAME=my-rhdh-must-gather IMAGE_TAG=v1.0.0
-```
-
 ## What Data is Collected
 
 See [data-collected.md](./docs/data-collected.md) for more details.
@@ -248,6 +206,10 @@ Usage: ./must_gather [params...]
 - `--namespaces prod-ns --with-heap-dumps` - Heap dumps from specific namespace only
 
 ## Output Structure
+
+<details>
+
+<summary>Click to expand</summary>
 
 ```
 /must-gather/
@@ -405,9 +367,15 @@ Usage: ./must_gather [params...]
                         └── pods.describe.txt
 ```
 
+</details>
+
 > **Note**: The tool automatically detects and collects data for both Helm and Operator-based RHDH deployments. For cluster-wide information, use the `--cluster-info` flag or combine with standard `oc adm must-gather`.
 
 See the [examples](examples) folder for sample outputs on various platforms.
+
+## Contributing and reporting issues
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## License
 

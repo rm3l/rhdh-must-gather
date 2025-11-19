@@ -1,7 +1,5 @@
 FROM quay.io/openshift/origin-must-gather:4.20
 
-ENV RHDH_MUST_GATHER_VERSION=0.1.0
-
 # Must-gather image for Red Hat Developer Hub (RHDH)
 LABEL name="rhdh-must-gather" \
       vendor="Red Hat" \

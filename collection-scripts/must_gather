@@ -37,7 +37,7 @@ function main() {
 
   # generate /version file
   source "${DIR_NAME}/version"
-  echo "rhdh/must-gather" > "${BASE_COLLECTION_PATH}/version"
+  echo "rhdh-must-gather" > "${BASE_COLLECTION_PATH}/version"
   version >> "${BASE_COLLECTION_PATH}/version"
 
   # Initialize must-gather environment

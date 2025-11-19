@@ -213,7 +213,7 @@ Usage: ./must_gather [params...]
 
 ```
 /must-gather/
-├── version                         # Tool version information (e.g., "rhdh/must-gather 0.0.0-unknown")
+├── version                         # Tool version information (e.g., "rhdh-must-gather x.y.z-sha")
 ├── sanitization-report.txt         # Data sanitization summary and details
 ├── all-routes.txt                  # All OpenShift routes cluster-wide
 ├── all-ingresses.txt               # All Kubernetes ingresses cluster-wide

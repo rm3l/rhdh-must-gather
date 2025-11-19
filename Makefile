@@ -1,6 +1,9 @@
 # RHDH Must-Gather Tool Makefile
 
 # Variables
+VERSION ?= 1.9.0
+GIT_SHA := $(shell git describe --no-match --always --abbrev=9 --dirty --broken 2>/dev/null || echo unknown)
+RHDH_MUST_GATHER_VERSION := $(VERSION)-$(GIT_SHA)
 SCRIPT ?= rhdh
 IMAGE_NAME ?= rhdh-community/rhdh-must-gather
 IMAGE_TAG ?= main
@@ -18,7 +21,7 @@ default: test-container-all
 .PHONY: build
 build: ## Build the must-gather container image
 	@echo "Building must-gather image..."
-	$(CONTAINER_TOOL) build $(BUILD_ARGS) $(if $(LABELS),$(LABELS)) -t $(IMAGE_NAME):$(IMAGE_TAG) .
+	$(CONTAINER_TOOL) build $(BUILD_ARGS) $(if $(LABELS),$(LABELS)) --build-arg RHDH_MUST_GATHER_VERSION=$(RHDH_MUST_GATHER_VERSION) -t $(IMAGE_NAME):$(IMAGE_TAG) .
 	@echo "Image built: $(IMAGE_NAME):$(IMAGE_TAG)"
 
 .PHONY: build-push
@@ -40,7 +43,10 @@ test-local-all: test-output ## Test the script locally (requires kubectl)
 		exit 1; \
 	fi
 	@echo "Running local test (requires cluster access)..."
-	BASE_COLLECTION_PATH=./test-output LOG_LEVEL=$(LOG_LEVEL) ./collection-scripts/must_gather $(OPTS)
+	BASE_COLLECTION_PATH=./test-output \
+	LOG_LEVEL=$(LOG_LEVEL) \
+	RHDH_MUST_GATHER_VERSION=$(RHDH_MUST_GATHER_VERSION) \
+	./collection-scripts/must_gather $(OPTS)
 
 .PHONY: test-local-script
 test-local-script: test-output ## Test the specified script (set the SCRIPT var)
@@ -50,7 +56,10 @@ test-local-script: test-output ## Test the specified script (set the SCRIPT var)
 		exit 1; \
 	fi
 	@echo "Running local test (requires cluster access)..."
-	BASE_COLLECTION_PATH=./test-output LOG_LEVEL=$(LOG_LEVEL) ./collection-scripts/gather_${SCRIPT}
+	BASE_COLLECTION_PATH=./test-output \
+	LOG_LEVEL=$(LOG_LEVEL)\
+	RHDH_MUST_GATHER_VERSION=$(RHDH_MUST_GATHER_VERSION) \
+	./collection-scripts/gather_${SCRIPT}
 
 .PHONY: test-container-all
 test-container-all: test-output ## Test using container (requires podman)
@@ -157,6 +166,8 @@ help: ## Show this help message
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {sub("\\\\n",sprintf("\n%22c"," "), $$2);printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 	@echo ""
 	@echo "Variables:"
+	@echo "  VERSION       - Must-gather version (default: $(VERSION))"
+	@echo "  RHDH_MUST_GATHER_VERSION - Full version with git SHA (computed: $(RHDH_MUST_GATHER_VERSION))"
 	@echo "  REGISTRY      - Container registry (default: $(REGISTRY))"
 	@echo "  IMAGE_NAME    - Container image name (default: $(IMAGE_NAME))"
 	@echo "  IMAGE_TAG     - Container image tag (default: $(IMAGE_TAG))"

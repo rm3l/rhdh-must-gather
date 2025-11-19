@@ -52,11 +52,19 @@ jobs:
           SHORT_SHA=$(git rev-parse --short=9 HEAD)
           
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            # Git tag: push the tag version
+            # Git tag: push the tag version and derive major/minor tags
             TAG_VERSION=${GITHUB_REF#refs/tags/}
             echo "IMAGE_TAG=${TAG_VERSION}" >> "$GITHUB_OUTPUT"
-            echo "EXTRA_TAGS=" >> "$GITHUB_OUTPUT"
             echo "VERSION=${TAG_VERSION}" >> "$GITHUB_OUTPUT"
+            
+            # Parse semantic version to extract major and major.minor
+            if [[ ${TAG_VERSION} =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+              MAJOR="${BASH_REMATCH[1]}"
+              MINOR="${BASH_REMATCH[2]}"
+              echo "EXTRA_TAGS=${MAJOR} ${MAJOR}.${MINOR}" >> "$GITHUB_OUTPUT"
+            else
+              echo "EXTRA_TAGS=" >> "$GITHUB_OUTPUT"
+            fi
           elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             # Main branch: push next and next-${commit}
             echo "IMAGE_TAG=next" >> "$GITHUB_OUTPUT"
@@ -95,24 +103,37 @@ jobs:
           # Save main tag for signing
           echo "${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.IMAGE_TAG }}" > /tmp/image-tags.txt
 
-      # Build and push extra tag with commit SHA and 2-week expiry if specified
-      - name: Build and push extra tag with expiry
+      # Push extra tags if specified
+      - name: Push extra tags
         if: steps.prep.outputs.EXTRA_TAGS != ''
         run: |
           # Get the VERSION from prep step
           VERSION="${{ steps.prep.outputs.VERSION }}"
           
-          # Build and push extra tag with 2-week expiry label
-          make build-push \
-            CONTAINER_TOOL=docker \
-            REGISTRY=${{ vars.REGISTRY }} \
-            IMAGE_NAME=${{ env.IMAGE_NAME}} \
-            IMAGE_TAG=${{ steps.prep.outputs.EXTRA_TAGS }} \
-            BUILD_ARGS="--build-arg RHDH_MUST_GATHER_VERSION=${VERSION}" \
-            LABELS="--label quay.expires-after=2w"
-
-          # Add extra tag for signing
-          echo "${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.EXTRA_TAGS }}" >> /tmp/image-tags.txt
+          # Process each extra tag (space-separated)
+          for TAG in ${{ steps.prep.outputs.EXTRA_TAGS }}; do
+            echo "Processing tag: ${TAG}"
+            
+            if [[ ${TAG} == next-* ]]; then
+              # Commit-SHA tags need rebuild with expiry label
+              echo "Building and pushing commit-SHA tag with expiry: ${TAG}"
+              make build-push \
+                CONTAINER_TOOL=docker \
+                REGISTRY=${{ vars.REGISTRY }} \
+                IMAGE_NAME=${{ env.IMAGE_NAME}} \
+                IMAGE_TAG=${TAG} \
+                BUILD_ARGS="--build-arg RHDH_MUST_GATHER_VERSION=${VERSION}" \
+                LABELS="--label quay.expires-after=2w"
+            else
+              # Version tags (major, major.minor) reuse the main image to preserve digest
+              echo "Tagging and pushing version tag: ${TAG}"
+              docker tag ${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.IMAGE_TAG }} ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${TAG}
+              docker push ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${TAG}
+            fi
+            
+            # Add tag for signing
+            echo "${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${TAG}" >> /tmp/image-tags.txt
+          done
 
       # Sign the resulting Docker image digests
       # https://github.com/sigstore/cosign
@@ -134,7 +155,10 @@ jobs:
           echo "- **Registry**: ${{ vars.REGISTRY }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Main Tag**: \`${{ steps.prep.outputs.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
           if [ -n "${{ steps.prep.outputs.EXTRA_TAGS }}" ]; then
-            echo "- **Extra Tag**: \`${{ steps.prep.outputs.EXTRA_TAGS }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Extra Tags**:" >> $GITHUB_STEP_SUMMARY
+            for TAG in ${{ steps.prep.outputs.EXTRA_TAGS }}; do
+              echo "  - \`${TAG}\`" >> $GITHUB_STEP_SUMMARY
+            done
           fi
           echo "- **Digest**: \`${{ steps.build-push.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Signed**: ✅" >> $GITHUB_STEP_SUMMARY

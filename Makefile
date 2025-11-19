@@ -4,10 +4,13 @@
 SCRIPT ?= rhdh
 IMAGE_NAME ?= rhdh-must-gather
 IMAGE_TAG ?= main
-REGISTRY ?= ghcr.io/redhat-developer
+REGISTRY ?= quay.io/rhdh-community
 FULL_IMAGE_NAME = $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
 LOG_LEVEL ?= info
 OPTS ?= ## Additional options to pass to must-gather (e.g., --with-heap-dumps --with-secrets)
+CONTAINER_TOOL ?= podman
+BUILD_ARGS ?=
+LABELS ?=
 
 default: test-container-all
 
@@ -15,15 +18,15 @@ default: test-container-all
 .PHONY: build
 build: ## Build the must-gather container image
 	@echo "Building must-gather image..."
-	podman build -t $(IMAGE_NAME):$(IMAGE_TAG) .
+	$(CONTAINER_TOOL) build $(BUILD_ARGS) $(if $(LABELS),$(LABELS)) -t $(IMAGE_NAME):$(IMAGE_TAG) .
 	@echo "Image built: $(IMAGE_NAME):$(IMAGE_TAG)"
 
 .PHONY: build-push
 build-push: build ## Build and push the image to registry
 	@echo "Tagging image for registry..."
-	podman tag $(IMAGE_NAME):$(IMAGE_TAG) $(FULL_IMAGE_NAME)
+	$(CONTAINER_TOOL) tag $(IMAGE_NAME):$(IMAGE_TAG) $(FULL_IMAGE_NAME)
 	@echo "Pushing image to registry..."
-	podman push $(FULL_IMAGE_NAME)
+	$(CONTAINER_TOOL) push $(FULL_IMAGE_NAME)
 	@echo "Image pushed: $(FULL_IMAGE_NAME)"
 
 test-output:

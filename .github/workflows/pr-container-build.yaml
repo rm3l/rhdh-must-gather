@@ -13,8 +13,7 @@ on:
       - release-1.[0-9]+
 
 env:
-  REGISTRY: quay.io
-  IMAGE_NAME: rhdh-community/rhdh-must-gather
+  IMAGE_NAME: ${{ vars.REGISTRY_ORG }}/rhdh-must-gather
 
 jobs:
   authorize:
@@ -30,8 +29,8 @@ jobs:
         run: |
           echo "✓"
 
-  pr-build:
-    name: PR Publish
+  pr-image-publish:
+    name: Publish PR Container Image
     runs-on: ubuntu-latest
     needs: authorize
     permissions:
@@ -74,11 +73,11 @@ jobs:
 
       # Login to Quay.io (only for PRs from same repo)
       # https://github.com/docker/login-action
-      - name: Log into registry ${{ env.REGISTRY }}
+      - name: Log into registry ${{ vars.REGISTRY }}
         if: steps.changed-files.outputs.any_changed == 'true'
         uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ${{ vars.REGISTRY }}
           username: ${{ vars.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_TOKEN }}
 
@@ -110,7 +109,8 @@ jobs:
         run: |
           make build-push \
             CONTAINER_TOOL=docker \
-            REGISTRY=${{ env.REGISTRY }} \
+            REGISTRY=${{ vars.REGISTRY }} \
+            IMAGE_NAME=${{ env.IMAGE_NAME}} \
             IMAGE_TAG=${{ steps.prep.outputs.IMAGE_TAG }} \
             BUILD_ARGS="${{ steps.prep.outputs.BUILD_ARGS }}" \
             LABELS="${{ steps.prep.outputs.LABELS }}"
@@ -119,8 +119,8 @@ jobs:
       - name: Push tag with commit SHA
         if: steps.changed-files.outputs.any_changed == 'true' && steps.prep.outputs.EXTRA_TAGS != ''
         run: |
-          docker tag rhdh-must-gather:${{ steps.prep.outputs.IMAGE_TAG }} ${{ env.REGISTRY }}/rhdh-must-gather:${{ steps.prep.outputs.EXTRA_TAGS }}
-          docker push ${{ env.REGISTRY }}/rhdh-must-gather:${{ steps.prep.outputs.EXTRA_TAGS }}
+          docker tag ${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.IMAGE_TAG }} ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.EXTRA_TAGS }}
+          docker push ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.EXTRA_TAGS }}
 
       # Sign the published Docker images (only for same-repo PRs)
       # https://github.com/sigstore/cosign
@@ -128,16 +128,16 @@ jobs:
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
           # Get digest for signing
-          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ${{ env.REGISTRY }}/rhdh-must-gather:${{ steps.prep.outputs.IMAGE_TAG }} | cut -d'@' -f2)
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.IMAGE_TAG }} | cut -d'@' -f2)
           
           # Sign the main tag
-          echo "Signing ${{ env.REGISTRY }}/rhdh-must-gather:${{ steps.prep.outputs.IMAGE_TAG }}@${DIGEST}"
-          cosign sign --yes "${{ env.REGISTRY }}/rhdh-must-gather:${{ steps.prep.outputs.IMAGE_TAG }}@${DIGEST}"
+          echo "Signing ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.IMAGE_TAG }}@${DIGEST}"
+          cosign sign --yes "${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.IMAGE_TAG }}@${DIGEST}"
           
           # Sign the extra tag if it exists
           if [ -n "${{ steps.prep.outputs.EXTRA_TAGS }}" ]; then
-            echo "Signing ${{ env.REGISTRY }}/rhdh-must-gather:${{ steps.prep.outputs.EXTRA_TAGS }}@${DIGEST}"
-            cosign sign --yes "${{ env.REGISTRY }}/rhdh-must-gather:${{ steps.prep.outputs.EXTRA_TAGS }}@${DIGEST}"
+            echo "Signing ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.EXTRA_TAGS }}@${DIGEST}"
+            cosign sign --yes "${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.EXTRA_TAGS }}@${DIGEST}"
           fi
 
       - name: Summary

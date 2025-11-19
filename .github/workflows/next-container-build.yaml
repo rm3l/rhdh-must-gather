@@ -14,11 +14,11 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  REGISTRY: quay.io
-  IMAGE_NAME: rhdh-community/rhdh-must-gather
+  IMAGE_NAME: ${{ vars.REGISTRY_ORG }}/rhdh-must-gather
 
 jobs:
-  build:
+  image-publish:
+    name: Publish Container Image
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -31,10 +31,10 @@ jobs:
 
       # Login to Quay.io
       # https://github.com/docker/login-action
-      - name: Log into registry ${{ env.REGISTRY }}
+      - name: Log into registry ${{ vars.REGISTRY }}
         uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ${{ vars.REGISTRY }}
           username: ${{ vars.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_TOKEN }}
 
@@ -83,27 +83,27 @@ jobs:
           # Build and push main tag
           make build-push \
             CONTAINER_TOOL=docker \
-            REGISTRY=${{ env.REGISTRY }} \
-            IMAGE_NAME=rhdh-must-gather \
+            REGISTRY=${{ vars.REGISTRY }} \
+            IMAGE_NAME=${{ env.IMAGE_NAME}} \
             IMAGE_TAG=${{ steps.prep.outputs.IMAGE_TAG }} \
             BUILD_ARGS="--build-arg RHDH_MUST_GATHER_VERSION=${VERSION}"
           
           # Get image digest
-          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ${{ env.REGISTRY }}/rhdh-must-gather:${{ steps.prep.outputs.IMAGE_TAG }} | cut -d'@' -f2)
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.IMAGE_TAG }} | cut -d'@' -f2)
           echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
           
           # Save main tag for signing
-          echo "${{ env.REGISTRY }}/rhdh-must-gather:${{ steps.prep.outputs.IMAGE_TAG }}" > /tmp/image-tags.txt
+          echo "${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.IMAGE_TAG }}" > /tmp/image-tags.txt
 
       # Push extra tag with commit SHA if specified
       - name: Push extra tag
         if: steps.prep.outputs.EXTRA_TAGS != ''
         run: |
-          docker tag rhdh-must-gather:${{ steps.prep.outputs.IMAGE_TAG }} ${{ env.REGISTRY }}/rhdh-must-gather:${{ steps.prep.outputs.EXTRA_TAGS }}
-          docker push ${{ env.REGISTRY }}/rhdh-must-gather:${{ steps.prep.outputs.EXTRA_TAGS }}
+          docker tag ${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.IMAGE_TAG }} ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.EXTRA_TAGS }}
+          docker push ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.EXTRA_TAGS }}
           
           # Add extra tag for signing
-          echo "${{ env.REGISTRY }}/rhdh-must-gather:${{ steps.prep.outputs.EXTRA_TAGS }}" >> /tmp/image-tags.txt
+          echo "${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.EXTRA_TAGS }}" >> /tmp/image-tags.txt
 
       # Sign the resulting Docker image digests
       # https://github.com/sigstore/cosign
@@ -122,7 +122,7 @@ jobs:
           echo "### Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Version**: ${{ steps.prep.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Registry**: ${{ env.REGISTRY }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Registry**: ${{ vars.REGISTRY }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Main Tag**: \`${{ steps.prep.outputs.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
           if [ -n "${{ steps.prep.outputs.EXTRA_TAGS }}" ]; then
             echo "- **Extra Tag**: \`${{ steps.prep.outputs.EXTRA_TAGS }}\`" >> $GITHUB_STEP_SUMMARY

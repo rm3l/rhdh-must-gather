@@ -51,9 +51,9 @@ jobs:
         run: |
           SHORT_SHA=$(git rev-parse --short=9 HEAD)
           
-          # Calculate expiration date (2 weeks from now in ISO 8601 format)
-          EXPIRATION_DATE=$(date -u -d "+14 days" +"%Y-%m-%dT%H:%M:%SZ")
-          echo "EXPIRATION_DATE=${EXPIRATION_DATE}" >> "$GITHUB_OUTPUT"
+          # Calculate expiration date (2 weeks from now as Unix timestamp)
+          EXPIRATION_TIMESTAMP=$(date -u -d "+14 days" +"%s")
+          echo "EXPIRATION_TIMESTAMP=${EXPIRATION_TIMESTAMP}" >> "$GITHUB_OUTPUT"
           
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             # Git tag: push the tag version and derive major/minor tags
@@ -150,11 +150,11 @@ jobs:
           
           # Set expiration for each commit-SHA tag
           while IFS= read -r TAG; do
-            echo "Setting expiration on ${TAG} to ${{ steps.prep.outputs.EXPIRATION_DATE }}"
+            echo "Setting expiration on ${TAG} to ${{ steps.prep.outputs.EXPIRATION_TIMESTAMP }} (Unix timestamp)"
             RESPONSE=$(curl -s -w "\n%{http_code}" -X PUT \
               -H "Authorization: Bearer ${API_TOKEN}" \
               -H "Content-Type: application/json" \
-              -d "{\"expiration\": \"${{ steps.prep.outputs.EXPIRATION_DATE }}\"}" \
+              -d "{\"expiration\": ${{ steps.prep.outputs.EXPIRATION_TIMESTAMP }}}" \
               "https://${{ vars.REGISTRY }}/api/v1/repository/${NAMESPACE}/${REPO}/tag/${TAG}")
             
             HTTP_CODE=$(echo "$RESPONSE" | tail -n1)

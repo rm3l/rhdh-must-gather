@@ -27,7 +27,7 @@ oc adm must-gather --image=quay.io/rhdh-community/rhdh-must-gather:next --since=
 oc adm must-gather --image=quay.io/rhdh-community/rhdh-must-gather:next --since-time=2025-08-21T20:00:00Z
 
 # To pass specific options to the gather script
-oc adm must-gather --image=quay.io/rhdh-community/rhdh-must-gather -- /usr/bin/gather [options...]
+oc adm must-gather --image=quay.io/rhdh-community/rhdh-must-gather:next -- /usr/bin/gather [options...]
 ```
 
 ### Using with Kubernetes

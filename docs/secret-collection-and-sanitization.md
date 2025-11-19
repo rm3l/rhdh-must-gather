@@ -6,10 +6,10 @@
 
 ```bash
 # Default: secrets excluded
-oc adm must-gather --image=quay.io/rhdh-community/rhdh-must-gather
+oc adm must-gather --image=quay.io/rhdh-community/rhdh-must-gather:next
 
 # Opt-in: include secrets (will be sanitized)
-oc adm must-gather --image=quay.io/rhdh-community/rhdh-must-gather -- /usr/bin/gather --with-secrets
+oc adm must-gather --image=quay.io/rhdh-community/rhdh-must-gather:next -- /usr/bin/gather --with-secrets
 ```
 
 When secrets are excluded (default behavior):

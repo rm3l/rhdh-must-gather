@@ -1,4 +1,4 @@
-[must-gather      ] OUT 2025-09-11T21:01:06.864612446Z Using must-gather plug-in image: ghcr.io/redhat-developer/rhdh-must-gather:main@sha256:03c44f0651254097feed88b0dba951d29cbc55ab25b3bc49b580a5846cef99a5
+[must-gather      ] OUT 2025-09-11T21:01:06.864612446Z Using must-gather plug-in image: quay.io/rhdh-community/rhdh-must-gather:next@sha256:03c44f0651254097feed88b0dba951d29cbc55ab25b3bc49b580a5846cef99a5
 When opening a support case, bugzilla, or issue please include the following summary data along with any other requested information:
 ClusterID: 3d355a71-e1aa-4950-a9d6-78ed392637fb
 ClientVersion: 4.19.11
@@ -17,7 +17,7 @@ ClusterOperators:
 
 [must-gather      ] OUT 2025-09-11T21:01:07.588665782Z namespace/openshift-must-gather-jf9dz created
 [must-gather      ] OUT 2025-09-11T21:01:07.688813933Z clusterrolebinding.rbac.authorization.k8s.io/must-gather-wk5sd created
-[must-gather      ] OUT 2025-09-11T21:01:07.903573489Z pod for plug-in image ghcr.io/redhat-developer/rhdh-must-gather:main@sha256:03c44f0651254097feed88b0dba951d29cbc55ab25b3bc49b580a5846cef99a5 created
+[must-gather      ] OUT 2025-09-11T21:01:07.903573489Z pod for plug-in image quay.io/rhdh-community/rhdh-must-gather:next@sha256:03c44f0651254097feed88b0dba951d29cbc55ab25b3bc49b580a5846cef99a5 created
 [must-gather-6c5qj] OUT 2025-09-11T21:01:50.792548614Z waiting for gather to complete
 [must-gather-6c5qj] OUT 2025-09-11T21:01:50.890997774Z downloading gather output
 [must-gather-6c5qj] OUT 2025-09-11T21:01:52.993028676Z receiving incremental file list

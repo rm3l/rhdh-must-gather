@@ -115,12 +115,17 @@ jobs:
             BUILD_ARGS="${{ steps.prep.outputs.BUILD_ARGS }}" \
             LABELS="${{ steps.prep.outputs.LABELS }}"
 
-      # Push the extra tag with commit SHA (only for same-repo PRs)
-      - name: Push tag with commit SHA
+      # Build and push extra tag with commit SHA
+      - name: Build and push extra tag with commit SHA
         if: steps.changed-files.outputs.any_changed == 'true' && steps.prep.outputs.EXTRA_TAGS != ''
         run: |
-          docker tag ${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.IMAGE_TAG }} ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.EXTRA_TAGS }}
-          docker push ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.EXTRA_TAGS }}
+          make build-push \
+            CONTAINER_TOOL=docker \
+            REGISTRY=${{ vars.REGISTRY }} \
+            IMAGE_NAME=${{ env.IMAGE_NAME}} \
+            IMAGE_TAG=${{ steps.prep.outputs.EXTRA_TAGS }} \
+            BUILD_ARGS="${{ steps.prep.outputs.BUILD_ARGS }}" \
+            LABELS="${{ steps.prep.outputs.LABELS }}"
 
       # Sign the published Docker images (only for same-repo PRs)
       # https://github.com/sigstore/cosign

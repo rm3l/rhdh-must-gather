@@ -95,13 +95,22 @@ jobs:
           # Save main tag for signing
           echo "${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.IMAGE_TAG }}" > /tmp/image-tags.txt
 
-      # Push extra tag with commit SHA if specified
-      - name: Push extra tag
+      # Build and push extra tag with commit SHA and 2-week expiry if specified
+      - name: Build and push extra tag with expiry
         if: steps.prep.outputs.EXTRA_TAGS != ''
         run: |
-          docker tag ${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.IMAGE_TAG }} ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.EXTRA_TAGS }}
-          docker push ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.EXTRA_TAGS }}
+          # Get the VERSION from prep step
+          VERSION="${{ steps.prep.outputs.VERSION }}"
           
+          # Build and push extra tag with 2-week expiry label
+          make build-push \
+            CONTAINER_TOOL=docker \
+            REGISTRY=${{ vars.REGISTRY }} \
+            IMAGE_NAME=${{ env.IMAGE_NAME}} \
+            IMAGE_TAG=${{ steps.prep.outputs.EXTRA_TAGS }} \
+            BUILD_ARGS="--build-arg RHDH_MUST_GATHER_VERSION=${VERSION}" \
+            LABELS="--label quay.expires-after=2w"
+
           # Add extra tag for signing
           echo "${{ vars.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ steps.prep.outputs.EXTRA_TAGS }}" >> /tmp/image-tags.txt
 

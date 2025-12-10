@@ -1,4 +1,4 @@
-FROM quay.io/openshift/origin-must-gather:4.20
+FROM quay.io/openshift/origin-must-gather:4.21
 
 # Must-gather image for Red Hat Developer Hub (RHDH)
 LABEL name="rhdh-must-gather" \

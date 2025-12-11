@@ -1,5 +1,8 @@
 FROM registry.access.redhat.com/ubi9-minimal:latest@sha256:6fc28bcb6776e387d7a35a2056d9d2b985dc4e26031e98a2bd35a7137cd6fd71
 
+# Define build argument before using it in LABEL
+ARG RHDH_MUST_GATHER_VERSION="0.0.0-unknown"
+
 # Must-gather image for Red Hat Developer Hub (RHDH)
 LABEL name="rhdh-must-gather" \
       vendor="Red Hat" \
@@ -60,7 +63,7 @@ COPY collection-scripts/* /usr/bin/
 
 RUN mv /usr/bin/must_gather /usr/bin/gather
 
-ARG RHDH_MUST_GATHER_VERSION="0.0.0-unknown"
+# Set environment variable from build argument
 ENV RHDH_MUST_GATHER_VERSION=$RHDH_MUST_GATHER_VERSION
 
 ENTRYPOINT ["/usr/bin/gather"]

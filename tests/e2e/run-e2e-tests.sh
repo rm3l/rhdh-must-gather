@@ -137,9 +137,18 @@ if [ -f "$OUTPUT_DIR/version" ]; then
     fi
 fi
 
-# Check platform info files
-check_file_exists "$OUTPUT_DIR/platform/cluster-info.json" "cluster info JSON"
-check_file_exists "$OUTPUT_DIR/platform/cluster-version.txt" "cluster version"
+# Check platform info files (cluster-info collection is opt-in and disabled by default)
+if [ -f "$OUTPUT_DIR/platform/cluster-info.json" ]; then
+    log_info "✓ Found cluster info JSON"
+else
+    log_warn "○ Cluster info JSON not present (expected - collection is opt-in)"
+fi
+
+if [ -f "$OUTPUT_DIR/platform/cluster-version.txt" ]; then
+    log_info "✓ Found cluster version"
+else
+    log_warn "○ Cluster version not present (expected - collection is opt-in)"
+fi
 
 # Check namespace-inspect output
 if [ -d "$OUTPUT_DIR/namespace-inspect" ]; then

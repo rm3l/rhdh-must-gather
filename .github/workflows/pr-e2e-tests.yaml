@@ -52,12 +52,6 @@ jobs:
           cluster_name: rhdh-must-gather-e2e
           wait: 120s
 
-      - name: Verify cluster is ready
-        run: |
-          kubectl cluster-info
-          kubectl get nodes
-          kubectl get pods -A
-
       - name: Run E2E tests
         env:
           FULL_IMAGE_NAME: ${{ inputs.image_name }}

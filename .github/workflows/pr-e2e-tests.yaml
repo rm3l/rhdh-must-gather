@@ -1,0 +1,92 @@
+name: PR E2E Tests
+
+on:
+  workflow_call:
+    inputs:
+      image_name:
+        description: 'Full container image name with tag (e.g., quay.io/rhdh-community/rhdh-must-gather:pr-123)'
+        required: true
+        type: string
+      checkout_repo:
+        description: 'Repository to checkout (e.g., owner/repo for fork PRs)'
+        required: true
+        type: string
+      checkout_ref:
+        description: 'Git ref to checkout (commit SHA or branch)'
+        required: true
+        type: string
+      run_e2e:
+        description: 'Whether to run E2E tests (false if no relevant files changed)'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e-tests:
+    name: E2E Tests on Kind
+    runs-on: ubuntu-latest
+    if: inputs.run_e2e
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          fetch-depth: 0
+          repository: ${{ inputs.checkout_repo }}
+          ref: ${{ inputs.checkout_ref }}
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+          # Install yq
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Create Kind cluster
+        uses: helm/kind-action@a1b0e391336a6ee6713a0583f8c6240d70863de3 # v1.12.0
+        with:
+          cluster_name: rhdh-must-gather-e2e
+          wait: 120s
+
+      - name: Verify cluster is ready
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
+          kubectl get pods -A
+
+      - name: Run E2E tests
+        env:
+          FULL_IMAGE_NAME: ${{ inputs.image_name }}
+        run: |
+          echo "Running E2E tests with image: $FULL_IMAGE_NAME"
+          ./tests/e2e/run-e2e-tests.sh "$FULL_IMAGE_NAME"
+
+      - name: Upload must-gather output on failure
+        if: failure()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: must-gather-output-e2e
+          path: |
+            rhdh-must-gather-output.k8s.*.tar.gz
+            rhdh-must-gather-output.k8s.*/
+          retention-days: 2
+
+      - name: Cleanup
+        if: always()
+        run: |
+          # Remove output files to clean up space
+          rm -rf rhdh-must-gather-output.k8s.* || true
+
+  skip-e2e:
+    name: Skip E2E Tests
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.run_e2e }}
+    steps:
+      - name: Skip message
+        run: |
+          echo "E2E tests skipped - no relevant files changed"
+

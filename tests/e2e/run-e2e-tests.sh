@@ -51,6 +51,27 @@ cd "$PROJECT_ROOT"
 
 log_info "Working directory: $PROJECT_ROOT"
 
+# Deploy some instances of RHDH
+# Helm
+kubectl create namespace my-rhdh-ns
+helm -n my-rhdh-ns install my-rhdh-helm backstage --repo https://redhat-developer.github.io/rhdh-chart --set route.enabled=false
+
+# Operator
+kubectl apply -f https://raw.githubusercontent.com/redhat-developer/rhdh-operator/refs/heads/main/dist/rhdh/install.yaml
+log_info "Waiting for rhdh-operator deployment to be available in rhdh-operator namespace..."
+if ! kubectl -n rhdh-operator wait --for=condition=Available deployment/rhdh-operator --timeout=5m; then
+    log_error "Timed out waiting for rhdh-operator deployment to be available."
+    exit 1
+fi
+log_info "rhdh-operator deployment is now available."
+kubectl -n my-rhdh-ns apply -f - <<EOF
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: my-rhdh-operator
+EOF
+# TODO: wait until the Backstage CR is reconciled
+
 # Run make k8s-test
 log_info "Running make k8s-test..."
 make k8s-test \
@@ -137,9 +158,18 @@ if [ -f "$OUTPUT_DIR/version" ]; then
     fi
 fi
 
-# Check platform info files
-check_file_exists "$OUTPUT_DIR/platform/cluster-info.json" "cluster info JSON"
-check_file_exists "$OUTPUT_DIR/platform/cluster-version.txt" "cluster version"
+# Check platform info files (cluster-info collection is opt-in and disabled by default)
+if [ -f "$OUTPUT_DIR/platform/cluster-info.json" ]; then
+    log_info "✓ Found cluster info JSON"
+else
+    log_warn "○ Cluster info JSON not present (expected - collection is opt-in)"
+fi
+
+if [ -f "$OUTPUT_DIR/platform/cluster-version.txt" ]; then
+    log_info "✓ Found cluster version"
+else
+    log_warn "○ Cluster version not present (expected - collection is opt-in)"
+fi
 
 # Check namespace-inspect output
 if [ -d "$OUTPUT_DIR/namespace-inspect" ]; then

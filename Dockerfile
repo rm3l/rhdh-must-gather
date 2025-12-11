@@ -15,6 +15,7 @@ LABEL name="rhdh-must-gather" \
 # grep, sed: text processing used in sanitization and data collection
 # jq: JSON processing (validated in common.sh)
 # util-linux: provides setsid (required by oc adm must-gather)
+# rsync: file synchronization tool (required by oc adm must-gather)
 RUN microdnf install -y --setopt=install_weak_deps=0 --nodocs \
     tar \
     gzip \
@@ -24,6 +25,7 @@ RUN microdnf install -y --setopt=install_weak_deps=0 --nodocs \
     sed \
     jq \
     util-linux \
+    rsync \
     && microdnf clean all
 
 # Install oc and kubectl (OpenShift CLI)

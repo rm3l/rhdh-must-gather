@@ -8,12 +8,22 @@ SCRIPT ?= rhdh
 IMAGE_NAME ?= rhdh-community/rhdh-must-gather
 IMAGE_TAG ?= main
 REGISTRY ?= quay.io
-FULL_IMAGE_NAME = $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
+FULL_IMAGE_NAME ?= $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
 LOG_LEVEL ?= info
 OPTS ?= ## Additional options to pass to must-gather (e.g., --with-heap-dumps --with-secrets)
 CONTAINER_TOOL ?= podman
 BUILD_ARGS ?=
 LABELS ?=
+TOOLS_DIR ?= ./bin
+
+# BATS test configuration
+BATS_VERSION ?= 1.13.0
+BATS_CORE_URL := https://github.com/bats-core/bats-core/archive/refs/tags/v$(BATS_VERSION).tar.gz
+BATS_BIN := $(TOOLS_DIR)/bats-core-$(BATS_VERSION)/bin/bats
+TEST_RESULTS_DIR ?= ./test-results
+TESTS_OPTIONS ?= --timing --print-output-on-failure --report-formatter junit --output "$(TEST_RESULTS_DIR)"
+
+TESTS_DIR := ./tests
 
 default: test-container-all
 
@@ -71,6 +81,35 @@ test-container-all: test-output ## Test using container (requires podman)
 		$(IMAGE_NAME):$(IMAGE_TAG) \
 		$(OPTS)
 
+# ============================================================================
+# BATS Unit Test Targets
+# ============================================================================
+
+.PHONY: test-results
+test-results: ## Create test results directory
+	@mkdir -p $(TEST_RESULTS_DIR)
+
+.PHONY: test-setup
+test-setup: test-results ## Download and setup BATS testing framework
+	@echo "Setting up BATS testing framework..."
+	@if [ ! -d "$(TOOLS_DIR)/bats-core-$(BATS_VERSION)" ]; then \
+		echo "Downloading BATS v$(BATS_VERSION)..."; \
+		mkdir -p "$(TOOLS_DIR)/bats-core-$(BATS_VERSION)"; \
+		curl -sL $(BATS_CORE_URL) | tar xz -C "$(TOOLS_DIR)/bats-core-$(BATS_VERSION)" --strip-components=1; \
+		echo "BATS installed successfully"; \
+	else \
+		echo "BATS $(BATS_VERSION) already installed: $(TOOLS_DIR)/bats-core-$(BATS_VERSION)"; \
+	fi
+
+.PHONY: test
+test: test-setup ## Run all BATS unit tests
+	@echo "Running BATS unit tests..."
+	@$(BATS_BIN) $(TESTS_OPTIONS) $(TESTS_DIR)/*.bats
+
+# ============================================================================
+# Cleanup Targets
+# ============================================================================
+
 .PHONY: clean
 clean: ## Remove built images and test output
 	@echo "Cleaning up..."
@@ -78,6 +117,24 @@ clean: ## Remove built images and test output
 	-podman rmi $(FULL_IMAGE_NAME) 2>/dev/null || true
 	-rm -rf ./test-output
 	@echo "Cleanup complete"
+
+
+.PHONY: test-clean
+test-clean: ## Remove BATS framework and test results
+	@echo "Cleaning up test artifacts..."
+	-rm -rf "$(TOOLS_DIR)/bats-core-$(BATS_VERSION)"
+	-rm -rf "$(TEST_RESULTS_DIR)"
+	@echo "Test cleanup complete"
+
+.PHONY: tools-clean
+tools-clean: ## Remove tools directory
+	@echo "Cleaning up tools..."
+	-rm -rf "$(TOOLS_DIR)"
+	@echo "Tools cleanup complete"
+
+.PHONY: clean-all
+clean-all: clean test-clean tools-clean ## Remove all generated artifacts (images, test output, BATS, tools)
+	@echo "Full cleanup complete"
 
 .PHONY: openshift-test
 openshift-test: ## Test using the 'oc adm must-gather' command
@@ -174,8 +231,10 @@ help: ## Show this help message
 	@echo "  LOG_LEVEL     - Log level (default: $(LOG_LEVEL))"
 	@echo "  OPTS          - Additional must-gather options (e.g., --with-heap-dumps --with-secrets)"
 	@echo "  SCRIPT        - Script name for test-local-script (default: $(SCRIPT))"
+	@echo "  BATS_VERSION  - BATS testing framework version (default: $(BATS_VERSION))"
 	@echo ""
 	@echo "Examples:"
+	@echo "  make test                                          # Run all unit tests"
 	@echo "  make test-local-all OPTS=\"--with-heap-dumps\""
 	@echo "  make test-container-all OPTS=\"--with-secrets --with-heap-dumps\""
 	@echo "  make openshift-test OPTS=\"--with-heap-dumps --namespaces my-ns\""

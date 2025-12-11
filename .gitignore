@@ -28,6 +28,12 @@ Thumbs.db
 test-data/
 sample-output/
 
+# Tools downloaded locally
+bin/
+
+# Test results
+test-results/
+
 inspect.local*
 
 *.local.*

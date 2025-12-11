@@ -63,4 +63,4 @@ RUN mv /usr/bin/must_gather /usr/bin/gather
 ARG RHDH_MUST_GATHER_VERSION="0.0.0-unknown"
 ENV RHDH_MUST_GATHER_VERSION=$RHDH_MUST_GATHER_VERSION
 
-ENTRYPOINT exec /usr/bin/gather
+ENTRYPOINT ["/usr/bin/gather"]

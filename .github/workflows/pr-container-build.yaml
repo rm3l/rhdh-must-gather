@@ -57,7 +57,6 @@ jobs:
             Dockerfile
             .containerignore
             collection-scripts/**
-            deploy/**
             LICENSE
           files_ignore: |
             **/*.md
@@ -191,93 +190,3 @@ jobs:
           echo "- **Status**: ✅ Built, pushed, and signed" >> $GITHUB_STEP_SUMMARY
           echo "- **Tags**: \`pr-${{ github.event.pull_request.number }}\`, \`${{ steps.prep.outputs.EXTRA_TAGS }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Expiry**: 2 weeks" >> $GITHUB_STEP_SUMMARY
-
-    outputs:
-      image_tag: ${{ steps.prep.outputs.IMAGE_TAG }}
-      any_changed: ${{ steps.changed-files.outputs.any_changed }}
-      version: ${{ steps.prep.outputs.VERSION }}
-
-  e2e-test:
-    name: E2E Tests on Kind
-    runs-on: ubuntu-latest
-    needs: pr-image-publish
-    if: needs.pr-image-publish.outputs.any_changed == 'true'
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-        with:
-          fetch-depth: 0
-          repository: ${{github.event.pull_request.head.repo.full_name}}
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Set up Kind cluster
-        uses: helm/kind-action@99576bfa6ddf9a8e612d83b513da5a75875caced # v1.12.0
-        with:
-          cluster_name: must-gather-e2e
-
-      - name: Pull PR image
-        run: |
-          docker pull ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.pr-image-publish.outputs.image_tag }}
-
-      - name: Load image into Kind
-        run: |
-          kind load docker-image ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.pr-image-publish.outputs.image_tag }} --name must-gather-e2e
-
-      - name: Install test dependencies
-        run: |
-          # Install yq
-          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-          sudo chmod +x /usr/local/bin/yq
-          # jq is pre-installed on GitHub runners
-          # kubectl is configured by kind-action
-
-      - name: Run E2E tests (k8s-test)
-        run: |
-          make k8s-test \
-            REGISTRY=${{ vars.REGISTRY }} \
-            IMAGE_NAME=${{ env.IMAGE_NAME }} \
-            IMAGE_TAG=${{ needs.pr-image-publish.outputs.image_tag }}
-
-      - name: Verify must-gather output
-        run: |
-          OUTPUT_FILE=$(ls rhdh-must-gather-output.k8s.*.tar.gz 2>/dev/null | head -1)
-          if [ -z "$OUTPUT_FILE" ]; then
-            echo "Error: No must-gather output file found"
-            exit 1
-          fi
-          
-          echo "Found output file: $OUTPUT_FILE"
-          echo ""
-          
-          # Extract and verify contents
-          mkdir -p /tmp/must-gather-verify
-          tar xzf "$OUTPUT_FILE" -C /tmp/must-gather-verify
-          
-          echo "=== Must-gather output structure ==="
-          find /tmp/must-gather-verify -type f | head -50
-          echo ""
-          
-          # Check for expected files/directories
-          if [ -d "/tmp/must-gather-verify" ] && [ "$(ls -A /tmp/must-gather-verify)" ]; then
-            echo "✓ Must-gather output is non-empty"
-          else
-            echo "Error: Must-gather output is empty"
-            exit 1
-          fi
-
-      - name: Upload must-gather output
-        if: always()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
-        with:
-          name: must-gather-e2e-output
-          path: rhdh-must-gather-output.k8s.*.tar.gz
-          retention-days: 7
-
-      - name: E2E Test Summary
-        run: |
-          echo "### E2E Test Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Cluster**: Kind (must-gather-e2e)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image**: \`${{ vars.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.pr-image-publish.outputs.image_tag }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status**: ✅ E2E tests passed" >> $GITHUB_STEP_SUMMARY

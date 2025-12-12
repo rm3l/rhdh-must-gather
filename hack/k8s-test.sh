@@ -3,16 +3,23 @@
 # Run RHDH must-gather on a standard Kubernetes cluster using Kustomize.
 #
 # Usage:
-#   ./hack/k8s-test.sh [IMAGE] [OPTS...]
+#   ./hack/k8s-test.sh [OPTIONS]
 #
-# Arguments:
-#   IMAGE   - Full image name (default: quay.io/rhdh-community/rhdh-must-gather:next)
-#   OPTS    - Additional options to pass to the gather script
+# Options:
+#   --image <image>     Full image name (default: quay.io/rhdh-community/rhdh-must-gather:next)
+#   --overlay <overlay> Overlay to use. Can be:
+#                       - A pre-built overlay name (e.g., "with-heap-dumps", "debug-mode")
+#                       - A full/relative path to a user-defined overlay directory
+#   --opts <options>    Additional options to pass to the gather script (quote multiple options)
+#   --help              Show this help message
 #
 # Examples:
 #   ./hack/k8s-test.sh
-#   ./hack/k8s-test.sh quay.io/myorg/rhdh-must-gather:v1.0.0
-#   ./hack/k8s-test.sh quay.io/myorg/rhdh-must-gather:v1.0.0 --with-secrets --namespaces my-ns
+#   ./hack/k8s-test.sh --image quay.io/myorg/rhdh-must-gather:v1.0.0
+#   ./hack/k8s-test.sh --overlay with-heap-dumps
+#   ./hack/k8s-test.sh --overlay debug-mode --opts "--namespaces my-ns"
+#   ./hack/k8s-test.sh --overlay /path/to/my-overlay
+#   ./hack/k8s-test.sh --image myimage:tag --overlay with-heap-dumps --opts "--with-secrets --namespaces my-ns"
 #
 
 set -euo pipefail
@@ -21,19 +28,72 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 KUSTOMIZE_BASE="${REPO_ROOT}/deploy"
 
-# Default image
+# Default values
 DEFAULT_IMAGE="quay.io/rhdh-community/rhdh-must-gather:next"
+IMAGE="${DEFAULT_IMAGE}"
+OVERLAY=""
+OPTS_STRING=""
 
-# Parse arguments
-IMAGE="${1:-${DEFAULT_IMAGE}}"
-shift || true
-OPTS=("$@")
+# Parse named arguments
+show_help() {
+    sed -n '2,/^$/p' "$0" | sed 's/^#//; s/^ //; /^$/d'
+    exit 0
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --image)
+            IMAGE="$2"
+            shift 2
+            ;;
+        --overlay)
+            OVERLAY="$2"
+            shift 2
+            ;;
+        --opts)
+            OPTS_STRING="$2"
+            shift 2
+            ;;
+        --help|-h)
+            show_help
+            ;;
+        *)
+            echo "Error: Unknown option: $1"
+            echo "Use --help for usage information."
+            exit 1
+            ;;
+    esac
+done
+
+# Convert OPTS_STRING to array
+OPTS=()
+if [[ -n "${OPTS_STRING}" ]]; then
+    read -ra OPTS <<< "${OPTS_STRING}"
+fi
 
 # Extract image components
 IMAGE_NAME="${IMAGE%:*}"
 IMAGE_TAG="${IMAGE##*:}"
 if [[ "${IMAGE_TAG}" == "${IMAGE_NAME}" ]]; then
     IMAGE_TAG="latest"
+fi
+
+# Resolve overlay path
+OVERLAY_PATH=""
+if [[ -n "${OVERLAY}" ]]; then
+    if [[ -d "${OVERLAY}" ]]; then
+        # Full/relative path to a user-defined overlay
+        OVERLAY_PATH="$(cd "${OVERLAY}" && pwd)"
+    elif [[ -d "${KUSTOMIZE_BASE}/overlays/${OVERLAY}" ]]; then
+        # Pre-built overlay name
+        OVERLAY_PATH="${KUSTOMIZE_BASE}/overlays/${OVERLAY}"
+    else
+        echo "Error: Overlay not found: ${OVERLAY}"
+        echo "       Looked for:"
+        echo "         - ${OVERLAY} (as path)"
+        echo "         - ${KUSTOMIZE_BASE}/overlays/${OVERLAY} (as pre-built overlay)"
+        exit 1
+    fi
 fi
 
 # Generate unique namespace
@@ -55,9 +115,16 @@ if ! command -v kubectl &>/dev/null; then
 fi
 
 echo "Preparing must-gather resources in namespace: ${NAMESPACE}"
+if [[ -n "${OVERLAY_PATH}" ]]; then
+    echo "Using overlay: ${OVERLAY_PATH}"
+fi
 
-# Create symlink to base directory (Kustomize requires relative paths)
-ln -s "${KUSTOMIZE_BASE}" "${TMP_OVERLAY}/base"
+# Create symlink to base/overlay directory (Kustomize requires relative paths)
+if [[ -n "${OVERLAY_PATH}" ]]; then
+    ln -s "${OVERLAY_PATH}" "${TMP_OVERLAY}/base"
+else
+    ln -s "${KUSTOMIZE_BASE}" "${TMP_OVERLAY}/base"
+fi
 
 # Generate kustomization.yaml
 cat > "${TMP_OVERLAY}/kustomization.yaml" <<EOF

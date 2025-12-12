@@ -30,35 +30,36 @@ oc adm must-gather --image=quay.io/rhdh-community/rhdh-must-gather:next --since-
 oc adm must-gather --image=quay.io/rhdh-community/rhdh-must-gather:next -- /usr/bin/gather [options...]
 ```
 
-### Using with Kubernetes
-
-Kustomize makes it easy to customize the deployment without modifying the base manifests.
+### Using with Kubernetes (`Kustomize`)
 
 ```bash
 # Basic deployment using the base configuration
-kubectl apply -k https://github.com/redhat-developer/rhdh-must-gather/deploy/kustomize/base?ref=main
+kubectl apply -k 'https://github.com/redhat-developer/rhdh-must-gather/deploy/kustomize/base?ref=main'
 
 # Wait for job completion
-kubectl -n rhdh-must-gather wait --for=condition=complete job/rhdh-must-gather --timeout=600s
+kubectl -n rhdh-must-gather wait --for=condition=complete job/rhdh-must-gather \
+  --timeout=600s
 
 # Wait for the data retriever pod to be ready
-kubectl -n rhdh-must-gather wait --for=condition=ready pod/rhdh-must-gather-data-retriever --timeout=60s
+kubectl -n rhdh-must-gather wait --for=condition=ready pod/rhdh-must-gather-data-retriever \
+  --timeout=60s
 
 # Stream the tar archive from the pod
-kubectl -n rhdh-must-gather exec rhdh-must-gather-data-retriever -- tar czf - -C /data . > rhdh-must-gather-output.k8s.tar.gz
+kubectl -n rhdh-must-gather exec rhdh-must-gather-data-retriever -- \
+  tar czf - -C /data . > rhdh-must-gather-output.k8s.tar.gz
 
 # Clean up
-kubectl delete -k https://github.com/redhat-developer/rhdh-must-gather/deploy/kustomize/base?ref=main
+kubectl delete -k 'https://github.com/redhat-developer/rhdh-must-gather/deploy/kustomize/base?ref=main'
 ```
 
 **Using pre-built overlays:**
 
 ```bash
 # Enable debug mode with increased resources
-kubectl apply -k https://github.com/redhat-developer/rhdh-must-gather/deploy/kustomize/overlays/debug-mode?ref=main
+kubectl apply -k 'https://github.com/redhat-developer/rhdh-must-gather/deploy/kustomize/overlays/debug-mode?ref=main'
 
 # Enable heap dump collection (larger storage, extended timeout)
-kubectl apply -k https://github.com/redhat-developer/rhdh-must-gather/deploy/kustomize/overlays/with-heap-dumps?ref=main
+kubectl apply -k 'https://github.com/redhat-developer/rhdh-must-gather/deploy/kustomize/overlays/with-heap-dumps?ref=main'
 ```
 
 **Creating your own overlay for custom configurations:**
@@ -73,7 +74,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - https://github.com/redhat-developer/rhdh-must-gather/deploy/kustomize/base?ref=main
+  - 'https://github.com/redhat-developer/rhdh-must-gather/deploy/kustomize/base?ref=main'
 
 # Example: Change the namespace
 namespace: my-custom-namespace

@@ -108,7 +108,11 @@ EOF
 fi
 
 # Create resources
-echo "Creating must-gather resources..."
+echo "Creating must-gather resources using this Kustomization overlay (${TMP_OVERLAY}/)..."
+echo "---"
+cat "${TMP_OVERLAY}/kustomization.yaml"
+echo "---"
+echo ""
 kubectl apply -k "${TMP_OVERLAY}"
 echo ""
 

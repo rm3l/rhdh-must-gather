@@ -184,7 +184,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'PR images are available:<br/><ol><li>https://${{ vars.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.prep.outputs.IMAGE_TAG }}</li><li>https://${{ vars.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.prep.outputs.EXTRA_TAGS }}</li></ol>'
+              body: 'PR images are available (for 1 week):<br/><ol><li>https://${{ vars.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.prep.outputs.IMAGE_TAG }}</li><li>https://${{ vars.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.prep.outputs.EXTRA_TAGS }}</li></ol>'
             })
 
       - name: Summary

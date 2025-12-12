@@ -19,7 +19,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-KUSTOMIZE_BASE="${REPO_ROOT}/deploy/kustomize/base"
+KUSTOMIZE_BASE="${REPO_ROOT}/deploy"
 
 # Default image
 DEFAULT_IMAGE="quay.io/rhdh-community/rhdh-must-gather:next"

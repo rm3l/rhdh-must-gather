@@ -5,7 +5,8 @@ This directory contains Kustomize configurations for deploying the RHDH must-gat
 ## Directory Structure
 
 ```
-kustomize/
+deploy/
+├── kustomization.yaml          # Default kustomization (references base)
 ├── base/                       # Base configuration (all required resources)
 │   ├── kustomization.yaml
 │   ├── namespace.yaml
@@ -27,21 +28,24 @@ kustomize/
 ### Basic Deployment
 
 ```bash
-# Deploy using the base configuration
-kubectl apply -k base/
+# Deploy using the default configuration
+kubectl apply -k deploy/
+
+# Or using the base configuration explicitly
+kubectl apply -k deploy/base/
 
 # Or directly from GitHub
-kubectl apply -k https://github.com/redhat-developer/rhdh-must-gather/deploy/kustomize/base?ref=main
+kubectl apply -k https://github.com/redhat-developer/rhdh-must-gather/deploy?ref=main
 ```
 
 ### Using Pre-built Overlays
 
 ```bash
 # Deploy with debug logging enabled
-kubectl apply -k overlays/debug-mode/
+kubectl apply -k deploy/overlays/debug-mode/
 
 # Deploy with heap dump collection
-kubectl apply -k overlays/with-heap-dumps/
+kubectl apply -k deploy/overlays/with-heap-dumps/
 ```
 
 ## Available Overlays
@@ -66,7 +70,7 @@ kind: Kustomization
 resources:
   - ../base
   # Or reference from GitHub:
-  # - https://github.com/redhat-developer/rhdh-must-gather/deploy/kustomize/base?ref=main
+  # - https://github.com/redhat-developer/rhdh-must-gather/deploy/base?ref=main
 
 # Customize namespace
 namespace: my-namespace
@@ -189,13 +193,13 @@ kubectl -n rhdh-must-gather exec rhdh-must-gather-data-retriever -- tar czf - -C
 ## Cleanup
 
 ```bash
-# Using base
-kubectl delete -k base/
+# Using default deployment
+kubectl delete -k deploy/
 
 # Using an overlay
-kubectl delete -k overlays/debug-mode/
+kubectl delete -k deploy/overlays/debug-mode/
 
 # From GitHub
-kubectl delete -k https://github.com/redhat-developer/rhdh-must-gather/deploy/kustomize/base?ref=main
+kubectl delete -k https://github.com/redhat-developer/rhdh-must-gather/deploy?ref=main
 ```
 

@@ -1,13 +1,13 @@
 # Example: Enable debug logging and increase resources
 #
 # Usage:
-#   kubectl apply -k deploy/kustomize/overlays/debug-mode
+#   kubectl apply -k deploy/overlays/debug-mode
 #
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - ../../base
+  - ../base
 
 patches:
   - target:

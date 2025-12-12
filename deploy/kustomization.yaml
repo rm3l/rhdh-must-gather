@@ -1,0 +1,13 @@
+# Default kustomization that uses the base configuration
+#
+# Usage:
+#   kubectl apply -k deploy/
+#
+# For customization options, see overlays/ or create your own overlay.
+#
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - base
+

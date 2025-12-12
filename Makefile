@@ -6,7 +6,7 @@ GIT_SHA := $(shell git describe --no-match --always --abbrev=9 --dirty --broken 
 RHDH_MUST_GATHER_VERSION := $(VERSION)-$(GIT_SHA)
 SCRIPT ?= rhdh
 IMAGE_NAME ?= rhdh-community/rhdh-must-gather
-IMAGE_TAG ?= main
+IMAGE_TAG ?= next
 REGISTRY ?= quay.io
 FULL_IMAGE_NAME ?= $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
 LOG_LEVEL ?= info

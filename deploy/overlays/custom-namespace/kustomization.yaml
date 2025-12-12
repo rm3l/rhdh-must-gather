@@ -13,7 +13,7 @@ kind: Kustomization
 namespace: my-must-gather-namespace
 
 resources:
-  - ../base
+  - ../../base
 
 # Override the namespace resource
 patches:

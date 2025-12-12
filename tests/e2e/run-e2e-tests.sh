@@ -1,6 +1,21 @@
 #!/bin/bash
 # E2E test script for rhdh-must-gather
 # This script runs the must-gather against a Kind cluster and validates the output
+#
+# Usage:
+#   ./tests/e2e/run-e2e-tests.sh --image <image> [OPTIONS]
+#
+# Options:
+#   --image <image>     Full image name (required)
+#   --overlay <overlay> Overlay to use (pre-built name or path)
+#   --opts <options>    Additional options to pass to the gather script
+#   --help              Show this help message
+#
+# Examples:
+#   ./tests/e2e/run-e2e-tests.sh --image quay.io/rhdh-community/rhdh-must-gather:pr-123
+#   ./tests/e2e/run-e2e-tests.sh --image quay.io/rhdh-community/rhdh-must-gather:pr-123 --overlay with-heap-dumps
+#   ./tests/e2e/run-e2e-tests.sh --image quay.io/rhdh-community/rhdh-must-gather:pr-123 --opts "--with-secrets"
+#
 
 set -euo pipefail
 
@@ -22,6 +37,11 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+show_help() {
+    sed -n '2,/^$/p' "$0" | sed 's/^#//; s/^ //; /^$/d'
+    exit 0
+}
+
 # Cleanup function to handle multiple cleanup tasks
 CLEANUP_TASKS=()
 # shellcheck disable=SC2329
@@ -33,17 +53,47 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Parse arguments
-FULL_IMAGE_NAME="${1:-}"
-OPTS="${2:-}"
+# Default values
+FULL_IMAGE_NAME=""
+OVERLAY=""
+OPTS=""
+
+# Parse named arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --image)
+            FULL_IMAGE_NAME="$2"
+            shift 2
+            ;;
+        --overlay)
+            OVERLAY="$2"
+            shift 2
+            ;;
+        --opts)
+            OPTS="$2"
+            shift 2
+            ;;
+        --help|-h)
+            show_help
+            ;;
+        *)
+            log_error "Unknown option: $1"
+            log_error "Use --help for usage information."
+            exit 1
+            ;;
+    esac
+done
 
 if [ -z "$FULL_IMAGE_NAME" ]; then
-    log_error "Usage: $0 <full-image-name> [opts]"
-    log_error "Example: $0 quay.io/rhdh-community/rhdh-must-gather:pr-123"
+    log_error "Error: --image is required"
+    log_error "Use --help for usage information."
     exit 1
 fi
 
 log_info "Starting E2E tests with image: $FULL_IMAGE_NAME"
+if [ -n "$OVERLAY" ]; then
+    log_info "Using overlay: $OVERLAY"
+fi
 
 # Extract registry, image name, and tag from full image name
 # e.g., quay.io/rhdh-community/rhdh-must-gather:pr-123
@@ -139,6 +189,7 @@ make k8s-test \
     REGISTRY="$REGISTRY" \
     IMAGE_NAME="$IMAGE_NAME" \
     IMAGE_TAG="$IMAGE_TAG" \
+    OVERLAY="$OVERLAY" \
     OPTS="$OPTS"
 
 # Find the output tarball (most recent one)

@@ -11,6 +11,7 @@ REGISTRY ?= quay.io
 FULL_IMAGE_NAME ?= $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
 LOG_LEVEL ?= info
 OPTS ?= ## Additional options to pass to must-gather (e.g., --with-heap-dumps --with-secrets)
+OVERLAY ?= ## Overlay to use for k8s-test (e.g., "with-heap-dumps", "debug-mode", or path to custom overlay)
 CONTAINER_TOOL ?= podman
 BUILD_ARGS ?=
 LABELS ?=
@@ -113,7 +114,7 @@ test: test-setup ## Run all BATS unit tests
 .PHONY: test-e2e
 test-e2e: ## Run E2E tests against a K8s cluster (requires Kind or similar)
 	@echo "Running E2E tests with image: $(FULL_IMAGE_NAME)..."
-	@./tests/e2e/run-e2e-tests.sh "$(FULL_IMAGE_NAME)" "$(OPTS)"
+	@./tests/e2e/run-e2e-tests.sh --image "$(FULL_IMAGE_NAME)" $(if $(OVERLAY),--overlay "$(OVERLAY)") $(if $(OPTS),--opts "$(OPTS)")
 
 # ============================================================================
 # Cleanup Targets
@@ -160,7 +161,7 @@ openshift-test: ## Test using the 'oc adm must-gather' command
 
 .PHONY: k8s-test
 k8s-test: ## Test on a non-OCP K8s cluster (uses Kustomize)
-	@./hack/k8s-test.sh "$(FULL_IMAGE_NAME)" $(OPTS)
+	@./hack/k8s-test.sh --image "$(FULL_IMAGE_NAME)" $(if $(OVERLAY),--overlay "$(OVERLAY)") $(if $(OPTS),--opts "$(OPTS)")
 
 .PHONY: help
 help: ## Show this help message
@@ -174,12 +175,15 @@ help: ## Show this help message
 	@echo "  IMAGE_TAG     - Container image tag (default: $(IMAGE_TAG))"
 	@echo "  LOG_LEVEL     - Log level (default: $(LOG_LEVEL))"
 	@echo "  OPTS          - Additional must-gather options (e.g., --with-heap-dumps --with-secrets)"
+	@echo "  OVERLAY       - Kustomize overlay for k8s-test/test-e2e (e.g., \"with-heap-dumps\", \"debug-mode\", or path)"
 	@echo "  SCRIPT        - Script name for test-local-script (default: $(SCRIPT))"
 	@echo "  BATS_VERSION  - BATS testing framework version (default: $(BATS_VERSION))"
 	@echo ""
 	@echo "Examples:"
 	@echo "  make test                                          # Run all unit tests"
 	@echo "  make test-e2e FULL_IMAGE_NAME=quay.io/org/img:tag  # Run E2E tests on Kind"
+	@echo "  make k8s-test OVERLAY=with-heap-dumps              # Run k8s-test with heap dump overlay"
+	@echo "  make k8s-test OVERLAY=/path/to/my-overlay          # Run k8s-test with custom overlay"
 	@echo "  make test-local-all OPTS=\"--with-heap-dumps\""
 	@echo "  make test-container-all OPTS=\"--with-secrets --with-heap-dumps\""
 	@echo "  make openshift-test OPTS=\"--with-heap-dumps --namespaces my-ns\""

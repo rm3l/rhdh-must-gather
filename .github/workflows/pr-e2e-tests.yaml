@@ -26,12 +26,12 @@ permissions:
 
 jobs:
   e2e-tests:
-    name: E2E Tests on Kind
+    name: PR E2E Tests
     runs-on: ubuntu-latest
-    if: inputs.run_e2e
 
     steps:
       - name: Checkout repository
+        if: inputs.run_e2e
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
           fetch-depth: 0
@@ -39,6 +39,7 @@ jobs:
           ref: ${{ inputs.checkout_ref }}
 
       - name: Install dependencies
+        if: inputs.run_e2e
         run: |
           sudo apt-get update
           sudo apt-get install -y jq
@@ -47,40 +48,28 @@ jobs:
           sudo chmod +x /usr/local/bin/yq
 
       - name: Create Kind cluster
+        if: inputs.run_e2e
         uses: helm/kind-action@92086f6be054225fa813e0a4b13787fc9088faab # v1.13.0
         with:
           cluster_name: rhdh-must-gather-e2e
           wait: 120s
 
       - name: Run E2E tests
-        env:
-          FULL_IMAGE_NAME: ${{ inputs.image_name }}
-        run: |
-          echo "Running E2E tests with image: $FULL_IMAGE_NAME"
-          ./tests/e2e/run-e2e-tests.sh "$FULL_IMAGE_NAME"
+        if: inputs.run_e2e
+        run: make test-e2e FULL_IMAGE_NAME="${{ inputs.image_name }}"
 
       - name: Upload must-gather output on failure
-        if: failure()
+        if: ${{ inputs.run_e2e && (success() || failure()) }}
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: must-gather-output-e2e
           path: |
             rhdh-must-gather-output.k8s.*.tar.gz
             rhdh-must-gather-output.k8s.*/
-          retention-days: 2
+          retention-days: 3
 
       - name: Cleanup
-        if: always()
+        if: ${{ inputs.run_e2e && always() }}
         run: |
           # Remove output files to clean up space
           rm -rf rhdh-must-gather-output.k8s.* || true
-
-  skip-e2e:
-    name: Skip E2E Tests
-    runs-on: ubuntu-latest
-    if: ${{ !inputs.run_e2e }}
-    steps:
-      - name: Skip message
-        run: |
-          echo "E2E tests skipped - no relevant files changed"
-

@@ -104,7 +104,7 @@ jobs:
           echo "BUILD_ARGS=--build-arg RHDH_MUST_GATHER_VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "EXPIRATION_TIMESTAMP=${EXPIRATION_TIMESTAMP}" >> "$GITHUB_OUTPUT"
-          echo "FULL_IMAGE_NAME=${{ vars.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "FULL_IMAGE_NAME=${{ vars.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${PR_NUMBER}-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push main tag
         if: steps.changed-files.outputs.any_changed == 'true'

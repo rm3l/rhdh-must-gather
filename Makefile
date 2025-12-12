@@ -6,7 +6,7 @@ GIT_SHA := $(shell git describe --no-match --always --abbrev=9 --dirty --broken 
 RHDH_MUST_GATHER_VERSION := $(VERSION)-$(GIT_SHA)
 SCRIPT ?= rhdh
 IMAGE_NAME ?= rhdh-community/rhdh-must-gather
-IMAGE_TAG ?= main
+IMAGE_TAG ?= next
 REGISTRY ?= quay.io
 FULL_IMAGE_NAME ?= $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
 LOG_LEVEL ?= info
@@ -105,6 +105,15 @@ test-setup: test-results ## Download and setup BATS testing framework
 test: test-setup ## Run all BATS unit tests
 	@echo "Running BATS unit tests..."
 	@$(BATS_BIN) $(TESTS_OPTIONS) $(TESTS_DIR)/*.bats
+
+# ============================================================================
+# E2E Test Targets
+# ============================================================================
+
+.PHONY: test-e2e
+test-e2e: ## Run E2E tests against a K8s cluster (requires Kind or similar)
+	@echo "Running E2E tests with image: $(FULL_IMAGE_NAME)..."
+	@./tests/e2e/run-e2e-tests.sh "$(FULL_IMAGE_NAME)" "$(OPTS)"
 
 # ============================================================================
 # Cleanup Targets
@@ -235,6 +244,7 @@ help: ## Show this help message
 	@echo ""
 	@echo "Examples:"
 	@echo "  make test                                          # Run all unit tests"
+	@echo "  make test-e2e FULL_IMAGE_NAME=quay.io/org/img:tag  # Run E2E tests on Kind"
 	@echo "  make test-local-all OPTS=\"--with-heap-dumps\""
 	@echo "  make test-container-all OPTS=\"--with-secrets --with-heap-dumps\""
 	@echo "  make openshift-test OPTS=\"--with-heap-dumps --namespaces my-ns\""

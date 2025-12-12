@@ -33,8 +33,8 @@ oc adm must-gather --image=quay.io/rhdh-community/rhdh-must-gather:next -- /usr/
 ### Using with Kubernetes (`Kustomize`)
 
 ```bash
-# Basic deployment using the base configuration
-kubectl apply -k 'https://github.com/redhat-developer/rhdh-must-gather/deploy/kustomize/base?ref=main'
+# Basic deployment using the default configuration
+kubectl apply -k 'https://github.com/redhat-developer/rhdh-must-gather/deploy?ref=main'
 
 # Wait for job completion
 kubectl -n rhdh-must-gather wait --for=condition=complete job/rhdh-must-gather \
@@ -49,17 +49,17 @@ kubectl -n rhdh-must-gather exec rhdh-must-gather-data-retriever -- \
   tar czf - -C /data . > rhdh-must-gather-output.k8s.tar.gz
 
 # Clean up
-kubectl delete -k 'https://github.com/redhat-developer/rhdh-must-gather/deploy/kustomize/base?ref=main'
+kubectl delete -k 'https://github.com/redhat-developer/rhdh-must-gather/deploy?ref=main'
 ```
 
 **Using pre-built overlays:**
 
 ```bash
 # Enable debug mode with increased resources
-kubectl apply -k 'https://github.com/redhat-developer/rhdh-must-gather/deploy/kustomize/overlays/debug-mode?ref=main'
+kubectl apply -k 'https://github.com/redhat-developer/rhdh-must-gather/deploy/overlays/debug-mode?ref=main'
 
 # Enable heap dump collection (larger storage, extended timeout)
-kubectl apply -k 'https://github.com/redhat-developer/rhdh-must-gather/deploy/kustomize/overlays/with-heap-dumps?ref=main'
+kubectl apply -k 'https://github.com/redhat-developer/rhdh-must-gather/deploy/overlays/with-heap-dumps?ref=main'
 ```
 
 **Creating your own overlay for custom configurations:**
@@ -74,7 +74,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - 'https://github.com/redhat-developer/rhdh-must-gather/deploy/kustomize/base?ref=main'
+  - 'https://github.com/redhat-developer/rhdh-must-gather/deploy/base?ref=main'
 
 # Example: Change the namespace
 namespace: my-custom-namespace
@@ -102,7 +102,7 @@ EOF
 kubectl apply -k my-must-gather-overlay/
 ```
 
-See the [deploy/kustomize/overlays](deploy/kustomize/overlays) directory for more overlay examples.
+See the [deploy/overlays](deploy/overlays) directory for more overlay examples.
 
 ## What Data is Collected
 

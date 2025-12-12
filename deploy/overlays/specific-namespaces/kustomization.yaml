@@ -1,7 +1,7 @@
 # Example: Collect data only from specific namespaces
 #
 # Usage:
-#   kubectl apply -k deploy/kustomize/overlays/specific-namespaces
+#   kubectl apply -k deploy/overlays/specific-namespaces
 #
 # Customize the namespaces list by modifying the args in the patch below.
 #
@@ -9,7 +9,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - ../../base
+  - ../base
 
 patches:
   - target:

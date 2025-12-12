@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rhdh-must-gather-data-retriever
+spec:
+  restartPolicy: Never
+  affinity:
+    podAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values:
+            - rhdh-must-gather
+          - key: component
+            operator: In
+            values:
+            - gather
+        topologyKey: kubernetes.io/hostname
+  containers:
+  - name: data-retriever
+    image: registry.access.redhat.com/ubi9/ubi:latest
+    command:
+    - sleep
+    - infinity
+    volumeMounts:
+    - name: must-gather-output
+      mountPath: /data
+      readOnly: true
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "128Mi"
+        cpu: "100m"
+  volumes:
+  - name: must-gather-output
+    persistentVolumeClaim:
+      claimName: rhdh-must-gather-pvc
+

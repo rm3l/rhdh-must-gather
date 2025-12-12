@@ -1,0 +1,42 @@
+# Example: Enable heap dump collection with larger storage
+#
+# Usage:
+#   kubectl apply -k deploy/kustomize/overlays/with-heap-dumps
+#
+# This overlay:
+#   - Increases PVC storage to 10Gi (heap dumps can be large)
+#   - Increases memory limits for the gather job
+#   - Adds --with-heap-dumps argument to the gather script
+#
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+patches:
+  # Increase PVC storage for heap dumps
+  - target:
+      kind: PersistentVolumeClaim
+      name: rhdh-must-gather-pvc
+    patch: |
+      - op: replace
+        path: /spec/resources/requests/storage
+        value: 10Gi
+
+  # Add --with-heap-dumps argument and increase resources
+  - target:
+      kind: Job
+      name: rhdh-must-gather
+    patch: |
+      - op: add
+        path: /spec/template/spec/containers/0/args
+        value:
+          - "--with-heap-dumps"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "1Gi"
+      - op: replace
+        path: /spec/activeDeadlineSeconds
+        value: 7200
+

@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rhdh-must-gather
+spec:
+  activeDeadlineSeconds: 3600
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: rhdh-must-gather
+        component: gather
+    spec:
+      serviceAccountName: rhdh-must-gather
+      restartPolicy: Never
+      containers:
+      - name: gather
+        image: quay.io/rhdh-community/rhdh-must-gather:next
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: BASE_COLLECTION_PATH
+          value: "/must-gather"
+        - name: LOG_LEVEL
+          value: "INFO"
+        volumeMounts:
+        - name: output
+          mountPath: /must-gather
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: output
+        persistentVolumeClaim:
+          claimName: rhdh-must-gather-pvc
+

@@ -1,0 +1,35 @@
+# Example: Deploy to a custom namespace
+#
+# Usage:
+#   kubectl apply -k deploy/kustomize/overlays/custom-namespace
+#
+# Or reference from your own overlay:
+#   resources:
+#     - github.com/redhat-developer/rhdh-must-gather/deploy/kustomize/overlays/custom-namespace?ref=main
+#
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: my-must-gather-namespace
+
+resources:
+  - ../../base
+
+# Override the namespace resource
+patches:
+  - target:
+      kind: Namespace
+      name: rhdh-must-gather
+    patch: |
+      - op: replace
+        path: /metadata/name
+        value: my-must-gather-namespace
+  # Update the ClusterRoleBinding to reference the new namespace
+  - target:
+      kind: ClusterRoleBinding
+      name: rhdh-must-gather
+    patch: |
+      - op: replace
+        path: /subjects/0/namespace
+        value: my-must-gather-namespace
+

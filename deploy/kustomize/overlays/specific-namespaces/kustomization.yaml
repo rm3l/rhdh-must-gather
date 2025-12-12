@@ -1,0 +1,24 @@
+# Example: Collect data only from specific namespaces
+#
+# Usage:
+#   kubectl apply -k deploy/kustomize/overlays/specific-namespaces
+#
+# Customize the namespaces list by modifying the args in the patch below.
+#
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+patches:
+  - target:
+      kind: Job
+      name: rhdh-must-gather
+    patch: |
+      - op: add
+        path: /spec/template/spec/containers/0/args
+        value:
+          - "--namespaces"
+          - "rhdh-prod,rhdh-staging"
+

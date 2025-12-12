@@ -22,6 +22,17 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Cleanup function to handle multiple cleanup tasks
+CLEANUP_TASKS=()
+# shellcheck disable=SC2329
+cleanup() {
+    for cmd in "${CLEANUP_TASKS[@]}"; do
+        log_info "Cleanup: $cmd"
+        eval "$cmd" || true
+    done
+}
+trap cleanup EXIT
+
 # Parse arguments
 FULL_IMAGE_NAME="${1:-}"
 OPTS="${2:-}"
@@ -55,8 +66,7 @@ log_info "Working directory: $PROJECT_ROOT"
 log_info "Deploying RHDH instances..."
 NS="test-e2e-$(date +%s)"
 kubectl create namespace "$NS"
-# shellcheck disable=SC2064
-trap "kubectl delete namespace $NS --wait=false" EXIT
+CLEANUP_TASKS+=("kubectl delete namespace $NS --wait=false")
 
 # Helm
 log_info "Deploying Helm release..."
@@ -101,8 +111,7 @@ log_info "Deploying RHDH Operator..."
 OPERATOR_BRANCH="main"
 OPERATOR_MANIFEST="https://raw.githubusercontent.com/redhat-developer/rhdh-operator/$OPERATOR_BRANCH/dist/rhdh/install.yaml"
 kubectl apply -f "$OPERATOR_MANIFEST"
-# shellcheck disable=SC2064
-trap "kubectl delete -f $OPERATOR_MANIFEST --wait=false" EXIT
+CLEANUP_TASKS+=("kubectl delete -f $OPERATOR_MANIFEST --wait=false")
 log_info "Waiting for rhdh-operator deployment to be available in rhdh-operator namespace..."
 if ! kubectl -n rhdh-operator wait --for=condition=Available deployment/rhdh-operator --timeout=5m; then
     log_error "Timed out waiting for rhdh-operator deployment to be available."

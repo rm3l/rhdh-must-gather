@@ -32,8 +32,6 @@ oc adm must-gather --image=quay.io/rhdh-community/rhdh-must-gather:next -- /usr/
 
 ### Using with Kubernetes
 
-#### Using Kustomize (Recommended)
-
 Kustomize makes it easy to customize the deployment without modifying the base manifests.
 
 ```bash
@@ -104,29 +102,6 @@ kubectl apply -k my-must-gather-overlay/
 ```
 
 See the [deploy/kustomize/overlays](deploy/kustomize/overlays) directory for more overlay examples.
-
-#### Using Raw Manifests
-
-Alternatively, you can use the raw manifest file directly:
-
-```bash
-# Create must-gather Job and other resources (switch to the appropriate branch or tag)
-# If you want to pass specific options to the gather script,
-# download the manifest file and add 'args' to the 'gather' Job container.
-kubectl apply -f https://raw.githubusercontent.com/redhat-developer/rhdh-must-gather/refs/heads/main/deploy/kubernetes-job.yaml
-
-# Wait for job completion
-kubectl -n rhdh-must-gather wait --for=condition=complete job/rhdh-must-gather --timeout=600s
-
-# Wait for the data retriever pod to be ready
-kubectl -n rhdh-must-gather wait --for=condition=ready pod/rhdh-must-gather-data-retriever --timeout=60s
-
-# Stream the tar archive from the pod
-kubectl -n rhdh-must-gather exec rhdh-must-gather-data-retriever -- tar czf - -C /data . > rhdh-must-gather-output.k8s.tar.gz
-
-# Clean up
-kubectl delete -f https://raw.githubusercontent.com/redhat-developer/rhdh-must-gather/refs/heads/main/deploy/kubernetes-job.yaml
-```
 
 ## What Data is Collected
 

@@ -52,25 +52,77 @@ cd "$PROJECT_ROOT"
 log_info "Working directory: $PROJECT_ROOT"
 
 # Deploy some instances of RHDH
+log_info "Deploying RHDH instances..."
+NS="test-e2e-$(date +%s)"
+kubectl create namespace "$NS"
+# shellcheck disable=SC2064
+trap "kubectl delete namespace $NS --wait=false" EXIT
+
 # Helm
-kubectl create namespace my-rhdh-ns
-helm -n my-rhdh-ns install my-rhdh-helm backstage --repo https://redhat-developer.github.io/rhdh-chart --set route.enabled=false
+log_info "Deploying Helm release..."
+TEMP_VALUES_FILE="$(mktemp)"
+cat > "$TEMP_VALUES_FILE" <<EOF
+route:
+  enabled: false
+global:
+  dynamic:
+    # Faster startup by disabling all default dynamic plugins
+    includes: []
+upstream:
+  postgresql:
+    # Purposely disable the local database to simulate a misconfigured application (missing external database info)
+    enabled: false
+EOF
+## TODO: consider specifying a specific version of the Helm chart to test
+helm -n "$NS" install my-rhdh-helm backstage --repo https://redhat-developer.github.io/rhdh-chart --values "$TEMP_VALUES_FILE"
+# Wait for the Helm-deployed RHDH pod to enter CreateContainerConfigError state (this is expected)
+log_info "Waiting for Helm-deployed RHDH pod to enter CreateContainerConfigError state (this is expected)..."
+HELM_POD=""
+TIMEOUT=60
+until HELM_POD=$(kubectl -n "$NS" get pods -l "app.kubernetes.io/instance=my-rhdh-helm" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null) && [ -n "$HELM_POD" ]; do
+    sleep 2
+    TIMEOUT=$((TIMEOUT - 2))
+    if [ $TIMEOUT -le 0 ]; then
+        break
+    fi
+done
+if [ -z "$HELM_POD" ]; then
+    log_error "Could not find Helm-deployed RHDH pod in namespace $NS."
+    exit 1
+fi
+if ! kubectl wait --for=jsonpath='{.status.containerStatuses[0].state.waiting.reason}=CreateContainerConfigError' pod/"$HELM_POD" -n "$NS" --timeout=5m 2>/dev/null; then
+    POD_REASON=$(kubectl -n "$NS" get pod "$HELM_POD" -o jsonpath='{.status.containerStatuses[0].state.waiting.reason}' 2>/dev/null)
+    log_error "Helm-deployed pod $HELM_POD did not reach CreateContainerConfigError state (current: $POD_REASON) within expected time. Test may not be operating under expected conditions."
+    exit 1
+fi
 
 # Operator
-kubectl apply -f https://raw.githubusercontent.com/redhat-developer/rhdh-operator/refs/heads/main/dist/rhdh/install.yaml
+log_info "Deploying RHDH Operator..."
+OPERATOR_BRANCH="main"
+OPERATOR_MANIFEST="https://raw.githubusercontent.com/redhat-developer/rhdh-operator/$OPERATOR_BRANCH/dist/rhdh/install.yaml"
+kubectl apply -f "$OPERATOR_MANIFEST"
+# shellcheck disable=SC2064
+trap "kubectl delete -f $OPERATOR_MANIFEST --wait=false" EXIT
 log_info "Waiting for rhdh-operator deployment to be available in rhdh-operator namespace..."
 if ! kubectl -n rhdh-operator wait --for=condition=Available deployment/rhdh-operator --timeout=5m; then
     log_error "Timed out waiting for rhdh-operator deployment to be available."
     exit 1
 fi
 log_info "rhdh-operator deployment is now available."
-kubectl -n my-rhdh-ns apply -f - <<EOF
+log_info "Deploying Backstage CR..."
+kubectl -n "$NS" apply -f - <<EOF
 apiVersion: rhdh.redhat.com/v1alpha5
 kind: Backstage
 metadata:
-  name: my-rhdh-operator
+  name: my-rhdh-op
 EOF
 # TODO: wait until the Backstage CR is reconciled
+log_info "Waiting for Backstage CR to be reconciled..."
+if ! kubectl -n "$NS" wait --for='jsonpath={.status.conditions[?(@.type=="Deployed")].reason}=Deployed' backstage/my-rhdh-op --timeout=5m; then
+    log_error "Timed out waiting for Backstage CR to be reconciled."
+    exit 1
+fi
+log_info "Backstage CR is now ready and deployed."
 
 # Run make k8s-test
 log_info "Running make k8s-test..."
@@ -196,4 +248,3 @@ else
     log_error "$ERRORS validation check(s) failed!"
     exit 1
 fi
-

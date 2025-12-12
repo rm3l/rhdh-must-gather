@@ -159,73 +159,8 @@ openshift-test: ## Test using the 'oc adm must-gather' command
 	fi
 
 .PHONY: k8s-test
-k8s-test: ## Test on a non-OCP K8s cluster
-	@echo "Testing against a regular K8s cluster..."
-	@if ! command -v yq >/dev/null 2>&1; then \
-		echo "Error: yq command not found. Please install yq."; \
-		exit 1; \
-	fi
-	@if ! command -v jq >/dev/null 2>&1; then \
-		echo "Error: jq command not found. Please install jq."; \
-		exit 1; \
-	fi
-	@if ! command -v kubectl >/dev/null 2>&1; then \
-		echo "Error: kubectl command not found."; \
-		exit 1; \
-	fi
-	@# Generate random namespace
-	@TIMESTAMP=$$(date +%s); \
-	NAMESPACE="rhdh-must-gather-$$TIMESTAMP"; \
-	OUTPUT_FILE="rhdh-must-gather-output.k8s.$$TIMESTAMP.tar.gz"; \
-	TMP_FILE=$$(mktemp); \
-	echo "Preparing must-gather resources in namespace: $$NAMESPACE"; \
-	cp deploy/kubernetes-job.yaml $$TMP_FILE; \
-	yq eval -i '(select(.kind == "Namespace") | .metadata.name) = "'$$NAMESPACE'"' $$TMP_FILE; \
-	yq eval -i '(select(.kind == "ServiceAccount") | .metadata.namespace) = "'$$NAMESPACE'"' $$TMP_FILE; \
-	yq eval -i '(select(.kind == "ClusterRoleBinding") | .subjects[0].namespace) = "'$$NAMESPACE'"' $$TMP_FILE; \
-	yq eval -i '(select(.kind == "PersistentVolumeClaim") | .metadata.namespace) = "'$$NAMESPACE'"' $$TMP_FILE; \
-	yq eval -i '(select(.kind == "Job") | .metadata.namespace) = "'$$NAMESPACE'"' $$TMP_FILE; \
-	yq eval -i '(select(.kind == "Job") | .spec.template.spec.containers[0].image) = "$(FULL_IMAGE_NAME)"' $$TMP_FILE; \
-	yq eval -i '(select(.kind == "Pod") | .metadata.namespace) = "'$$NAMESPACE'"' $$TMP_FILE; \
-	if [ -n "$(OPTS)" ]; then \
-		ARGS_JSON=$$(echo "$(OPTS)" | xargs -n1 | jq -R . | jq -s .); \
-		yq eval -i "(select(.kind == \"Job\") | .spec.template.spec.containers[0].args) = $$ARGS_JSON" $$TMP_FILE; \
-	fi; \
-	echo "Creating must-gather resources..."; \
-	kubectl apply -f $$TMP_FILE; \
-	echo ""; \
-	echo "Waiting for job to complete (timeout: 600s)..."; \
-	if kubectl -n $$NAMESPACE wait --for=condition=complete job/rhdh-must-gather --timeout=600s 2>&1; then \
-		echo "Job completed successfully"; \
-	else \
-		echo "Error: Job did not complete within timeout"; \
-		echo ""; \
-		echo "Job logs:"; \
-		kubectl -n $$NAMESPACE logs job/rhdh-must-gather --tail=50 || true; \
-		exit 1; \
-	fi; \
-	echo ""; \
-	echo "Waiting for data retriever pod to be ready (timeout: 60s)..."; \
-	if kubectl -n $$NAMESPACE wait --for=condition=ready pod/rhdh-must-gather-data-retriever --timeout=60s 2>&1; then \
-		echo "Data retriever pod is ready"; \
-	else \
-		echo "Error: Data retriever pod did not become ready within timeout"; \
-		echo ""; \
-		kubectl -n $$NAMESPACE describe pod/rhdh-must-gather-data-retriever || true; \
-		exit 1; \
-	fi; \
-	echo ""; \
-	echo "Pulling must-gather data from pod..."; \
-	kubectl -n $$NAMESPACE exec rhdh-must-gather-data-retriever -- tar czf - -C /data . > $$OUTPUT_FILE; \
-	echo ""; \
-	echo "Cleaning up resources..."; \
-	kubectl delete -f $$TMP_FILE --wait=false 2>/dev/null || true; \
-	rm -f $$TMP_FILE; \
-	echo ""; \
-	echo "✓ Must-gather data saved to: $$OUTPUT_FILE"; \
-	echo ""; \
-	echo "To extract the data, run:"; \
-	echo "  tar xzf $$OUTPUT_FILE"
+k8s-test: ## Test on a non-OCP K8s cluster (uses Kustomize)
+	@./hack/k8s-test.sh "$(FULL_IMAGE_NAME)" $(OPTS)
 
 .PHONY: help
 help: ## Show this help message

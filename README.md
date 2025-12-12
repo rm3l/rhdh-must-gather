@@ -32,11 +32,11 @@ oc adm must-gather --image=quay.io/rhdh-community/rhdh-must-gather:next -- /usr/
 
 ### Using with Kubernetes
 
+Kustomize makes it easy to customize the deployment without modifying the base manifests.
+
 ```bash
-# Create must-gather Job and other resources (switch to the appropriate branch or tag)
-# If you want to pass specific options to the gather script,
-# download the manifest file and add 'args' to the 'gather' Job container.
-kubectl apply -f https://raw.githubusercontent.com/redhat-developer/rhdh-must-gather/refs/heads/main/deploy/kubernetes-job.yaml
+# Basic deployment using the base configuration
+kubectl apply -k https://github.com/redhat-developer/rhdh-must-gather/deploy/kustomize/base?ref=main
 
 # Wait for job completion
 kubectl -n rhdh-must-gather wait --for=condition=complete job/rhdh-must-gather --timeout=600s
@@ -48,8 +48,60 @@ kubectl -n rhdh-must-gather wait --for=condition=ready pod/rhdh-must-gather-data
 kubectl -n rhdh-must-gather exec rhdh-must-gather-data-retriever -- tar czf - -C /data . > rhdh-must-gather-output.k8s.tar.gz
 
 # Clean up
-kubectl delete -f https://raw.githubusercontent.com/redhat-developer/rhdh-must-gather/refs/heads/main/deploy/kubernetes-job.yaml
+kubectl delete -k https://github.com/redhat-developer/rhdh-must-gather/deploy/kustomize/base?ref=main
 ```
+
+**Using pre-built overlays:**
+
+```bash
+# Enable debug mode with increased resources
+kubectl apply -k https://github.com/redhat-developer/rhdh-must-gather/deploy/kustomize/overlays/debug-mode?ref=main
+
+# Enable heap dump collection (larger storage, extended timeout)
+kubectl apply -k https://github.com/redhat-developer/rhdh-must-gather/deploy/kustomize/overlays/with-heap-dumps?ref=main
+```
+
+**Creating your own overlay for custom configurations:**
+
+```bash
+# Create a local overlay directory
+mkdir -p my-must-gather-overlay
+
+# Create a kustomization.yaml that references the base
+cat > my-must-gather-overlay/kustomization.yaml << 'EOF'
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - https://github.com/redhat-developer/rhdh-must-gather/deploy/kustomize/base?ref=main
+
+# Example: Change the namespace
+namespace: my-custom-namespace
+
+# Example: Use a specific image tag
+images:
+  - name: quay.io/rhdh-community/rhdh-must-gather
+    newTag: v1.0.0
+
+# Example: Add custom arguments to the gather script
+patches:
+  - target:
+      kind: Job
+      name: rhdh-must-gather
+    patch: |
+      - op: add
+        path: /spec/template/spec/containers/0/args
+        value:
+          - "--namespaces"
+          - "rhdh-prod,rhdh-staging"
+          - "--with-secrets"
+EOF
+
+# Apply your custom overlay
+kubectl apply -k my-must-gather-overlay/
+```
+
+See the [deploy/kustomize/overlays](deploy/kustomize/overlays) directory for more overlay examples.
 
 ## What Data is Collected
 

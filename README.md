@@ -85,15 +85,6 @@ images:
     newTag: v1.0.0
 
 patches:
-  # Needed for now if you are using a custom namespace
-  - target:
-      kind: ClusterRoleBinding
-      name: rhdh-must-gather
-    patch: |
-      - op: replace
-        path: /subjects/0/namespace
-        value: my-custom-namespace
-
   # Example: Add custom arguments to the gather script
   - target:
       kind: Job

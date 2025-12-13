@@ -2,6 +2,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: rhdh-must-gather
+  namespace: rhdh-must-gather
 spec:
   activeDeadlineSeconds: 3600
   backoffLimit: 3
@@ -11,7 +12,7 @@ spec:
         app: rhdh-must-gather
         component: gather
     spec:
-      serviceAccountName: rhdh-must-gather
+      serviceAccountName: rhdh-must-gather-sa
       restartPolicy: Never
       containers:
       - name: gather

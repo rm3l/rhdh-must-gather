@@ -24,6 +24,7 @@ rules:
 - apiGroups: ["operators.coreos.com"]
   resources: ["*"]
   verbs: ["get", "list", "describe"]
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -35,6 +36,5 @@ roleRef:
   name: rhdh-must-gather
 subjects:
 - kind: ServiceAccount
-  name: rhdh-must-gather
+  name: rhdh-must-gather-sa
   namespace: rhdh-must-gather
-

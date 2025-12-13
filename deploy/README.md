@@ -31,9 +31,6 @@ deploy/
 # Deploy using the default configuration
 kubectl apply -k deploy/
 
-# Or using the base configuration explicitly
-kubectl apply -k deploy/base/
-
 # Or directly from GitHub
 kubectl apply -k https://github.com/redhat-developer/rhdh-must-gather/deploy?ref=main
 ```

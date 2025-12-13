@@ -14,22 +14,3 @@ namespace: my-must-gather-namespace
 
 resources:
   - ../../base
-
-# Override the namespace resource
-patches:
-  - target:
-      kind: Namespace
-      name: rhdh-must-gather
-    patch: |
-      - op: replace
-        path: /metadata/name
-        value: my-must-gather-namespace
-  # Update the ClusterRoleBinding to reference the new namespace
-  - target:
-      kind: ClusterRoleBinding
-      name: rhdh-must-gather
-    patch: |
-      - op: replace
-        path: /subjects/0/namespace
-        value: my-must-gather-namespace
-

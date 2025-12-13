@@ -110,7 +110,7 @@ jobs:
       - name: Build and push main tag
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
-          make build-push \
+          make image-push \
             CONTAINER_TOOL=docker \
             REGISTRY=${{ vars.REGISTRY }} \
             IMAGE_NAME=${{ env.IMAGE_NAME}} \

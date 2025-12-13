@@ -141,19 +141,12 @@ images:
     newName: ${IMAGE_NAME}
     newTag: ${IMAGE_TAG}
 
-patches:
-  - target:
-      kind: ClusterRoleBinding
-      name: rhdh-must-gather
-    patch: |
-      - op: replace
-        path: /subjects/0/namespace
-        value: ${NAMESPACE}
 EOF
 
 # Add args patch if OPTS provided
 if [[ ${#OPTS[@]} -gt 0 ]]; then
     cat >> "${TMP_OVERLAY}/kustomization.yaml" <<EOF
+patches:
   - target:
       kind: Job
       name: rhdh-must-gather

@@ -143,13 +143,6 @@ images:
 
 patches:
   - target:
-      kind: Namespace
-      name: rhdh-must-gather
-    patch: |
-      - op: replace
-        path: /metadata/name
-        value: ${NAMESPACE}
-  - target:
       kind: ClusterRoleBinding
       name: rhdh-must-gather
     patch: |

@@ -1,7 +1,7 @@
 # Build artifacts
 *.log
 *.tmp
-test-output/
+out/
 must-gather-*/
 must-gather.local.*/
 

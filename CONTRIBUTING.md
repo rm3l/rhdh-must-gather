@@ -18,20 +18,20 @@ Contributions are welcome!
 make help
 
 # Run locally (requires oc, kubectl, jq, yq, and access to a cluster)
-make test-local-all
+make run-local
 
 # Test specific script locally. Examples:
-make test-local-script SCRIPT=helm    # Test only gather_helm
-make test-local-script SCRIPT=operator # Test only gather_operator
+make run-script SCRIPT=helm    # Test only gather_helm
+make run-script SCRIPT=operator # Test only gather_operator
 
 # Test in container with local cluster access
-make test-container-all
+make run-container
 
 # Test with OpenShift using oc adm must-gather
-make openshift-test
+make deploy-openshift
 
 # Test on regular Kubernetes (non-OpenShift) by creating a Job in the cluster
-make k8s-test
+make deploy-k8s
 
 # Clean up test artifacts and images
 make clean
@@ -41,11 +41,11 @@ make clean
 
 ```bash
 # Build locally
-make build
+make image-build
 
 # Build and push to registry
-make build-push REGISTRY=your-registry.com IMAGE_NAME=namespace/rhdh-must-gather
+make image-push REGISTRY=your-registry.com IMAGE_NAME=namespace/rhdh-must-gather
 
 # Build and push with custom image name and tag
-make build-push REGISTRY=your-registry.com IMAGE_NAME=namespace/my-rhdh-must-gather IMAGE_TAG=v1.0.0
+make image-push REGISTRY=your-registry.com IMAGE_NAME=namespace/my-rhdh-must-gather IMAGE_TAG=v1.0.0
 ```

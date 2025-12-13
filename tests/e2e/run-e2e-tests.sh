@@ -183,9 +183,9 @@ if ! kubectl -n "$NS" wait --for='jsonpath={.status.conditions[?(@.type=="Deploy
 fi
 log_info "Backstage CR is now ready and deployed."
 
-# Run make k8s-test
-log_info "Running make k8s-test..."
-make k8s-test \
+# Run make deploy-k8s
+log_info "Running make deploy-k8s..."
+make deploy-k8s \
     REGISTRY="$REGISTRY" \
     IMAGE_NAME="$IMAGE_NAME" \
     IMAGE_TAG="$IMAGE_TAG" \

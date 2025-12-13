@@ -3,7 +3,7 @@
 # Run RHDH must-gather on a standard Kubernetes cluster using Kustomize.
 #
 # Usage:
-#   ./hack/k8s-test.sh [OPTIONS]
+#   ./hack/deploy-k8s.sh [OPTIONS]
 #
 # Options:
 #   --image <image>     Full image name (default: quay.io/rhdh-community/rhdh-must-gather:next)
@@ -14,12 +14,12 @@
 #   --help              Show this help message
 #
 # Examples:
-#   ./hack/k8s-test.sh
-#   ./hack/k8s-test.sh --image quay.io/myorg/rhdh-must-gather:v1.0.0
-#   ./hack/k8s-test.sh --overlay with-heap-dumps
-#   ./hack/k8s-test.sh --overlay debug-mode --opts "--namespaces my-ns"
-#   ./hack/k8s-test.sh --overlay /path/to/my-overlay
-#   ./hack/k8s-test.sh --image myimage:tag --overlay with-heap-dumps --opts "--with-secrets --namespaces my-ns"
+#   ./hack/deploy-k8s.sh
+#   ./hack/deploy-k8s.sh --image quay.io/myorg/rhdh-must-gather:v1.0.0
+#   ./hack/deploy-k8s.sh --overlay with-heap-dumps
+#   ./hack/deploy-k8s.sh --overlay debug-mode --opts "--namespaces my-ns"
+#   ./hack/deploy-k8s.sh --overlay /path/to/my-overlay
+#   ./hack/deploy-k8s.sh --image myimage:tag --overlay with-heap-dumps --opts "--with-secrets --namespaces my-ns"
 #
 
 set -euo pipefail

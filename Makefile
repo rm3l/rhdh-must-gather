@@ -4,94 +4,77 @@
 VERSION ?= 1.9.0
 GIT_SHA := $(shell git describe --no-match --always --abbrev=9 --dirty --broken 2>/dev/null || echo unknown)
 RHDH_MUST_GATHER_VERSION := $(VERSION)-$(GIT_SHA)
-SCRIPT ?= rhdh
+SCRIPT ?=
+REGISTRY ?= quay.io
 IMAGE_NAME ?= rhdh-community/rhdh-must-gather
 IMAGE_TAG ?= next
-REGISTRY ?= quay.io
 FULL_IMAGE_NAME ?= $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
 LOG_LEVEL ?= info
 OPTS ?= ## Additional options to pass to must-gather (e.g., --with-heap-dumps --with-secrets)
-OVERLAY ?= ## Overlay to use for k8s-test (e.g., "with-heap-dumps", "debug-mode", or path to custom overlay)
+OVERLAY ?= ## Overlay to use for deploy-k8s (e.g., "with-heap-dumps", "debug-mode", or path to custom overlay)
 CONTAINER_TOOL ?= podman
 BUILD_ARGS ?=
 LABELS ?=
 TOOLS_DIR ?= ./bin
 
-# BATS test configuration
-BATS_VERSION ?= 1.13.0
+# Test configuration
+BATS_VERSION := 1.13.0
 BATS_CORE_URL := https://github.com/bats-core/bats-core/archive/refs/tags/v$(BATS_VERSION).tar.gz
 BATS_BIN := $(TOOLS_DIR)/bats-core-$(BATS_VERSION)/bin/bats
 TEST_RESULTS_DIR ?= ./test-results
 TESTS_OPTIONS ?= --timing --print-output-on-failure --report-formatter junit --output "$(TEST_RESULTS_DIR)"
-
 TESTS_DIR := ./tests
 
-default: test-container-all
+default: run-local
 
-# Build targets
-.PHONY: build
-build: ## Build the must-gather container image
-	@echo "Building must-gather image..."
-	$(CONTAINER_TOOL) build $(BUILD_ARGS) $(if $(LABELS),$(LABELS)) --build-arg RHDH_MUST_GATHER_VERSION=$(RHDH_MUST_GATHER_VERSION) -t $(IMAGE_NAME):$(IMAGE_TAG) .
-	@echo "Image built: $(IMAGE_NAME):$(IMAGE_TAG)"
+##@ Development
 
-.PHONY: build-push
-build-push: build ## Build and push the image to registry
-	@echo "Tagging image for registry..."
-	$(CONTAINER_TOOL) tag $(IMAGE_NAME):$(IMAGE_TAG) $(FULL_IMAGE_NAME)
-	@echo "Pushing image to registry..."
-	$(CONTAINER_TOOL) push $(FULL_IMAGE_NAME)
-	@echo "Image pushed: $(FULL_IMAGE_NAME)"
+.PHONY: local-output
+local-output:
+	@mkdir -p ./out
 
-test-output:
-	@mkdir -p ./test-output
-
-.PHONY: test-local-all
-test-local-all: test-output ## Test the script locally (requires kubectl)
+.PHONY: run-local
+run-local: local-output ## Test the script locally (requires jq, yq, kubectl, oc and cluster access)
 	@echo "Testing must-gather script locally..."
 	@if ! command -v kubectl >/dev/null 2>&1; then \
 		echo "Error: kubectl not found. Please install kubectl to test."; \
 		exit 1; \
 	fi
 	@echo "Running local test (requires cluster access)..."
-	BASE_COLLECTION_PATH=./test-output \
-	LOG_LEVEL=$(LOG_LEVEL) \
-	RHDH_MUST_GATHER_VERSION=$(RHDH_MUST_GATHER_VERSION) \
-	./collection-scripts/must_gather $(OPTS)
+	BASE_COLLECTION_PATH=./out \
+		LOG_LEVEL=$(LOG_LEVEL) \
+		RHDH_MUST_GATHER_VERSION=$(RHDH_MUST_GATHER_VERSION) \
+		./collection-scripts/must_gather $(OPTS)
 
-.PHONY: test-local-script
-test-local-script: test-output ## Test the specified script (set the SCRIPT var)
-	@echo "Testing gather-${SCRIPT} must-gather script locally..."
-	@if ! command -v kubectl >/dev/null 2>&1; then \
-		echo "Error: kubectl not found. Please install kubectl to test."; \
+.PHONY: run-script
+run-script: local-output ## Test the specified gather-<SCRIPT> script (set the SCRIPT var)
+	@if [ -z "$(SCRIPT)" ]; then \
+		echo "Error: SCRIPT variable is not set. Please set the SCRIPT variable to the name of the script to test. It will then run ./collection-scripts/gather_<SCRIPT>"; \
 		exit 1; \
 	fi
+	@echo "Testing gather-${SCRIPT} must-gather script locally..."
 	@echo "Running local test (requires cluster access)..."
-	BASE_COLLECTION_PATH=./test-output \
-	LOG_LEVEL=$(LOG_LEVEL)\
-	RHDH_MUST_GATHER_VERSION=$(RHDH_MUST_GATHER_VERSION) \
-	./collection-scripts/gather_${SCRIPT}
+	BASE_COLLECTION_PATH=./out \
+		LOG_LEVEL=$(LOG_LEVEL)\
+		RHDH_MUST_GATHER_VERSION=$(RHDH_MUST_GATHER_VERSION) \
+		./collection-scripts/gather_${SCRIPT} $(OPTS)
 
-.PHONY: test-container-all
-test-container-all: test-output ## Test using container (requires podman)
+.PHONY: run-container
+run-container: image-build local-output ## Test using container (requires podman)
 	@echo "Testing must-gather in container..."
 	podman run --rm \
 		-v $(HOME)/.kube:/home/must-gather/.kube:ro \
-		-v $(PWD)/test-output:/must-gather \
+		-v $(PWD)/out:/must-gather \
 		-e LOG_LEVEL=$(LOG_LEVEL) \
 		$(IMAGE_NAME):$(IMAGE_TAG) \
 		$(OPTS)
-
-# ============================================================================
-# BATS Unit Test Targets
-# ============================================================================
 
 .PHONY: test-results
 test-results: ## Create test results directory
 	@mkdir -p $(TEST_RESULTS_DIR)
 
 .PHONY: test-setup
-test-setup: test-results ## Download and setup BATS testing framework
+test-setup: test-results ## Download and setup the unit testing framework (BATS)
 	@echo "Setting up BATS testing framework..."
 	@if [ ! -d "$(TOOLS_DIR)/bats-core-$(BATS_VERSION)" ]; then \
 		echo "Downloading BATS v$(BATS_VERSION)..."; \
@@ -103,87 +86,99 @@ test-setup: test-results ## Download and setup BATS testing framework
 	fi
 
 .PHONY: test
-test: test-setup ## Run all BATS unit tests
+test: test-setup ## Run all unit tests
 	@echo "Running BATS unit tests..."
 	@$(BATS_BIN) $(TESTS_OPTIONS) $(TESTS_DIR)/*.bats
-
-# ============================================================================
-# E2E Test Targets
-# ============================================================================
 
 .PHONY: test-e2e
 test-e2e: ## Run E2E tests against a K8s cluster (requires Kind or similar)
 	@echo "Running E2E tests with image: $(FULL_IMAGE_NAME)..."
 	@./tests/e2e/run-e2e-tests.sh --image "$(FULL_IMAGE_NAME)" $(if $(OVERLAY),--overlay "$(OVERLAY)") $(if $(OPTS),--opts "$(OPTS)")
 
-# ============================================================================
-# Cleanup Targets
-# ============================================================================
+
+##@ Build
+
+.PHONY: image-build
+image-build: ## Build the must-gather container image
+	@echo "Building must-gather image..."
+	$(CONTAINER_TOOL) build $(BUILD_ARGS) $(if $(LABELS),$(LABELS)) --build-arg RHDH_MUST_GATHER_VERSION=$(RHDH_MUST_GATHER_VERSION) -t $(IMAGE_NAME):$(IMAGE_TAG) .
+	@echo "Image built: $(IMAGE_NAME):$(IMAGE_TAG)"
+
+.PHONY: image-push
+image-push: image-build ## Build and push the image to registry
+	@echo "Tagging image for registry..."
+	$(CONTAINER_TOOL) tag $(IMAGE_NAME):$(IMAGE_TAG) $(FULL_IMAGE_NAME)
+	@echo "Pushing image to registry..."
+	$(CONTAINER_TOOL) push $(FULL_IMAGE_NAME)
+	@echo "Image pushed: $(FULL_IMAGE_NAME)"
+
+
+##@ Deployment
+
+.PHONY: deploy-openshift
+deploy-openshift: ## Deploy the must-gather image using the 'oc adm must-gather' command
+	@echo "Deploying the must-gather image with oc adm must-gather..."
+	@if ! command -v oc >/dev/null 2>&1; then \
+		echo "Error: oc command not found. Please install OpenShift CLI."; \
+		exit 1; \
+	fi
+	oc adm must-gather --image=$(FULL_IMAGE_NAME) $(if $(OPTS),-- /usr/bin/gather $(OPTS))
+
+.PHONY: deploy-k8s
+deploy-k8s: ## Deploy the must-gather image on a non-OCP K8s cluster (uses Kustomize)
+	@if ! command -v kubectl >/dev/null 2>&1; then \
+		echo "Error: kubectl command not found. Please install kubectl."; \
+		exit 1; \
+	fi
+	@./hack/deploy-k8s.sh --image "$(FULL_IMAGE_NAME)" $(if $(OVERLAY),--overlay "$(OVERLAY)") $(if $(OPTS),--opts "$(OPTS)")
+
+
+##@ Cleanup
 
 .PHONY: clean
 clean: ## Remove built images and test output
 	@echo "Cleaning up..."
 	-podman rmi $(IMAGE_NAME):$(IMAGE_TAG) 2>/dev/null || true
 	-podman rmi $(FULL_IMAGE_NAME) 2>/dev/null || true
-	-rm -rf ./test-output
+	-rm -rf "$(TOOLS_DIR)"
+	-rm -rf "$(TEST_RESULTS_DIR)"
+	-rm -rf ./out
 	@echo "Cleanup complete"
 
 
-.PHONY: test-clean
-test-clean: ## Remove BATS framework and test results
-	@echo "Cleaning up test artifacts..."
-	-rm -rf "$(TOOLS_DIR)/bats-core-$(BATS_VERSION)"
-	-rm -rf "$(TEST_RESULTS_DIR)"
-	@echo "Test cleanup complete"
+##@ General
 
-.PHONY: tools-clean
-tools-clean: ## Remove tools directory
-	@echo "Cleaning up tools..."
-	-rm -rf "$(TOOLS_DIR)"
-	@echo "Tools cleanup complete"
-
-.PHONY: clean-all
-clean-all: clean test-clean tools-clean ## Remove all generated artifacts (images, test output, BATS, tools)
-	@echo "Full cleanup complete"
-
-.PHONY: openshift-test
-openshift-test: ## Test using the 'oc adm must-gather' command
-	@echo "Testing with oc adm must-gather..."
-	@if ! command -v oc >/dev/null 2>&1; then \
-		echo "Error: oc command not found. Please install OpenShift CLI."; \
-		exit 1; \
-	fi
-	@if [ -z "$(OPTS)" ]; then \
-		oc adm must-gather --image=$(FULL_IMAGE_NAME); \
-	else \
-		oc adm must-gather --image=$(FULL_IMAGE_NAME) -- /usr/bin/gather $(OPTS); \
-	fi
-
-.PHONY: k8s-test
-k8s-test: ## Test on a non-OCP K8s cluster (uses Kustomize)
-	@./hack/k8s-test.sh --image "$(FULL_IMAGE_NAME)" $(if $(OVERLAY),--overlay "$(OVERLAY)") $(if $(OPTS),--opts "$(OPTS)")
+# The help target prints out all targets with their descriptions organized
+# beneath their categories. The categories are represented by '##@' and the
+# target descriptions by '##'. The awk command is responsible for reading the
+# entire set of makefiles included in this invocation, looking for lines of the
+# file as xyz: ## something, and then pretty-format the target and help. Then,
+# if there's a line with ##@ something, that gets pretty-printed as a category.
+# More info on the usage of ANSI control characters for terminal formatting:
+# https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_parameters
+# More info on the awk command:
+# http://linuxcommand.org/lc3_adv_awk.php
 
 .PHONY: help
-help: ## Show this help message
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {sub("\\\\n",sprintf("\n%22c"," "), $$2);printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+help: ## Display this help.
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 	@echo ""
 	@echo "Variables:"
-	@echo "  VERSION       - Must-gather version (default: $(VERSION))"
-	@echo "  RHDH_MUST_GATHER_VERSION - Full version with git SHA (computed: $(RHDH_MUST_GATHER_VERSION))"
-	@echo "  REGISTRY      - Container registry (default: $(REGISTRY))"
-	@echo "  IMAGE_NAME    - Container image name (default: $(IMAGE_NAME))"
-	@echo "  IMAGE_TAG     - Container image tag (default: $(IMAGE_TAG))"
-	@echo "  LOG_LEVEL     - Log level (default: $(LOG_LEVEL))"
-	@echo "  OPTS          - Additional must-gather options (e.g., --with-heap-dumps --with-secrets)"
-	@echo "  OVERLAY       - Kustomize overlay for k8s-test/test-e2e (e.g., \"with-heap-dumps\", \"debug-mode\", or path)"
-	@echo "  SCRIPT        - Script name for test-local-script (default: $(SCRIPT))"
-	@echo "  BATS_VERSION  - BATS testing framework version (default: $(BATS_VERSION))"
+	@echo "  VERSION			- Must-gather version (default: $(VERSION))"
+	@echo "  RHDH_MUST_GATHER_VERSION	- Full version with git SHA (computed: $(RHDH_MUST_GATHER_VERSION))"
+	@echo "  REGISTRY			- Container registry (default: $(REGISTRY))"
+	@echo "  IMAGE_NAME			- Container image name (default: $(IMAGE_NAME))"
+	@echo "  IMAGE_TAG			- Container image tag (default: $(IMAGE_TAG))"
+	@echo "  LOG_LEVEL			- Log level (default: $(LOG_LEVEL))"
+	@echo "  OPTS				- Additional must-gather options (e.g., --with-heap-dumps --with-secrets)"
+	@echo "  OVERLAY			- Kustomize overlay for deploy-k8s/test-e2e (e.g., \"with-heap-dumps\", \"debug-mode\", or path)"
+	@echo "  SCRIPT			- Script name for run-script"
 	@echo ""
 	@echo "Examples:"
 	@echo "  make test                                          # Run all unit tests"
-	@echo "  make test-e2e FULL_IMAGE_NAME=quay.io/org/img:tag  # Run E2E tests on Kind"
-	@echo "  make k8s-test OVERLAY=with-heap-dumps              # Run k8s-test with heap dump overlay"
-	@echo "  make k8s-test OVERLAY=/path/to/my-overlay          # Run k8s-test with custom overlay"
-	@echo "  make test-local-all OPTS=\"--with-heap-dumps\""
-	@echo "  make test-container-all OPTS=\"--with-secrets --with-heap-dumps\""
-	@echo "  make openshift-test OPTS=\"--with-heap-dumps --namespaces my-ns\""
+	@echo "  make test-e2e FULL_IMAGE_NAME=quay.io/org/img:tag  # Run E2E tests against the current cluster you are connected to"
+	@echo "  make deploy-k8s OVERLAY=with-heap-dumps            # Run deploy-k8s with heap dump overlay"
+	@echo "  make deploy-k8s OVERLAY=/path/to/my-overlay        # Run deploy-k8s with custom overlay"
+	@echo "  make run-local OPTS=\"--with-heap-dumps\""
+	@echo "  make run-container OPTS=\"--with-secrets --with-heap-dumps\""
+	@echo "  make deploy-openshift OPTS=\"--with-heap-dumps --namespaces my-ns\""

@@ -69,7 +69,7 @@ kubectl apply -k 'https://github.com/redhat-developer/rhdh-must-gather/deploy/ov
 mkdir -p my-must-gather-overlay
 
 # Create a kustomization.yaml that references the base
-cat > my-must-gather-overlay/kustomization.yaml << 'EOF'
+cat > my-must-gather-overlay/kustomization.yaml <<EOF
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 

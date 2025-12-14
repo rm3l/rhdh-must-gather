@@ -25,6 +25,14 @@ TEST_RESULTS_DIR ?= ./test-results
 TESTS_OPTIONS ?= --timing --print-output-on-failure --report-formatter junit --output "$(TEST_RESULTS_DIR)"
 TESTS_DIR := ./tests
 
+# Local tools configuration
+YQ_VERSION := 4.45.1
+YQ_ARCHIVE_DIR := $(TOOLS_DIR)/yq-$(YQ_VERSION)
+YQ_BIN_DL := $(YQ_ARCHIVE_DIR)/yq
+YQ_BIN := $(TOOLS_DIR)/yq
+OS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
+ARCH := $(shell uname -m | sed 's/x86_64/amd64/' | sed 's/aarch64/arm64/')
+
 default: run-local
 
 ##@ Development
@@ -33,28 +41,33 @@ default: run-local
 local-output:
 	@mkdir -p ./out
 
+.PHONY: local-setup
+local-setup: $(YQ_BIN_DL) ## Download and setup required local tools (yq)
+
 .PHONY: run-local
-run-local: local-output ## Test the script locally (requires jq, yq, kubectl, oc and cluster access)
+run-local: local-output local-setup ## Test the script locally (requires jq, kubectl, oc and cluster access)
 	@echo "Testing must-gather script locally..."
 	@if ! command -v kubectl >/dev/null 2>&1; then \
 		echo "Error: kubectl not found. Please install kubectl to test."; \
 		exit 1; \
 	fi
 	@echo "Running local test (requires cluster access)..."
-	BASE_COLLECTION_PATH=./out \
+	PATH="$(abspath $(TOOLS_DIR)):$$PATH" \
+		BASE_COLLECTION_PATH=./out \
 		LOG_LEVEL=$(LOG_LEVEL) \
 		RHDH_MUST_GATHER_VERSION=$(RHDH_MUST_GATHER_VERSION) \
 		./collection-scripts/must_gather $(OPTS)
 
 .PHONY: run-script
-run-script: local-output ## Test the specified gather-<SCRIPT> script (set the SCRIPT var)
+run-script: local-output local-setup ## Test the specified gather-<SCRIPT> script (set the SCRIPT var)
 	@if [ -z "$(SCRIPT)" ]; then \
 		echo "Error: SCRIPT variable is not set. Please set the SCRIPT variable to the name of the script to test. It will then run ./collection-scripts/gather_<SCRIPT>"; \
 		exit 1; \
 	fi
 	@echo "Testing gather-${SCRIPT} must-gather script locally..."
 	@echo "Running local test (requires cluster access)..."
-	BASE_COLLECTION_PATH=./out \
+	PATH="$(abspath $(TOOLS_DIR)):$$PATH" \
+		BASE_COLLECTION_PATH=./out \
 		LOG_LEVEL=$(LOG_LEVEL)\
 		RHDH_MUST_GATHER_VERSION=$(RHDH_MUST_GATHER_VERSION) \
 		./collection-scripts/gather_${SCRIPT} $(OPTS)
@@ -70,7 +83,7 @@ run-container: image-build local-output ## Test using container (requires podman
 		$(OPTS)
 
 .PHONY: test-results
-test-results: ## Create test results directory
+test-results:
 	@mkdir -p $(TEST_RESULTS_DIR)
 
 .PHONY: test-setup
@@ -101,6 +114,23 @@ else
 	@./tests/e2e/run-e2e-tests.sh --image "$(FULL_IMAGE_NAME)" $(if $(OVERLAY),--overlay "$(OVERLAY)") $(if $(OPTS),--opts "$(OPTS)")
 endif
 
+.PHONY: $(TOOLS_DIR)
+$(TOOLS_DIR):
+	@mkdir -p "$(TOOLS_DIR)"
+
+.PHONY: $(YQ_BIN_DL)
+$(YQ_BIN_DL): $(TOOLS_DIR)
+	@mkdir -p "$(YQ_ARCHIVE_DIR)"
+	@if [ ! -f "$(YQ_BIN_DL)" ]; then \
+		echo "Downloading yq v$(YQ_VERSION) for $(OS)/$(ARCH)..."; \
+		curl -sSL "https://github.com/mikefarah/yq/releases/download/v$(YQ_VERSION)/yq_$(OS)_$(ARCH).tar.gz" | tar xz -C "$(TOOLS_DIR)"; \
+		mv -f "$(TOOLS_DIR)/yq_$(OS)_$(ARCH)" "$(YQ_BIN_DL)"; \
+		chmod +x "$(YQ_BIN_DL)"; \
+		echo "yq installed successfully: $$($(YQ_BIN_DL) --version)"; \
+	else \
+		echo "yq $(YQ_VERSION) already installed: $(YQ_BIN_DL)"; \
+	fi
+	ln -sf "$(shell echo $(YQ_BIN_DL) | sed 's|$(TOOLS_DIR)/||')" "$(YQ_BIN)"
 
 ##@ Build
 
@@ -183,6 +213,7 @@ help: ## Display this help.
 	@echo "  OVERLAY			- Kustomize overlay for deploy-k8s/test-e2e (e.g., \"with-heap-dumps\", \"debug-mode\", or path)"
 	@echo "  LOCAL				- Set to 'true' to run test-e2e in local mode (no image required)"
 	@echo "  SCRIPT			- Script name for run-script"
+	@echo "  TOOLS_DIR			- Directory for local tools like yq (default: $(TOOLS_DIR))"
 	@echo ""
 	@echo "Examples:"
 	@echo "  make test                                          # Run all unit tests"

@@ -5,10 +5,12 @@
 #
 # Usage:
 #   ./tests/e2e/run-e2e-tests.sh --image <image> [OPTIONS]
+#   ./tests/e2e/run-e2e-tests.sh --local [OPTIONS]
 #
 # Options:
-#   --image <image>     Full image name (required)
-#   --overlay <overlay> Overlay to use (pre-built name or path). Only applicable on Kubernetes, ignored on OpenShift.
+#   --image <image>     Full image name (required unless --local is used)
+#   --local             Run in local mode using 'make clean-out run-local' (no image required)
+#   --overlay <overlay> Overlay to use (pre-built name or path). Only applicable on Kubernetes, ignored on OpenShift and local mode.
 #   --opts <options>    Additional options to pass to the gather script
 #   --help              Show this help message
 #
@@ -16,6 +18,8 @@
 #   ./tests/e2e/run-e2e-tests.sh --image quay.io/rhdh-community/rhdh-must-gather:pr-123
 #   ./tests/e2e/run-e2e-tests.sh --image quay.io/rhdh-community/rhdh-must-gather:pr-123 --overlay with-heap-dumps
 #   ./tests/e2e/run-e2e-tests.sh --image quay.io/rhdh-community/rhdh-must-gather:pr-123 --opts "--with-secrets"
+#   ./tests/e2e/run-e2e-tests.sh --local
+#   ./tests/e2e/run-e2e-tests.sh --local --opts "--with-secrets"
 #
 
 set -euo pipefail
@@ -64,6 +68,7 @@ trap cleanup EXIT
 FULL_IMAGE_NAME=""
 OVERLAY=""
 OPTS=""
+LOCAL_MODE=false
 
 # Parse named arguments
 while [[ $# -gt 0 ]]; do
@@ -71,6 +76,10 @@ while [[ $# -gt 0 ]]; do
         --image)
             FULL_IMAGE_NAME="$2"
             shift 2
+            ;;
+        --local)
+            LOCAL_MODE=true
+            shift
             ;;
         --overlay)
             OVERLAY="$2"
@@ -91,26 +100,34 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if [ -z "$FULL_IMAGE_NAME" ]; then
-    log_error "Error: --image is required"
+if [ "$LOCAL_MODE" = true ] && [ -n "$FULL_IMAGE_NAME" ]; then
+    log_warn "--image is ignored when --local is used"
+fi
+
+if [ "$LOCAL_MODE" = false ] && [ -z "$FULL_IMAGE_NAME" ]; then
+    log_error "Error: --image is required (or use --local for local mode)"
     log_error "Use --help for usage information."
     exit 1
 fi
 
-log_info "Starting E2E tests with image: $FULL_IMAGE_NAME"
-if [ -n "$OVERLAY" ]; then
-    log_info "Using overlay: $OVERLAY"
+if [ "$LOCAL_MODE" = true ]; then
+    log_info "Starting E2E tests in local mode"
+else
+    log_info "Starting E2E tests with image: $FULL_IMAGE_NAME"
+    if [ -n "$OVERLAY" ]; then
+        log_info "Using overlay: $OVERLAY"
+    fi
+
+    # Extract registry, image name, and tag from full image name
+    # e.g., quay.io/rhdh-community/rhdh-must-gather:pr-123
+    REGISTRY=$(echo "$FULL_IMAGE_NAME" | cut -d'/' -f1)
+    IMAGE_NAME=$(echo "$FULL_IMAGE_NAME" | cut -d':' -f1 | cut -d'/' -f2-)
+    IMAGE_TAG=$(echo "$FULL_IMAGE_NAME" | cut -d':' -f2)
+
+    log_info "Registry: $REGISTRY"
+    log_info "Image name: $IMAGE_NAME"
+    log_info "Image tag: $IMAGE_TAG"
 fi
-
-# Extract registry, image name, and tag from full image name
-# e.g., quay.io/rhdh-community/rhdh-must-gather:pr-123
-REGISTRY=$(echo "$FULL_IMAGE_NAME" | cut -d'/' -f1)
-IMAGE_NAME=$(echo "$FULL_IMAGE_NAME" | cut -d':' -f1 | cut -d'/' -f2-)
-IMAGE_TAG=$(echo "$FULL_IMAGE_NAME" | cut -d':' -f2)
-
-log_info "Registry: $REGISTRY"
-log_info "Image name: $IMAGE_NAME"
-log_info "Image tag: $IMAGE_TAG"
 
 # Ensure we're in the project root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -223,7 +240,20 @@ fi
 log_info "Backstage CR $BACKSTAGE_CR_STATEFULSET is now ready and deployed."
 
 # Detect cluster type and run the appropriate deployment
-if is_openshift; then
+if [ "$LOCAL_MODE" = true ]; then
+    log_info "Running in local mode"
+    if [ -n "$OVERLAY" ]; then
+        log_warn "--overlay option is not applicable in local mode, ignoring"
+    fi
+    log_info "Running make clean-out run-local..."
+    make clean-out run-local OPTS="$OPTS"
+    OUTPUT_DIR="./out"
+    if [ ! -d "$OUTPUT_DIR" ]; then
+        log_error "No output directory found at $OUTPUT_DIR!"
+        exit 1
+    fi
+    log_info "Using output directory: $OUTPUT_DIR"
+elif is_openshift; then
     log_info "Detected OpenShift cluster"
     if ! command -v oc &>/dev/null; then
         log_error "OpenShift cluster detected but 'oc' command not found. Please install the OpenShift CLI."
@@ -353,7 +383,11 @@ log_info "Validating must-gather output structure"
 log_info "=========================================="
 
 # Check required files
-check_file_not_empty "$OUTPUT_DIR/must-gather.log" "must-gather container logs"
+if [ "$LOCAL_MODE" = true ]; then
+    log_info "○ Skipping must-gather.log check in local mode (logs go to console)"
+else
+    check_file_not_empty "$OUTPUT_DIR/must-gather.log" "must-gather container logs"
+fi
 
 check_file_not_empty "$OUTPUT_DIR/version" "version file"
 

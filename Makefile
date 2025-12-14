@@ -90,10 +90,16 @@ test: test-setup ## Run all unit tests
 	@echo "Running BATS unit tests..."
 	@$(BATS_BIN) $(TESTS_OPTIONS) $(TESTS_DIR)/*.bats
 
+LOCAL ?= ## Set to 'true' to run E2E tests in local mode (no image required)
 .PHONY: test-e2e
 test-e2e: ## Run E2E tests against a K8s cluster (requires Kind or similar)
+ifeq ($(LOCAL),true)
+	@echo "Running E2E tests in local mode..."
+	@./tests/e2e/run-e2e-tests.sh --local $(if $(OPTS),--opts "$(OPTS)")
+else
 	@echo "Running E2E tests with image: $(FULL_IMAGE_NAME)..."
 	@./tests/e2e/run-e2e-tests.sh --image "$(FULL_IMAGE_NAME)" $(if $(OVERLAY),--overlay "$(OVERLAY)") $(if $(OPTS),--opts "$(OPTS)")
+endif
 
 
 ##@ Build
@@ -135,16 +141,19 @@ deploy-k8s: ## Deploy the must-gather image on a non-OCP K8s cluster (uses Kusto
 
 ##@ Cleanup
 
+.PHONY: clean-out
+clean-out: ## Remove the local output directory
+	-rm -rf ./out
+	@echo "Local output directory cleaned"
+
 .PHONY: clean
-clean: ## Remove built images and test output
+clean: clean-out## Remove built images and test output
 	@echo "Cleaning up..."
 	-podman rmi $(IMAGE_NAME):$(IMAGE_TAG) 2>/dev/null || true
 	-podman rmi $(FULL_IMAGE_NAME) 2>/dev/null || true
 	-rm -rf "$(TOOLS_DIR)"
 	-rm -rf "$(TEST_RESULTS_DIR)"
-	-rm -rf ./out
 	@echo "Cleanup complete"
-
 
 ##@ General
 
@@ -172,11 +181,13 @@ help: ## Display this help.
 	@echo "  LOG_LEVEL			- Log level (default: $(LOG_LEVEL))"
 	@echo "  OPTS				- Additional must-gather options (e.g., --with-heap-dumps --with-secrets)"
 	@echo "  OVERLAY			- Kustomize overlay for deploy-k8s/test-e2e (e.g., \"with-heap-dumps\", \"debug-mode\", or path)"
+	@echo "  LOCAL				- Set to 'true' to run test-e2e in local mode (no image required)"
 	@echo "  SCRIPT			- Script name for run-script"
 	@echo ""
 	@echo "Examples:"
 	@echo "  make test                                          # Run all unit tests"
 	@echo "  make test-e2e FULL_IMAGE_NAME=quay.io/org/img:tag  # Run E2E tests against the current cluster you are connected to"
+	@echo "  make test-e2e LOCAL=true                           # Run E2E tests in local mode (no image needed)"
 	@echo "  make deploy-k8s OVERLAY=with-heap-dumps            # Run deploy-k8s with heap dump overlay"
 	@echo "  make deploy-k8s OVERLAY=/path/to/my-overlay        # Run deploy-k8s with custom overlay"
 	@echo "  make run-local OPTS=\"--with-heap-dumps\""

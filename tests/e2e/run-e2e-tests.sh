@@ -121,7 +121,8 @@ log_info "Working directory: $PROJECT_ROOT"
 
 # Deploy some instances of RHDH
 log_info "Deploying RHDH instances..."
-NS="test-e2e-$(date +%s)"
+TIMESTAMP=$(date +%s)
+NS="test-e2e-$TIMESTAMP"
 kubectl create namespace "$NS"
 CLEANUP_TASKS+=("kubectl delete namespace $NS --wait=false")
 
@@ -179,21 +180,47 @@ if ! kubectl -n rhdh-operator wait --for=condition=Available deployment/rhdh-ope
     exit 1
 fi
 log_info "rhdh-operator deployment is now available."
-log_info "Deploying Backstage CR..."
+
+NS_STATEFULSET="test-e2e-$TIMESTAMP-statefulset"
+kubectl create namespace "$NS_STATEFULSET"
+CLEANUP_TASKS+=("kubectl delete namespace $NS_STATEFULSET --wait=false")
+
+log_info "Deploying Backstage CR (kind: Deployment in v1alpha4)..."
 BACKSTAGE_CR="my-rhdh-op"
 kubectl -n "$NS" apply -f - <<EOF
-apiVersion: rhdh.redhat.com/v1alpha5
+apiVersion: rhdh.redhat.com/v1alpha4
 kind: Backstage
 metadata:
   name: $BACKSTAGE_CR
 EOF
-# TODO: wait until the Backstage CR is reconciled
-log_info "Waiting for Backstage CR to be reconciled..."
+# Added in 1.9
+log_info "Deploying Backstage CR (kind: StatefulSet in v1alpha5)..."
+BACKSTAGE_CR_STATEFULSET="my-rhdh-op-statefulset"
+kubectl -n "$NS_STATEFULSET" apply -f - <<EOF
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: $BACKSTAGE_CR_STATEFULSET
+spec:
+  deployment:
+    kind: StatefulSet
+EOF
+
+# wait until the Backstage CR is reconciled
+log_info "Waiting for Backstage CR $BACKSTAGE_CR to be reconciled..."
 if ! kubectl -n "$NS" wait --for='jsonpath={.status.conditions[?(@.type=="Deployed")].reason}=Deployed' backstage/$BACKSTAGE_CR --timeout=5m; then
-    log_error "Timed out waiting for Backstage CR to be reconciled."
+    log_error "Timed out waiting for Backstage CR $BACKSTAGE_CR to be reconciled."
     exit 1
 fi
-log_info "Backstage CR is now ready and deployed."
+log_info "Backstage CR $BACKSTAGE_CR is now ready and deployed."
+
+# wait until the Backstage CR is reconciled
+log_info "Waiting for Backstage CR $BACKSTAGE_CR_STATEFULSET to be reconciled..."
+if ! kubectl -n "$NS_STATEFULSET" wait --for='jsonpath={.status.conditions[?(@.type=="Deployed")].reason}=Deployed' backstage/$BACKSTAGE_CR_STATEFULSET --timeout=5m; then
+    log_error "Timed out waiting for Backstage CR $BACKSTAGE_CR_STATEFULSET to be reconciled."
+    exit 1
+fi
+log_info "Backstage CR $BACKSTAGE_CR_STATEFULSET is now ready and deployed."
 
 # Detect cluster type and run the appropriate deployment
 if is_openshift; then
@@ -378,27 +405,37 @@ check_file_not_empty "$OUTPUT_DIR/helm/releases/ns=$NS/$HELM_RELEASE/deployment/
 check_dir_not_empty "$OUTPUT_DIR/helm/releases/ns=$NS/$HELM_RELEASE/deployment/pods" "all pod data in Helm collection directory"
 
 check_dir_not_empty "$OUTPUT_DIR/operator" "Operator collection directory"
-check_dir_not_empty "$OUTPUT_DIR/operator/crds" "CRDs in Operator collection directory"
-check_dir_not_empty "$OUTPUT_DIR/operator/crds/backstages.rhdh.redhat.com" "Backstage CRD in Operator collection directory"
-check_file_not_empty "$OUTPUT_DIR/operator/crds/all-crds.txt" "All CRDs in Operator collection directory"
-check_file_contains "$OUTPUT_DIR/operator/crds/all-crds.txt" "backstages.rhdh.redhat.com" "Backstage CRD is listed in the All CRDs list"
-check_file_not_empty "$OUTPUT_DIR/operator/crds/backstages.rhdh.redhat.com.yaml" "Backstage CRD definition in Operator collection directory"
-
-check_dir_not_empty "$OUTPUT_DIR/operator/backstage-crs" "Backstage CRs in Operator collection directory"
-check_file_not_empty "$OUTPUT_DIR/operator/backstage-crs/all-backstage-crs.txt" "All Backstage CRs in Operator collection directory"
-check_file_contains "$OUTPUT_DIR/operator/backstage-crds/all-backstage-crs.txt" "$BACKSTAGE_CR" "Backstage CRD is listed in the All CRDs list"
-check_dir_not_empty "$OUTPUT_DIR/operator/backstage-crs/ns=$NS" "$NS namespace in Backstage CRs in Operator collection directory"
-check_dir_not_empty "$OUTPUT_DIR/operator/backstage-crs/ns=$NS/_configmaps" "$NS namespace configmaps in Backstage CRs in Operator collection directory"
-check_dir_not_empty "$OUTPUT_DIR/operator/backstage-crs/ns=$NS/$BACKSTAGE_CR" "$BACKSTAGE_CR in Backstage CRs in Operator collection directory"
-check_dir_not_empty "$OUTPUT_DIR/operator/backstage-crs/ns=$NS/$BACKSTAGE_CR/deployment" "all deployment data in $BACKSTAGE_CR in Backstage CRs in Operator collection directory"
-check_dir_not_empty "$OUTPUT_DIR/operator/backstage-crs/ns=$NS/$BACKSTAGE_CR/pods" "all pod data in $BACKSTAGE_CR in Backstage CRs in Operator collection directory"
-
 check_dir_not_empty "$OUTPUT_DIR/operator/ns=rhdh-operator" "rhdh-operator namespace in Operator collection directory"
 check_dir_not_empty "$OUTPUT_DIR/operator/ns=rhdh-operator/configs" "rhdh-operator configmaps in Operator collection directory"
 check_dir_not_empty "$OUTPUT_DIR/operator/ns=rhdh-operator/deployments" "rhdh-operator deployments in Operator collection directory"
 check_file_not_empty "$OUTPUT_DIR/operator/ns=rhdh-operator/logs.txt" "logs.txt"
 check_dir_not_empty "$OUTPUT_DIR/operator/ns=rhdh-operator/configs" "rhdh-operator configmaps in Operator collection directory"
 check_dir_not_empty "$OUTPUT_DIR/operator/ns=rhdh-operator/deployments" "rhdh-operator deployments in Operator collection directory"
+
+check_dir_not_empty "$OUTPUT_DIR/operator/crds" "CRDs in Operator collection directory"
+check_file_contains "$OUTPUT_DIR/operator/crds/all-crds.txt" "backstages.rhdh.redhat.com" "Backstage CRD is listed in the All CRDs list"
+check_file_not_empty "$OUTPUT_DIR/operator/crds/backstages.rhdh.redhat.com.describe.txt" "Backstage CRD in Operator collection directory"
+check_file_not_empty "$OUTPUT_DIR/operator/crds/backstages.rhdh.redhat.com.yaml" "Backstage CRD definition in Operator collection directory"
+
+check_dir_not_empty "$OUTPUT_DIR/operator/backstage-crs" "Backstage CRs in Operator collection directory"
+check_file_not_empty "$OUTPUT_DIR/operator/backstage-crs/all-backstage-crs.txt" "All Backstage CRs in Operator collection directory"
+check_file_contains "$OUTPUT_DIR/operator/backstage-crs/all-backstage-crs.txt" "$BACKSTAGE_CR" "Backstage CR is listed in the All CRDs list"
+check_file_contains "$OUTPUT_DIR/operator/backstage-crs/all-backstage-crs.txt" "$BACKSTAGE_CR_STATEFULSET" "Backstage CR (kind: StatefulSet) is listed in the All CRDs list"
+cr=$BACKSTAGE_CR
+for ns in "$NS" "$NS_STATEFULSET"; do
+    if [ "$ns" == "$NS_STATEFULSET" ]; then
+        cr=$BACKSTAGE_CR_STATEFULSET
+    fi
+    check_dir_not_empty "$OUTPUT_DIR/operator/backstage-crs/ns=$ns" "$ns namespace in Backstage CRs in Operator collection directory"
+    check_dir_not_empty "$OUTPUT_DIR/operator/backstage-crs/ns=$ns/_configmaps" "$ns namespace configmaps in Backstage CRs in Operator collection directory"
+    check_dir_not_empty "$OUTPUT_DIR/operator/backstage-crs/ns=$ns/$cr" "$cr in Backstage CRs in Operator collection directory"
+    check_dir_not_empty "$OUTPUT_DIR/operator/backstage-crs/ns=$ns/$cr/deployment" "all deployment data in $cr in Backstage CRs in Operator collection directory"
+    check_file_not_empty "$OUTPUT_DIR/operator/backstage-crs/ns=$ns/$cr/deployment/logs-app.txt" "Backstage CR Deployment logs in Operator collection directory"
+    check_dir_not_empty "$OUTPUT_DIR/operator/backstage-crs/ns=$ns/$cr/deployment/pods" "all pod data in $cr in Backstage CRs in Operator collection directory"
+    check_dir_not_empty "$OUTPUT_DIR/operator/backstage-crs/ns=$ns/$cr/db-statefulset" "all deployment data in $cr in Backstage CRs in Operator collection directory"
+    check_file_not_empty "$OUTPUT_DIR/operator/backstage-crs/ns=$ns/$cr/db-statefulset/logs-db.txt" "Backstage CR DB StatefulSet logs in Operator collection directory"
+    check_dir_not_empty "$OUTPUT_DIR/operator/backstage-crs/ns=$ns/$cr/db-statefulset/pods" "all DB StatefulSet pods data in $cr in Backstage CRs in Operator collection directory"
+done
 
 ## Optional (depending on the flags used)
 if [ -d "$OUTPUT_DIR/cluster-info" ]; then

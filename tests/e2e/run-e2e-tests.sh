@@ -11,15 +11,12 @@
 #   --image <image>     Full image name (required unless --local is used)
 #   --local             Run in local mode using 'make clean-out run-local' (no image required)
 #   --overlay <overlay> Overlay to use (pre-built name or path). Only applicable on Kubernetes, ignored on OpenShift and local mode.
-#   --opts <options>    Additional options to pass to the gather script
 #   --help              Show this help message
 #
 # Examples:
 #   ./tests/e2e/run-e2e-tests.sh --image quay.io/rhdh-community/rhdh-must-gather:pr-123
 #   ./tests/e2e/run-e2e-tests.sh --image quay.io/rhdh-community/rhdh-must-gather:pr-123 --overlay with-heap-dumps
-#   ./tests/e2e/run-e2e-tests.sh --image quay.io/rhdh-community/rhdh-must-gather:pr-123 --opts "--with-secrets"
 #   ./tests/e2e/run-e2e-tests.sh --local
-#   ./tests/e2e/run-e2e-tests.sh --local --opts "--with-secrets"
 #
 
 set -euo pipefail
@@ -67,7 +64,6 @@ trap cleanup EXIT
 # Default values
 FULL_IMAGE_NAME=""
 OVERLAY=""
-OPTS=""
 LOCAL_MODE=false
 
 # Parse named arguments
@@ -83,10 +79,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         --overlay)
             OVERLAY="$2"
-            shift 2
-            ;;
-        --opts)
-            OPTS="$2"
             shift 2
             ;;
         --help|-h)
@@ -246,7 +238,7 @@ if [ "$LOCAL_MODE" = true ]; then
         log_warn "--overlay option is not applicable in local mode, ignoring"
     fi
     log_info "Running make clean-out run-local..."
-    make clean-out run-local OPTS="$OPTS"
+    make clean-out run-local
     OUTPUT_DIR="./out"
     if [ ! -d "$OUTPUT_DIR" ]; then
         log_error "No output directory found at $OUTPUT_DIR!"
@@ -266,8 +258,7 @@ elif is_openshift; then
     make deploy-openshift \
         REGISTRY="$REGISTRY" \
         IMAGE_NAME="$IMAGE_NAME" \
-        IMAGE_TAG="$IMAGE_TAG" \
-        OPTS="$OPTS"
+        IMAGE_TAG="$IMAGE_TAG"
     # Find the output directory (most recent must-gather.local.* directory)
     OUTPUT_DIR=$(find . -maxdepth 1 -type d -name 'must-gather.local.*' -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
     if [ -z "$OUTPUT_DIR" ]; then
@@ -289,8 +280,7 @@ else
         REGISTRY="$REGISTRY" \
         IMAGE_NAME="$IMAGE_NAME" \
         IMAGE_TAG="$IMAGE_TAG" \
-        OVERLAY="$OVERLAY" \
-        OPTS="$OPTS"
+        OVERLAY="$OVERLAY"
     # Find the output tarball (most recent one)
     OUTPUT_TARBALL=$(find . -maxdepth 1 -name 'rhdh-must-gather-output.k8s.*.tar.gz' -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
     if [ -z "$OUTPUT_TARBALL" ]; then

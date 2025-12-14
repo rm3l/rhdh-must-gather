@@ -108,10 +108,10 @@ LOCAL ?= ## Set to 'true' to run E2E tests in local mode (no image required)
 test-e2e: ## Run E2E tests against a K8s cluster (requires Kind or similar)
 ifeq ($(LOCAL),true)
 	@echo "Running E2E tests in local mode..."
-	@./tests/e2e/run-e2e-tests.sh --local $(if $(OPTS),--opts "$(OPTS)")
+	@./tests/e2e/run-e2e-tests.sh --local
 else
 	@echo "Running E2E tests with image: $(FULL_IMAGE_NAME)..."
-	@./tests/e2e/run-e2e-tests.sh --image "$(FULL_IMAGE_NAME)" $(if $(OVERLAY),--overlay "$(OVERLAY)") $(if $(OPTS),--opts "$(OPTS)")
+	@./tests/e2e/run-e2e-tests.sh --image "$(FULL_IMAGE_NAME)" $(if $(OVERLAY),--overlay "$(OVERLAY)")
 endif
 
 .PHONY: $(TOOLS_DIR)

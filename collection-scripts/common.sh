@@ -536,6 +536,13 @@ collect_rhdh_data() {
       kubectl -n "$ns" get deployment "$deploy" -o json \
         | jq -r '.spec.selector.matchLabels | to_entries | map("\(.key)=\(.value)") | join(",")'  || true
     )
+     if [[ -z "$labels" ]]; then
+      log_debug "No labels found for deployment $deploy, trying statefulset"
+      labels=$(
+        kubectl -n "$ns" get statefulset "$deploy" -o json \
+          | jq -r '.spec.selector.matchLabels | to_entries | map("\(.key)=\(.value)") | join(",")' || true
+      )
+     fi
     if [[ -n "$labels" ]]; then
       # Retrieve some information from the running pods
       collect_rhdh_info_from_running_pods "$ns" "$labels" "$deploy_dir"

@@ -526,16 +526,23 @@ collect_rhdh_data() {
     local deploy_dir="${output_dir}/deployment"
     ensure_directory "$deploy_dir"
 
-    safe_exec "kubectl -n '$ns' get deployment $deploy -o yaml" "$deploy_dir/deployment.yaml" "app deployment for $ns/$deploy"
-    safe_exec "kubectl -n '$ns' describe deployment $deploy" "$deploy_dir/deployment.describe.txt" "app deployment for $ns/$deploy"
-    safe_exec "kubectl -n '$ns' logs deployments/$deploy -c install-dynamic-plugins ${log_collection_args:-}" "$deploy_dir/logs-app--install-dynamic-plugins.txt" "app init-container logs for $ns/$deploy"
-    safe_exec "kubectl -n '$ns' logs deployments/$deploy -c backstage-backend ${log_collection_args:-}" "$deploy_dir/logs-app--backstage-backend.txt" "app backstage-backend logs for $ns/$deploy"
-    safe_exec "kubectl -n '$ns' logs deployments/$deploy --all-containers ${log_collection_args:-}" "$deploy_dir/logs-app.txt" "app deployment logs for $ns/$deploy"
-
+    safe_exec "kubectl -n '$ns' get deployment $deploy -o yaml || kubectl -n '$ns' get statefulset $deploy -o yaml" "$deploy_dir/deployment.yaml" "app deployment for $ns/$deploy"
+    safe_exec "kubectl -n '$ns' describe deployment $deploy || kubectl -n '$ns' describe statefulset $deploy" "$deploy_dir/deployment.describe.txt" "app deployment for $ns/$deploy"
+    safe_exec "kubectl -n '$ns' logs deployments/$deploy -c install-dynamic-plugins ${log_collection_args:-} || kubectl -n '$ns' logs statefulsets/$deploy -c install-dynamic-plugins ${log_collection_args:-}" "$deploy_dir/logs-app--install-dynamic-plugins.txt" "app init-container logs for $ns/$deploy"
+    safe_exec "kubectl -n '$ns' logs deployments/$deploy -c backstage-backend ${log_collection_args:-} || kubectl -n '$ns' logs statefulsets/$deploy -c backstage-backend ${log_collection_args:-}" "$deploy_dir/logs-app--backstage-backend.txt" "app backstage-backend logs for $ns/$deploy"
+    safe_exec "kubectl -n '$ns' logs deployments/$deploy --all-containers ${log_collection_args:-} || kubectl -n '$ns' logs statefulsets/$deploy --all-containers ${log_collection_args:-}" "$deploy_dir/logs-app.txt" "app deployment logs for $ns/$deploy"
+  
     labels=$(
       kubectl -n "$ns" get deployment "$deploy" -o json \
-        | jq -r '.spec.selector.matchLabels | to_entries | map("\(.key)=\(.value)") | join(",")' || true
+        | jq -r '.spec.selector.matchLabels | to_entries | map("\(.key)=\(.value)") | join(",")'  || true
     )
+     if [[ -z "$labels" ]]; then
+      log_debug "No labels found for deployment $deploy, trying statefulset"
+      labels=$(
+        kubectl -n "$ns" get statefulset "$deploy" -o json \
+          | jq -r '.spec.selector.matchLabels | to_entries | map("\(.key)=\(.value)") | join(",")' || true
+      )
+     fi
     if [[ -n "$labels" ]]; then
       # Retrieve some information from the running pods
       collect_rhdh_info_from_running_pods "$ns" "$labels" "$deploy_dir"

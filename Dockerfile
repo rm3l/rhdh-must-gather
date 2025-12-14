@@ -42,7 +42,7 @@ RUN curl -L https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/ope
 
 # Install yq (YAML processor)
 # Used for filtering manifests and processing YAML data
-RUN curl -sSLo- https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_amd64.tar.gz | tar xz \
+RUN curl -sSLo- https://github.com/mikefarah/yq/releases/download/v4.50.1/yq_linux_amd64.tar.gz | tar xz \
     && mv -f yq_linux_amd64 /usr/local/bin/yq \
     && yq --version
 

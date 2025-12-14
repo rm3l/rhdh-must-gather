@@ -26,7 +26,7 @@ TESTS_OPTIONS ?= --timing --print-output-on-failure --report-formatter junit --o
 TESTS_DIR := ./tests
 
 # Local tools configuration
-YQ_VERSION := 4.45.1
+YQ_VERSION := 4.50.1
 YQ_ARCHIVE_DIR := $(TOOLS_DIR)/yq-$(YQ_VERSION)
 YQ_BIN_DL := $(YQ_ARCHIVE_DIR)/yq
 YQ_BIN := $(TOOLS_DIR)/yq
@@ -130,7 +130,8 @@ $(YQ_BIN_DL): $(TOOLS_DIR)
 	else \
 		echo "yq $(YQ_VERSION) already installed: $(YQ_BIN_DL)"; \
 	fi
-	ln -sf "$(shell echo $(YQ_BIN_DL) | sed 's|$(TOOLS_DIR)/||')" "$(YQ_BIN)"
+	@ln -sf "$(shell echo $(YQ_BIN_DL) | sed 's|$(TOOLS_DIR)/||')" "$(YQ_BIN)"
+	@"$(YQ_BIN)" --version
 
 ##@ Build
 

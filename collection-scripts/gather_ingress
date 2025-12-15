@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# Helm Data Collection Script
-# Collects Helm-specific information for RHDH deployments
+# Ingress Data Collection Script
+# Collects Ingress information for RHDH deployments
 
 set -euo pipefail
 
@@ -12,6 +12,6 @@ source "${DIR_NAME}/common.sh"
 log_info "Starting Ingress data collection..."
 
 namespace_args=$(get_namespace_args)
-safe_exec "oc get ingresses.networking.k8s.io $namespace_args" "$BASE_COLLECTION_PATH/all-ingresses.txt" "All Ingresses"
+safe_exec "$KUBECTL_CMD get ingresses.networking.k8s.io $namespace_args" "$BASE_COLLECTION_PATH/all-ingresses.txt" "All Ingresses"
 
 # TODO Collect more details if needed

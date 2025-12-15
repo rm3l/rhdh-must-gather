@@ -31,7 +31,8 @@ release_namespaces=$(echo "$release_namespaces" | sort | uniq)
 rm -rf "$helm_dir/all-rhdh-releases.json"
 
 if [[ -z "$releases" ]]; then
-    log_warn "No RHDH-related Helm releases found" > "$helm_dir/no-releases.txt"
+    log_warn "No RHDH-related Helm releases found"
+    echo "No RHDH-related Helm releases found" > "$helm_dir/no-releases.txt"
     exit 0
 fi
 

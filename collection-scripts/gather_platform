@@ -16,7 +16,7 @@ ensure_directory "$OUT_DIR"
 
 # --- Helpers ---
 jsonpath() {
-  $KUBECTL_CMD get "$1" $2 -o "jsonpath=$3" 2>/dev/null || true
+  $KUBECTL_CMD get "$1" "$2" -o "jsonpath=$3" 2>/dev/null || true
 }
 
 has_api_group() {

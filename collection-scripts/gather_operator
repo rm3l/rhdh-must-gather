@@ -185,7 +185,7 @@ gather_crds
 namespace_args=$(get_namespace_args)
 safe_exec "$KUBECTL_CMD get deployments $namespace_args -l app=rhdh-operator" "$operator_dir/all-deployments.txt" "All RHDH Operator Deployments"
 
-operatorNamespaces=$($KUBECTL_CMD get deployments $namespace_args -l app=rhdh-operator -o jsonpath="{.items[*].metadata.namespace}" 2>/dev/null || true)
+operatorNamespaces=$($KUBECTL_CMD get deployments "$namespace_args" -l app=rhdh-operator -o jsonpath="{.items[*].metadata.namespace}" 2>/dev/null || true)
 log_info "Found Operator namespaces: $operatorNamespaces"
 
 for operatorNamespace in $operatorNamespaces; do

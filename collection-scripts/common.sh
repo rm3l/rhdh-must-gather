@@ -286,7 +286,8 @@ collect_heap_dumps_for_pods() {
   local HEAP_DUMP_TIMEOUT="${HEAP_DUMP_TIMEOUT:-120}"
   
   # Get list of running pods matching the labels
-  local pods=$($KUBECTL_CMD get pods -n "$ns" -l "$labels" --field-selector=status.phase=Running -o jsonpath='{.items[*].metadata.name}' 2>/dev/null || true)
+  local pods
+  pods=$($KUBECTL_CMD get pods -n "$ns" -l "$labels" --field-selector=status.phase=Running -o jsonpath='{.items[*].metadata.name}' 2>/dev/null || true)
   
   if [[ -z "$pods" ]]; then
     log_warn "No running pods found with labels: $labels in namespace: $ns"
@@ -304,7 +305,8 @@ collect_heap_dumps_for_pods() {
     $KUBECTL_CMD get pod -n "$ns" "$pod" -o yaml > "$pod_dir/pod-spec.yaml" 2>&1 || true
     
     # Find backstage-backend container
-    local containers=$($KUBECTL_CMD get pod -n "$ns" "$pod" -o jsonpath='{.spec.containers[*].name}' 2>/dev/null || true)
+    local containers
+    containers=$($KUBECTL_CMD get pod -n "$ns" "$pod" -o jsonpath='{.spec.containers[*].name}' 2>/dev/null || true)
     
     for container in $containers; do
       # Only process the backstage-backend container
@@ -319,7 +321,8 @@ collect_heap_dumps_for_pods() {
       # Using /proc filesystem as it's always available in Linux containers
       # (unlike ps, pidof, or pgrep which require additional packages)
       log_debug "Looking for Node.js process using /proc filesystem..."
-      local node_pid=$($KUBECTL_CMD exec -n "$ns" "$pod" -c "$container" -- sh -c "
+      local node_pid
+      node_pid=$($KUBECTL_CMD exec -n "$ns" "$pod" -c "$container" -- sh -c "
         for pid_dir in /proc/[0-9]*; do
           pid=\$(basename \$pid_dir)
           # Check process name in comm file
@@ -402,7 +405,8 @@ collect_heap_dumps_for_pods() {
         
         # Look for heap dump files in common locations
         echo "Searching for heap dump files..."
-        local found_dumps=$($KUBECTL_CMD exec -n "$ns" "$pod" -c "$container" -- sh -c \
+        local found_dumps
+        found_dumps=$($KUBECTL_CMD exec -n "$ns" "$pod" -c "$container" -- sh -c \
           "find /tmp /app /opt/app-root/src . -maxdepth 2 \( -name '*.heapsnapshot' -o -name 'Heap.*.heapsnapshot' -o -name 'heapdump-*.heapsnapshot' \) 2>/dev/null | head -5" 2>/dev/null || true)
         
         if [[ -n "$found_dumps" ]]; then
@@ -418,7 +422,8 @@ collect_heap_dumps_for_pods() {
       local search_paths="/tmp /app /opt/app-root/src"
       
       for search_path in $search_paths; do
-        local heap_files=$($KUBECTL_CMD exec -n "$ns" "$pod" -c "$container" -- sh -c \
+        local heap_files
+        heap_files=$($KUBECTL_CMD exec -n "$ns" "$pod" -c "$container" -- sh -c \
           "find $search_path -maxdepth 2 -name '*.heapsnapshot' 2>/dev/null | head -1" 2>/dev/null || true)
         
         if [[ -n "$heap_files" ]]; then

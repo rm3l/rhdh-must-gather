@@ -16,19 +16,19 @@ ensure_directory "$OUT_DIR"
 
 # --- Helpers ---
 jsonpath() {
-  kubectl get "$1" $2 -o "jsonpath=$3" 2>/dev/null || true
+  $KUBECTL_CMD get "$1" $2 -o "jsonpath=$3" 2>/dev/null || true
 }
 
 has_api_group() {
-  kubectl api-versions 2>/dev/null | grep -q -E "^$1/"
+  $KUBECTL_CMD api-versions 2>/dev/null | grep -q -E "^$1/"
 }
 
 provider_prefix() {
-  kubectl get nodes -o jsonpath='{.items[0].spec.providerID}' 2>/dev/null | cut -d: -f1
+  $KUBECTL_CMD get nodes -o jsonpath='{.items[0].spec.providerID}' 2>/dev/null | cut -d: -f1
 }
 
 get_k8s_version() {
-  kubectl version -o json 2>/dev/null | jq -r '.serverVersion.gitVersion' || true
+  $KUBECTL_CMD version -o json 2>/dev/null | jq -r '.serverVersion.gitVersion' || true
 }
 
 # --- Init ---
@@ -42,7 +42,7 @@ if has_api_group "config.openshift.io"; then
   PLATFORM="OCP"
 
   OCP_VERSION="$(jsonpath clusterversion version '{.status.desired.version}')"
-  [[ -z "${OCP_VERSION}" ]] && OCP_VERSION="$(kubectl get clusterversion version -o json | jq -r '.status.desired.version' 2>/dev/null || true)"
+  [[ -z "${OCP_VERSION}" ]] && OCP_VERSION="$($KUBECTL_CMD get clusterversion version -o json | jq -r '.status.desired.version' 2>/dev/null || true)"
 
   K8S_VERSION="$(jsonpath clusterversion version '{.status.desired.kubernetesVersion}')"
   [[ -z "${K8S_VERSION}" ]] && K8S_VERSION="$(get_k8s_version)"
@@ -50,7 +50,7 @@ if has_api_group "config.openshift.io"; then
   UNDERLYING="$(jsonpath infrastructures.config.openshift.io cluster '{.status.platformStatus.type}')"
   [[ -z "${UNDERLYING}" ]] && UNDERLYING="$(jsonpath infrastructures.config.openshift.io cluster '{.status.platform}')"
 
-  INFRA_JSON="$(kubectl get infrastructures.config.openshift.io cluster -o json 2>/dev/null || true)"
+  INFRA_JSON="$($KUBECTL_CMD get infrastructures.config.openshift.io cluster -o json 2>/dev/null || true)"
 
   # ROSA / ARO / ROKS
   if [[ "$UNDERLYING" == "AWS" ]]; then
@@ -77,11 +77,11 @@ else
     *)      UNDERLYING="$(provider_prefix)" ;;
   esac
 
-  if [[ "$UNDERLYING" == "AWS" ]] && kubectl get nodes -o jsonpath='{.items[*].metadata.labels.eks\.amazonaws\.com/nodegroup}' | grep -q .; then
+  if [[ "$UNDERLYING" == "AWS" ]] && $KUBECTL_CMD get nodes -o jsonpath='{.items[*].metadata.labels.eks\.amazonaws\.com/nodegroup}' | grep -q .; then
     PLATFORM="EKS"
-  elif [[ "$UNDERLYING" == "GCP" ]] && kubectl get nodes -o jsonpath='{.items[*].metadata.labels.cloud\.google\.com/gke-nodepool}' | grep -q .; then
+  elif [[ "$UNDERLYING" == "GCP" ]] && $KUBECTL_CMD get nodes -o jsonpath='{.items[*].metadata.labels.cloud\.google\.com/gke-nodepool}' | grep -q .; then
     PLATFORM="GKE"
-  elif [[ "$UNDERLYING" == "Azure" ]] && kubectl get nodes -o jsonpath='{.items[*].metadata.labels.agentpool}' | grep -q .; then
+  elif [[ "$UNDERLYING" == "Azure" ]] && $KUBECTL_CMD get nodes -o jsonpath='{.items[*].metadata.labels.agentpool}' | grep -q .; then
     PLATFORM="AKS"
   else
     PLATFORM="Vanilla K8s"

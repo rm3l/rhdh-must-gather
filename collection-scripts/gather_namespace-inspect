@@ -48,11 +48,11 @@ else
         | sort | uniq || echo "")
     
     # Find namespaces with Backstage CRs
-    cr_namespaces=$(kubectl get backstages.rhdh.redhat.com --all-namespaces -o jsonpath='{.items[*].metadata.namespace}' 2>/dev/null \
+    cr_namespaces=$($KUBECTL_CMD get backstages.rhdh.redhat.com --all-namespaces -o jsonpath='{.items[*].metadata.namespace}' 2>/dev/null \
         | tr ' ' '\n' | sort | uniq || echo "")
     
     # Find operator namespace(s)
-    operator_namespaces=$(kubectl get deployments --all-namespaces -l app=rhdh-operator -o jsonpath='{.items[*].metadata.namespace}' 2>/dev/null \
+    operator_namespaces=$($KUBECTL_CMD get deployments --all-namespaces -l app=rhdh-operator -o jsonpath='{.items[*].metadata.namespace}' 2>/dev/null \
         | tr ' ' '\n' | sort | uniq || echo "")
     
     # Combine and deduplicate

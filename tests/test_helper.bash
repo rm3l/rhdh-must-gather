@@ -57,7 +57,7 @@ load_common() {
     export -f safe_exec
     export -f export_log_collection_args
     export -f run
-    export -f kubectl_or_oc
+    export -f get_kubectl_cmd
     export -f check_cluster_connectivity
     export -f validate_environment
 }

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
-# Helm Data Collection Script
-# Collects Helm-specific information for RHDH deployments
+# Route Data Collection Script
+# Collects OpenShift Route information for RHDH deployments
+# Note: Routes are OpenShift-specific resources; this will fail gracefully on vanilla Kubernetes
 
 set -euo pipefail
 
@@ -12,6 +13,6 @@ source "${DIR_NAME}/common.sh"
 log_info "Starting OCP Route data collection..."
 
 namespace_args=$(get_namespace_args)
-safe_exec "oc get routes.route.openshift.io $namespace_args" "$BASE_COLLECTION_PATH/all-routes.txt" "All OCP routes"
+safe_exec "$KUBECTL_CMD get routes.route.openshift.io $namespace_args" "$BASE_COLLECTION_PATH/all-routes.txt" "All OCP routes"
 
 # TODO Collect more details if needed

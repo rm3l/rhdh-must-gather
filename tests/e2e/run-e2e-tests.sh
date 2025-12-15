@@ -190,7 +190,7 @@ if ! kubectl -n rhdh-operator wait --for=condition=Available deployment/rhdh-ope
 fi
 log_info "rhdh-operator deployment is now available."
 
-NS_STATEFULSET="test-e2e-$TIMESTAMP-statefulset"
+NS_STATEFULSET="test-e2e-$TIMESTAMP-2"
 kubectl create namespace "$NS_STATEFULSET"
 CLEANUP_TASKS+=("kubectl delete namespace $NS_STATEFULSET --wait=false")
 
